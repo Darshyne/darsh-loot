@@ -1,0 +1,95 @@
+{
+  "id": "darsh-loot",
+  "title": "darsh-dnd · Butin et commerce",
+  "description": "Cadavres fouillables, conteneurs, vol, nécromancie, lancer de torche, échange et marchands pour dnd5e, interface façon Baldur's Gate 3.",
+  "version": "0.13.0",
+  "authors": [
+    {
+      "name": "Darshyne"
+    }
+  ],
+  "url": "https://github.com/Darshyne/darsh-loot",
+  "license": "https://github.com/Darshyne/darsh-loot/blob/main/LICENSE",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14.367"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "6.0.0"
+        }
+      }
+    ],
+    "requires": [
+      {
+        "id": "dnd5e-combat",
+        "type": "module",
+        "compatibility": {
+          "minimum": "0.144.0"
+        }
+      }
+    ],
+    "conflicts": [
+      {
+        "id": "item-piles",
+        "type": "module",
+        "reason": "Butin et commerce le remplace : tas au sol, fouille, marchands. Ses marchands se reprennent par la macro du module."
+      },
+      {
+        "id": "itempilesdnd5e",
+        "type": "module",
+        "reason": "Complément d'Item Piles."
+      }
+    ]
+  },
+  "documentTypes": {
+    "RegionBehavior": {
+      "container": {}
+    }
+  },
+  "esmodules": [
+    "scripts/darsh-loot.mjs"
+  ],
+  "styles": [
+    "styles/darsh-loot.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "outils",
+      "label": "darsh-loot · Outils du MJ",
+      "path": "packs/outils",
+      "type": "Macro",
+      "system": "dnd5e",
+      "ownership": {
+        "PLAYER": "NONE",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "darsh-dnd",
+      "sorting": "m",
+      "packs": [
+        "outils"
+      ]
+    }
+  ]
+}

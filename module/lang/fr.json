@@ -1,0 +1,326 @@
+{
+  "DLO": {
+    "Window": {
+      "Title": "Fouille : {name}",
+      "Corpse": "Cadavre",
+      "To": "Pris par {name}",
+      "Empty": "Rien à prendre.",
+      "TakeAll": "Tout prendre",
+      "TakeCoins": "Prendre les pièces",
+      "NoLooter": "Sélectionnez d'abord votre personnage.",
+      "Container": "Conteneur",
+      "OpenStore": "Fiche du contenu"
+    },
+    "Hud": {
+      "Search": "Fouiller le cadavre"
+    },
+    "Refus": {
+      "Introuvable": "Cadavre ou personnage introuvable.",
+      "PasCadavre": "Cette créature n'est pas un cadavre.",
+      "PasAToi": "Ce personnage ne vous appartient pas.",
+      "MJSeul": "Seul le MJ peut fouiller les cadavres.",
+      "Loin": "Trop loin : approchez-vous pour fouiller."
+    },
+    "Notice": {
+      "NoGM": "Aucun MJ connecté : la fouille a besoin d'un MJ actif.",
+      "Refused": "Impossible : {reason}"
+    },
+    "Chat": {
+      "Took": "{looter} prend sur {corpse} : {what}.",
+      "Stole": "{looter} vole à {corpse} : {what}.",
+      "Caught": "{thief} a tenté de voler {victim} et s'est fait prendre (Escamotage {total} contre DD {dc})."
+    },
+    "Settings": {
+      "Reach": {
+        "Name": "Portée de fouille",
+        "Hint": "Distance maximale entre un personnage et un cadavre pour le fouiller, en unités de la scène (de bord à bord)."
+      },
+      "WhoLoots": {
+        "Name": "Qui fouille les cadavres",
+        "Hint": "Les joueurs eux-mêmes, ou le MJ seulement.",
+        "All": "Tout le monde",
+        "GM": "Le MJ seulement"
+      },
+      "Announce": {
+        "Name": "Annoncer ce qui est pris",
+        "Hint": "Un message de chat qui liste ce qui a été pris sur un cadavre.",
+        "GM": "Chuchoté au MJ",
+        "All": "Public",
+        "None": "Aucun message"
+      },
+      "AutoTreasure": {
+        "Name": "Tirer le trésor des cadavres",
+        "Hint": "À la première fouille d'un cadavre, tirer son trésor individuel selon son FP (DMG 2024) : des pièces, ou des gemmes (Arcanes) et des objets d'art (Reliques) si le module Guide du maître est actif. Une créature sans préférence de trésor n'a rien."
+      },
+      "Pockets": {
+        "Name": "Poches des humanoïdes",
+        "Hint": "Les humanoïdes peuvent aussi porter quelques objets ordinaires (rations, bougies, une torche, une babiole…) du Manuel des joueurs."
+      },
+      "TheftHostile": {
+        "Name": "Un voleur pris se fait des ennemis",
+        "Hint": "Quand un vol à la tire échoue, le token de la victime devient hostile. Sinon, elle devient seulement méfiante et le MJ est prévenu."
+      },
+      "DropMode": {
+        "Name": "Poser des objets au sol",
+        "Hint": "Glisser un objet d'une fiche de personnage sur la carte le pose au sol (un tas d'une demi-case, qui se ramasse comme un conteneur).",
+        "On": "Oui",
+        "Off": "Non"
+      },
+      "ThrownWeapons": {
+        "Name": "Les armes de jet quittent la main",
+        "Hint": "Une arme lancée avec le moteur de combat quitte le lanceur : si elle touche, une fois sur deux elle reste plantée dans la cible (dans son inventaire, récupérable à sa mort), sinon elle tombe à ses pieds ; si elle rate, elle tombe 1 à 3 cases plus loin, arrêtée par les murs."
+      }
+    },
+    "Lock": {
+      "Locked": "Verrouillé.",
+      "UseKey": "Ouvrir avec {name}",
+      "Pick": "Crocheter (DD {dc})",
+      "GMOpen": "Déverrouiller (MJ)",
+      "NoWay": "Vous n'avez ni la clé ni d'outils de voleur.",
+      "Failed": "La serrure résiste."
+    },
+    "Container": {
+      "Folder": "Butin — conteneurs",
+      "ActorName": "Conteneur : {name}"
+    },
+    "ContainerBehavior": {
+      "Hoard": {
+        "None": "Aucun",
+        "B0": "Repaire FP 0–4",
+        "B5": "Repaire FP 5–10",
+        "B11": "Repaire FP 11–16",
+        "B17": "Repaire FP 17+"
+      },
+      "FIELDS": {
+        "label": {
+          "label": "Nom",
+          "hint": "Affiché dans le titre de la fenêtre de fouille. Vide : le nom de la région."
+        },
+        "actor": {
+          "label": "Contenu",
+          "hint": "L'acteur Groupe qui porte le contenu, créé automatiquement. Ouvrez sa fiche pour y glisser objets et pièces."
+        },
+        "table": {
+          "label": "Table",
+          "hint": "Tirée une fois, à la première ouverture. Objets liés, liens @UUID d'objet dans le texte, ou texte seul (devient un objet « butin »)."
+        },
+        "draws": {
+          "label": "Tirages",
+          "hint": "Nombre de tirages sur la table."
+        },
+        "hoard": {
+          "label": "Trésor de repaire",
+          "hint": "Trésor de repaire aléatoire (DMG 2024) de cette tranche de FP : pièces et objets magiques, tirés une fois à la première ouverture."
+        },
+        "theme": {
+          "label": "Thème du trésor",
+          "hint": "Arcanes : gemmes ; Reliques : objets d'art ; objets magiques tirés dans les tables de ce thème (Tous : 1d4 par objet)."
+        },
+        "rolled": {
+          "label": "Déjà tiré",
+          "hint": "Décocher pour tirer de nouveau table et repaire à la prochaine ouverture (s'ajoute au contenu)."
+        },
+        "locked": {
+          "label": "Verrouillé",
+          "hint": "S'ouvre avec la clé, des outils de voleur (test de Dextérité) ou par le MJ."
+        },
+        "dc": {
+          "label": "DD de la serrure",
+          "hint": "Test d'outils de voleur pour la crocheter."
+        },
+        "key": {
+          "label": "Clé",
+          "hint": "Nom de l'objet qui ouvre la serrure (sans tenir compte de la casse)."
+        },
+        "owner": {
+          "label": "Propriétaire",
+          "hint": "À qui appartient le contenu. Si renseigné, tout ce qu'on y prend est marqué volé à ce nom."
+        }
+      }
+    },
+    "Tables": {
+      "Folder": "Butin — tables",
+      "Nothing": "(rien)",
+      "chest": "Coffre",
+      "barrel": "Tonneau",
+      "crate": "Caisse",
+      "bookshelf": "Bibliothèque",
+      "desk": "Bureau",
+      "altar": "Autel",
+      "camp": "Sac de campement",
+      "MenuName": "Tables génériques de conteneurs",
+      "MenuLabel": "Créer les tables",
+      "MenuHint": "Crée dans ce monde les tables de butin génériques (coffre, tonneau, caisse, bibliothèque, bureau, autel, sac de campement), faites d'objets du Manuel des joueurs, dans le dossier « Butin — tables ». Les tables déjà créées sont laissées telles quelles.",
+      "Created": "{count} table(s) créée(s) dans « Butin — tables ».",
+      "NeedPHB": "Le module Manuel des joueurs doit être actif."
+    },
+    "Steal": {
+      "Title": "Vol à la tire : {name}",
+      "Someone": "Quelqu'un",
+      "By": "Voleur : {name}",
+      "Purse": "Bourse",
+      "Worn": "Porté — impossible à voler",
+      "Tried": "Déjà tenté",
+      "Difficulty": {
+        "easy": "Facile",
+        "medium": "Moyen",
+        "hard": "Difficile",
+        "veryHard": "Très difficile"
+      },
+      "Hint": "Un seul essai par objet. Un échec se remarque.",
+      "Alert": "Sur ses gardes : il surveille.",
+      "InCombat": "Pas pendant un combat.",
+      "AlreadyTried": "Vous avez déjà tenté votre chance.",
+      "Impossible": "Cela ne se vole pas.",
+      "Success": "C'est dans la poche, personne n'a rien vu.",
+      "Caught": "{name} vous a pris la main dans le sac !",
+      "StolenFrom": "Volé à {name}"
+    },
+    "Necro": {
+      "Hud": "Relever le mort",
+      "DialogTitle": "Relever {name}",
+      "DialogCaster": "Sous le contrôle de {name} (le token sélectionné).",
+      "DialogNoCaster": "Aucun lanceur sélectionné : le mort-vivant n'appartiendra à aucun joueur.",
+      "Skeleton": "Squelette",
+      "Zombie": "Zombi",
+      "Name": "{undead} ({name})",
+      "Remains": "Affaires de {name}",
+      "Folder": "Morts-vivants animés",
+      "Chat": "{caster} relève {corpse} : {undead} se dresse.",
+      "Someone": "Quelqu'un",
+      "NotRaisable": "Seul le cadavre d'un humanoïde de taille Petite ou Moyenne peut être relevé.",
+      "NeedMM": "Le module Monster Manual doit être actif."
+    },
+    "Drop": {
+      "QuantityTitle": "Poser : {name}",
+      "Quantity": "Combien ?",
+      "Confirm": "Poser",
+      "PileName": "Objets au sol",
+      "NotOnScene": "Votre personnage n'est pas sur cette scène."
+    },
+    "Trade": {
+      "Title": "Échange : {a} ⇄ {b}",
+      "YouGive": "{name} donne",
+      "YouGet": "{name} donne",
+      "Accepted": "d'accord",
+      "Waiting": "pas encore d'accord",
+      "DropHint": "Glissez ici des objets de votre fiche.",
+      "Nothing": "Rien pour l'instant.",
+      "Remove": "Retirer",
+      "Accept": "Valider",
+      "Unaccept": "Revenir sur mon accord",
+      "Cancel": "Annuler l'échange",
+      "Cancelled": "Échange annulé par {name}.",
+      "Done": "Échange conclu.",
+      "Over": "Cet échange est terminé.",
+      "NotYours": "Seuls les objets de votre personnage peuvent être proposés.",
+      "NobodyThere": "Personne ne tient {name} en ce moment.",
+      "Chat": "Échange entre {a} et {b} — {a} donne : {gaveA} ; {b} donne : {gaveB}.",
+      "Menu": "Échanger",
+      "Impossible": "On ne peut échanger qu'avec le personnage d'un autre joueur.",
+      "WindowFailed": "La fenêtre d'échange n'a pas pu s'ouvrir : {reason}"
+    },
+    "Shop": {
+      "Title": "Boutique : {name}",
+      "Menu": "Commercer",
+      "HudOpen": "Ouvrir la boutique",
+      "HudMake": "En faire un marchand",
+      "Stall": "Étal",
+      "EmptyStall": "Rien à vendre.",
+      "NoBuyer": "Aucun personnage",
+      "NothingToSell": "Rien à proposer.",
+      "YouGive": "Vous donnez",
+      "YouGet": "Vous recevez",
+      "YouPay": "À payer : {price}",
+      "YouEarn": "Le marchand vous doit : {price}",
+      "Even": "Troc équilibré.",
+      "Deal": "Conclure",
+      "Clear": "Vider",
+      "Done": "Marché conclu.",
+      "Hint": "Clic : un exemplaire sur le plateau (Maj : toute la pile). Clic sur le plateau : le reprendre.",
+      "GMHint": "Clic droit sur une marchandise : exposée sans être à vendre → cachée → à vendre.",
+      "Configure": "Réglages",
+      "Restock": "Réassortir",
+      "Sheet": "Fiche",
+      "Closed": "La boutique est fermée.",
+      "ClosedTag": "(fermé)",
+      "TooFar": "Trop loin : approchez-vous du marchand.",
+      "NoFunds": "Vous n'avez pas assez d'argent.",
+      "MerchantNoFunds": "Le marchand n'a pas assez d'argent : prenez-lui autre chose en échange.",
+      "Refused": "Le marchand refuse cet objet volé.",
+      "Fenced": "Objet volé : racheté au rabais.",
+      "NotForSale": "Exposé, pas à vendre.",
+      "Hidden": "Caché des joueurs.",
+      "EndlessCoins": "Caisse sans fond",
+      "Gone": "Marchand ou personnage introuvable.",
+      "Changed": "Le stock ou votre inventaire a changé : vérifiez le troc.",
+      "Nothing": "Rien à échanger.",
+      "Restocked": "{name} : réassort fait ({count} objet(s) tirés).",
+      "Chat": "{buyer} commerce avec {merchant}.",
+      "ChatBought": "Achète : {what} ({price})",
+      "ChatSold": "Vend : {what} ({price})",
+      "ChatPaid": "Paie {price}.",
+      "ChatEarned": "Reçoit {price}.",
+      "Show": "Montrer aux joueurs",
+      "Shown": "{name} : boutique montrée à {count} joueur(s)."
+    },
+    "Merchant": {
+      "Title": "Marchand : {name}",
+      "Shop": "Boutique",
+      "Enabled": "Tient boutique",
+      "EnabledHint": "Les joueurs ouvrent la boutique d'un clic sur son token, hors combat.",
+      "ClosedField": "Fermée",
+      "Owner": "Propriétaire",
+      "OwnerHint": "Ce qu'on a volé à ce nom, la boutique le refuse.",
+      "Description": "Présentation",
+      "Prices": "Prix",
+      "Buy": "Achat",
+      "BuyHint": "Ce que le joueur paie : prix de l'objet × ce coefficient.",
+      "Sell": "Vente",
+      "SellHint": "Ce que le marchand donne : prix de l'objet × ce coefficient (0,5 : moitié prix).",
+      "AttitudeField": "Attitude",
+      "AttitudeHint": "Amical : 10 % en faveur du joueur. Hostile : 20 % contre lui.",
+      "Attitude": {
+        "friendly": "Amical",
+        "indifferent": "Indifférent",
+        "hostile": "Hostile"
+      },
+      "SameAttitude": "Comme tout le monde",
+      "Stolen": "Objets volés",
+      "StolenPolicy": {
+        "own": "Refuse ce qu'on lui a volé",
+        "refuse": "Refuse tout objet volé",
+        "fence": "Receleur : rachète au rabais"
+      },
+      "FenceRate": "Rabais du receleur",
+      "FenceRateHint": "Part du prix de vente donnée pour un objet volé.",
+      "Stock": "Stock et caisse",
+      "InfiniteStock": "Stock inépuisable",
+      "InfiniteCoins": "Caisse sans fond",
+      "TablesHint": "Tables tirées à chaque réassort (ce qui avait été tiré part d'abord).",
+      "DropTable": "Glisser une table ici",
+      "TableMissing": "Table introuvable",
+      "Rolls": "Nombre de tirages (formule)",
+      "RemoveTable": "Retirer",
+      "Memorize": "Noter le stock comme référence",
+      "MemorizeHint": "Le réassort ramènera le stock fixe et la caisse à leur état présent.",
+      "Memorized": "Référence notée ({count} objet(s)).",
+      "Types": "Par type d'objet",
+      "TypesHint": "Coefficients multipliés à ceux du marchand (1 : aucun effet).",
+      "Characters": "Par personnage",
+      "CharactersHint": "Attitude envers lui, et remise en % (positive : en sa faveur).",
+      "Discount": "Remise %",
+      "NoCharacters": "Aucun personnage de joueur.",
+      "Save": "Enregistrer",
+      "ItemPiles": "Cet acteur est un marchand d'Item Piles.",
+      "Convert": "Reprendre ses réglages",
+      "Converted": "{name} : réglages d'Item Piles repris.",
+      "Menu": "Réglages de marchand"
+    }
+  },
+  "TYPES": {
+    "RegionBehavior": {
+      "darsh-loot.container": "Conteneur"
+    }
+  }
+}

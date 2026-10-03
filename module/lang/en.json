@@ -1,0 +1,326 @@
+{
+  "DLO": {
+    "Window": {
+      "Title": "Search: {name}",
+      "Corpse": "Corpse",
+      "To": "Taken by {name}",
+      "Empty": "Nothing to take.",
+      "TakeAll": "Take all",
+      "TakeCoins": "Take the coins",
+      "NoLooter": "Select your character first.",
+      "Container": "Container",
+      "OpenStore": "Contents sheet"
+    },
+    "Hud": {
+      "Search": "Search the corpse"
+    },
+    "Refus": {
+      "Introuvable": "Corpse or character not found.",
+      "PasCadavre": "This creature is not a corpse.",
+      "PasAToi": "You do not own this character.",
+      "MJSeul": "Only the GM can search corpses.",
+      "Loin": "Too far away: step closer to search."
+    },
+    "Notice": {
+      "NoGM": "No GM connected: searching needs an active GM.",
+      "Refused": "Not possible: {reason}"
+    },
+    "Chat": {
+      "Took": "{looter} takes from {corpse}: {what}.",
+      "Stole": "{looter} steals from {corpse}: {what}.",
+      "Caught": "{thief} tried to rob {victim} and was caught (Sleight of Hand {total} vs DC {dc})."
+    },
+    "Settings": {
+      "Reach": {
+        "Name": "Search reach",
+        "Hint": "How close a character must be to a corpse to search it, in scene units (edge to edge)."
+      },
+      "WhoLoots": {
+        "Name": "Who can search corpses",
+        "Hint": "Players themselves, or the GM only.",
+        "All": "Everyone",
+        "GM": "GM only"
+      },
+      "Announce": {
+        "Name": "Announce what is taken",
+        "Hint": "A chat message listing what was taken from a corpse.",
+        "GM": "Whisper to the GM",
+        "All": "Public",
+        "None": "No message"
+      },
+      "AutoTreasure": {
+        "Name": "Roll treasure on corpses",
+        "Hint": "The first time a corpse is searched, roll its individual treasure by CR (DMG 2024): coins, or gemstones (Arcana) and art objects (Relics) when the Dungeon Master's Guide module is active. Creatures without a treasure preference have none."
+      },
+      "Pockets": {
+        "Name": "Humanoid pockets",
+        "Hint": "Humanoids may also carry a few mundane items (rations, candles, a torch, a trinket…) from the Player's Handbook."
+      },
+      "TheftHostile": {
+        "Name": "Caught thieves make enemies",
+        "Hint": "When a pickpocket fails, the victim's token turns hostile. Otherwise it only becomes wary and the GM is told."
+      },
+      "DropMode": {
+        "Name": "Drop items on the ground",
+        "Hint": "Drag an item from a character sheet onto the map to drop it there (a half-square pile, picked up like a container).",
+        "On": "Yes",
+        "Off": "No"
+      },
+      "ThrownWeapons": {
+        "Name": "Thrown weapons leave the hand",
+        "Hint": "A weapon thrown with the combat engine leaves the thrower: on a hit it stays lodged in the target half the time (in its inventory, recoverable when it dies), otherwise it drops at the target's feet; on a miss it lands 1–3 squares beyond, stopped by walls."
+      }
+    },
+    "Lock": {
+      "Locked": "Locked.",
+      "UseKey": "Open with {name}",
+      "Pick": "Pick the lock (DC {dc})",
+      "GMOpen": "Unlock (GM)",
+      "NoWay": "You have neither the key nor thieves' tools.",
+      "Failed": "The lock resists."
+    },
+    "Container": {
+      "Folder": "Loot — containers",
+      "ActorName": "Container: {name}"
+    },
+    "ContainerBehavior": {
+      "Hoard": {
+        "None": "None",
+        "B0": "Hoard CR 0–4",
+        "B5": "Hoard CR 5–10",
+        "B11": "Hoard CR 11–16",
+        "B17": "Hoard CR 17+"
+      },
+      "FIELDS": {
+        "label": {
+          "label": "Name",
+          "hint": "Shown in the search window title. Empty: the region name."
+        },
+        "actor": {
+          "label": "Contents",
+          "hint": "The Group actor holding the contents, created automatically. Open its sheet to drop items and coins in."
+        },
+        "table": {
+          "label": "Roll table",
+          "hint": "Rolled once, the first time the container is opened. Linked items, @UUID item links in the text, or plain text (becomes a loot item)."
+        },
+        "draws": {
+          "label": "Draws",
+          "hint": "How many times the table is rolled."
+        },
+        "hoard": {
+          "label": "Treasure hoard",
+          "hint": "Random Treasure Hoard (DMG 2024) of that CR band: coins and magic items, rolled once at first opening."
+        },
+        "theme": {
+          "label": "Treasure theme",
+          "hint": "Arcana: gemstones; Relics: art objects; magic items from that theme's tables (Any: 1d4 per item)."
+        },
+        "rolled": {
+          "label": "Already rolled",
+          "hint": "Untick to roll the table and hoard again at the next opening (adds to the contents)."
+        },
+        "locked": {
+          "label": "Locked",
+          "hint": "Opened with the key, thieves' tools (Dexterity check) or by the GM."
+        },
+        "dc": {
+          "label": "Lock DC",
+          "hint": "Thieves' tools check to pick the lock."
+        },
+        "key": {
+          "label": "Key",
+          "hint": "Name of the item that opens the lock (case ignored)."
+        },
+        "owner": {
+          "label": "Owner",
+          "hint": "Whoever owns the contents. If set, whatever is taken is flagged as stolen from them."
+        }
+      }
+    },
+    "Tables": {
+      "Folder": "Loot — tables",
+      "Nothing": "(nothing)",
+      "chest": "Chest",
+      "barrel": "Barrel",
+      "crate": "Crate",
+      "bookshelf": "Bookshelf",
+      "desk": "Desk",
+      "altar": "Altar",
+      "camp": "Camp bag",
+      "MenuName": "Generic container tables",
+      "MenuLabel": "Create the tables",
+      "MenuHint": "Creates in this world the generic loot tables (chest, barrel, crate, bookshelf, desk, altar, camp bag) from Player's Handbook items, in the “Loot — tables” folder. Tables already created are left as they are.",
+      "Created": "{count} table(s) created in “Loot — tables”.",
+      "NeedPHB": "The Player's Handbook module must be active."
+    },
+    "Steal": {
+      "Title": "Pickpocket: {name}",
+      "Someone": "Someone",
+      "By": "Thief: {name}",
+      "Purse": "Purse",
+      "Worn": "Worn — cannot be stolen",
+      "Tried": "Already tried",
+      "Difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "veryHard": "Very hard"
+      },
+      "Hint": "One try per item. A failure is noticed.",
+      "Alert": "On guard: watching closely.",
+      "InCombat": "Not during combat.",
+      "AlreadyTried": "You already tried for that.",
+      "Impossible": "That cannot be stolen.",
+      "Success": "Got it, unnoticed.",
+      "Caught": "{name} caught you!",
+      "StolenFrom": "Stolen from {name}"
+    },
+    "Necro": {
+      "Hud": "Raise the dead",
+      "DialogTitle": "Raise {name}",
+      "DialogCaster": "Under the control of {name} (the selected token).",
+      "DialogNoCaster": "No caster selected: the undead will belong to no player.",
+      "Skeleton": "Skeleton",
+      "Zombie": "Zombie",
+      "Name": "{undead} ({name})",
+      "Remains": "Belongings of {name}",
+      "Folder": "Animated undead",
+      "Chat": "{caster} raises {corpse}: {undead} rises.",
+      "Someone": "Someone",
+      "NotRaisable": "Only the corpse of a Small or Medium humanoid can be raised.",
+      "NeedMM": "The Monster Manual module must be active."
+    },
+    "Drop": {
+      "QuantityTitle": "Drop: {name}",
+      "Quantity": "How many?",
+      "Confirm": "Drop",
+      "PileName": "Items on the ground",
+      "NotOnScene": "Your character is not on this scene."
+    },
+    "Trade": {
+      "Title": "Trade: {a} ⇄ {b}",
+      "YouGive": "{name} gives",
+      "YouGet": "{name} gives",
+      "Accepted": "agreed",
+      "Waiting": "not yet agreed",
+      "DropHint": "Drag items from your sheet here.",
+      "Nothing": "Nothing yet.",
+      "Remove": "Remove",
+      "Accept": "Agree",
+      "Unaccept": "Take back",
+      "Cancel": "Cancel the trade",
+      "Cancelled": "Trade cancelled by {name}.",
+      "Done": "Trade done.",
+      "Over": "This trade is over.",
+      "NotYours": "Only items of your own character can be offered.",
+      "NobodyThere": "Nobody holds {name} right now.",
+      "Chat": "Trade between {a} and {b} — {a} gives: {gaveA} ; {b} gives: {gaveB}.",
+      "Menu": "Trade",
+      "Impossible": "You can only trade with another player character.",
+      "WindowFailed": "The trade window could not open: {reason}"
+    },
+    "Shop": {
+      "Title": "Shop: {name}",
+      "Menu": "Trade",
+      "HudOpen": "Open the shop",
+      "HudMake": "Make a merchant",
+      "Stall": "Stall",
+      "EmptyStall": "Nothing for sale.",
+      "NoBuyer": "No character",
+      "NothingToSell": "Nothing to offer.",
+      "YouGive": "You give",
+      "YouGet": "You get",
+      "YouPay": "To pay: {price}",
+      "YouEarn": "The merchant owes you: {price}",
+      "Even": "Even trade.",
+      "Deal": "Deal",
+      "Clear": "Clear",
+      "Done": "Deal done.",
+      "Hint": "Click: one item onto the tray (Shift: the whole stack). Click on the tray: take it back.",
+      "GMHint": "Right-click an item: displayed but not for sale → hidden → for sale.",
+      "Configure": "Settings",
+      "Restock": "Restock",
+      "Sheet": "Sheet",
+      "Closed": "The shop is closed.",
+      "ClosedTag": "(closed)",
+      "TooFar": "Too far: get closer to the merchant.",
+      "NoFunds": "You don't have enough money.",
+      "MerchantNoFunds": "The merchant doesn't have enough money: take something else in exchange.",
+      "Refused": "The merchant refuses this stolen item.",
+      "Fenced": "Stolen item: bought at a discount.",
+      "NotForSale": "On display, not for sale.",
+      "Hidden": "Hidden from players.",
+      "EndlessCoins": "Bottomless till",
+      "Gone": "Merchant or character not found.",
+      "Changed": "The stock or your inventory changed: check the trade.",
+      "Nothing": "Nothing to trade.",
+      "Restocked": "{name}: restocked ({count} item(s) drawn).",
+      "Chat": "{buyer} trades with {merchant}.",
+      "ChatBought": "Buys: {what} ({price})",
+      "ChatSold": "Sells: {what} ({price})",
+      "ChatPaid": "Pays {price}.",
+      "ChatEarned": "Receives {price}.",
+      "Show": "Show to players",
+      "Shown": "{name}: shop shown to {count} player(s)."
+    },
+    "Merchant": {
+      "Title": "Merchant: {name}",
+      "Shop": "Shop",
+      "Enabled": "Runs a shop",
+      "EnabledHint": "Players open the shop by clicking its token, out of combat.",
+      "ClosedField": "Closed",
+      "Owner": "Owner",
+      "OwnerHint": "The shop refuses anything stolen from this name.",
+      "Description": "Description",
+      "Prices": "Prices",
+      "Buy": "Buy",
+      "BuyHint": "What the player pays: item price × this factor.",
+      "Sell": "Sell",
+      "SellHint": "What the merchant gives: item price × this factor (0.5: half price).",
+      "AttitudeField": "Attitude",
+      "AttitudeHint": "Friendly: 10% in the player's favour. Hostile: 20% against.",
+      "Attitude": {
+        "friendly": "Friendly",
+        "indifferent": "Indifferent",
+        "hostile": "Hostile"
+      },
+      "SameAttitude": "Same as everyone",
+      "Stolen": "Stolen items",
+      "StolenPolicy": {
+        "own": "Refuses what was stolen from them",
+        "refuse": "Refuses any stolen item",
+        "fence": "Fence: buys at a discount"
+      },
+      "FenceRate": "Fence discount",
+      "FenceRateHint": "Share of the selling price given for a stolen item.",
+      "Stock": "Stock and till",
+      "InfiniteStock": "Endless stock",
+      "InfiniteCoins": "Bottomless till",
+      "TablesHint": "Tables drawn at each restock (what had been drawn goes first).",
+      "DropTable": "Drop a table here",
+      "TableMissing": "Table not found",
+      "Rolls": "Number of draws (formula)",
+      "RemoveTable": "Remove",
+      "Memorize": "Set stock as reference",
+      "MemorizeHint": "Restocking will bring the fixed stock and the till back to their present state.",
+      "Memorized": "Reference set ({count} item(s)).",
+      "Types": "By item type",
+      "TypesHint": "Factors multiplied with the merchant's (1: no effect).",
+      "Characters": "By character",
+      "CharactersHint": "Attitude towards them, and discount in % (positive: in their favour).",
+      "Discount": "Discount %",
+      "NoCharacters": "No player character.",
+      "Save": "Save",
+      "ItemPiles": "This actor is an Item Piles merchant.",
+      "Convert": "Import its settings",
+      "Converted": "{name}: Item Piles settings imported.",
+      "Menu": "Merchant settings"
+    }
+  },
+  "TYPES": {
+    "RegionBehavior": {
+      "darsh-loot.container": "Container"
+    }
+  }
+}
