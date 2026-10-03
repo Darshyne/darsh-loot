@@ -16,7 +16,13 @@ dnd5e et des compendiums installés : aucun texte de livre n'est livré.
 
 ## Installation
 
-Pas encore de version publiée : le module s'installe depuis les sources. Le module Foundry est le
+Dans Foundry (ou sur The Forge), *Installer un module* → coller l'URL de manifeste :
+
+```
+https://github.com/Darshyne/darsh-loot/releases/latest/download/module.json
+```
+
+Depuis les sources : le module Foundry est le
 sous-dossier `module/`, à copier ou lier dans `Data/modules/darsh-loot`. Les compendiums ne sont pas
 versionnés : `npm install` puis `npm run packs`, Foundry fermé. Tests : `npm test`.
 
