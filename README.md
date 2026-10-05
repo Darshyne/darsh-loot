@@ -1,38 +1,39 @@
-# darsh-dnd · Butin et commerce (`darsh-loot`)
+# DAS · Loot & Trade (`darsh-loot`)
 
-Butin et commerce pour **Foundry VTT V14** et **dnd5e 6.x**, interface façon Baldur's Gate 3 :
+Part of **Darshyne's Automation Suite (DAS)**. Loot and trade for **Foundry VTT V14** and **dnd5e 6.x**, with a
+Baldur's Gate 3-style interface:
 
-- **cadavres fouillables** hors combat, trésor tiré à la première fouille selon le FP et le thème de la créature ;
-- **conteneurs** : comportement de région « Conteneur », contenu tiré d'une table ou d'un trésor par tranche de
-  FP, serrures (clé, outils de voleur ou MJ), curseur au survol ;
-- **objets posés au sol** (glisser un objet d'une fiche vers la carte), avec animation de lancer et sons ;
-- **vol à la tire** (Escamotage contre Perception passive), objets volés marqués ;
-- **nécromancie** : un humanoïde mort devient un squelette ou un zombi contrôlé ;
-- **marchands** : fenêtre de troc, réassort, boutiques sans token ; une macro reprend les marchands Item Piles.
+- **lootable corpses** out of combat, with treasure rolled on the first search according to the creature's CR
+  and treasure theme;
+- **containers**: a "Container" region behavior, contents rolled from a table or from a treasure hoard by CR
+  band, locks (key, thieves' tools or GM), hover cursor;
+- **items dropped on the ground** (drag an item from a sheet onto the map), with a throw animation and sounds;
+- **pickpocketing** (Sleight of Hand against passive Perception), stolen items are flagged;
+- **necromancy**: a dead humanoid becomes a controlled skeleton or zombie;
+- **merchants**: barter window, restocking, shops without a token; a macro converts Item Piles merchants.
 
-Il **requiert le moteur [`dnd5e-combat`](https://github.com/Darshyne/dnd5e-combat)**, appelé uniquement par
-son API publique, et remplace Item Piles (déclaré en conflit). Les données de trésor sont celles du système
-dnd5e et des compendiums installés : aucun texte de livre n'est livré.
+It **requires the [`dnd5e-combat`](https://github.com/Darshyne/dnd5e-combat) engine**, called only through its
+public API, and replaces Item Piles (declared as a conflict). Treasure data comes from the dnd5e system and the
+installed compendiums: no book text is shipped.
 
 ## Installation
 
-Dans Foundry (ou sur The Forge), *Installer un module* → coller l'URL de manifeste :
+In Foundry (or on The Forge), *Install Module* → paste the manifest URL:
 
 ```
 https://github.com/Darshyne/darsh-loot/releases/latest/download/module.json
 ```
 
-Depuis les sources : le module Foundry est le
-sous-dossier `module/`, à copier ou lier dans `Data/modules/darsh-loot`. Les compendiums ne sont pas
-versionnés : `npm install` puis `npm run packs`, Foundry fermé. Tests : `npm test`.
+From source: the Foundry module is the `module/` subfolder, to copy or link into `Data/modules/darsh-loot`.
+Compendiums are not versioned: run `npm install` then `npm run packs`, with Foundry closed. Tests: `npm test`.
 
-Interface en français. En développement actif.
+The interface is in French only for now. Under active development.
 
-## Licence
+## License
 
-Code sous licence MIT (voir `LICENSE`).
+Code under the MIT license (see `LICENSE`).
 
-Ce travail inclut des éléments du System Reference Document 5.2 (« SRD 5.2 ») de Wizards of the Coast LLC,
-disponible sur https://www.dndbeyond.com/srd. Le SRD 5.2 est sous licence Creative Commons Attribution 4.0
-International, disponible sur https://creativecommons.org/licenses/by/4.0/legalcode. Ce module n'est ni
-affilié à Wizards of the Coast ni approuvé par elle.
+This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC,
+available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0
+International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. This module is not
+affiliated with, nor endorsed by, Wizards of the Coast.
