@@ -12,6 +12,7 @@ import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
 import { registerHiddenInit, registerHidden, requestSearch } from "./runtime/hidden.mjs";
+import { registerHighlight } from "./runtime/highlight.mjs";
 import { registerTheft, requestSteal } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
@@ -52,6 +53,7 @@ Hooks.once("ready", () => {
   registerPointer();
   registerTileZone();
   registerHidden();
+  registerHighlight();
   registerStolenMark();
   registerNecromancy();
   registerDrop();

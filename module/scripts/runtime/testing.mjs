@@ -13,6 +13,7 @@ import { tileToZone } from "./tile-zone.mjs";
 import { runZone } from "./zones.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { requestSearch, passiveCheck } from "./hidden.mjs";
+import { highlightState } from "./highlight.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
 
 function tokenOf(tokenId) {
@@ -192,4 +193,4 @@ async function removeTestActors() {
 }
 
 export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
-  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet });
+  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState });
