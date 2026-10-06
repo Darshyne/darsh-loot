@@ -59,6 +59,20 @@ export function engineStopWalks() {
   catch(err) { return false; }
 }
 
+/**
+ * Le budget du tour, tenu par le moteur (son SPEC §102, `api.budget`) : ce qui empêche une dépense (« notYourTurn »,
+ * « noAction »…) et la dépense elle-même, chez le MJ actif. Sans le moteur, ou sans cette API : rien ne coûte.
+ */
+export function engineBudgetIssues(actor, cost="action") {
+  const fn = engineApi()?.budget?.issues;
+  return (typeof fn === "function") ? fn(actor, cost) : [];
+}
+
+export async function engineSpend(actor, cost="action") {
+  const fn = engineApi()?.budget?.spend;
+  return (typeof fn === "function") ? fn(actor, cost) : false;
+}
+
 /** Étapes finales d'une action du moteur (core/action.mjs `STEPS`). */
 const FINAL_STEPS = new Set(["done", "missed"]);
 

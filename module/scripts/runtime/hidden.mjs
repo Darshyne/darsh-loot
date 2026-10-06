@@ -16,7 +16,7 @@ import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { passiveFinds, searchReach, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
 import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playerToken, wallHidden } from "../adapter/hidden.mjs";
-import { TOKEN_MENU_HOOK, engineStopWalks } from "../adapter/engine.mjs";
+import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend } from "../adapter/engine.mjs";
 
 const SEARCH_QUERY = `${MODULE_ID}.search`;
 const HALT_QUERY = `${MODULE_ID}.halt`;
@@ -159,6 +159,10 @@ async function handleSearch({ token: uuid }, { user }) {
   if ( !token?.actor ) throw new Error(loc("Refus.Introuvable"));
   if ( !token.actor.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
   const actor = token.actor;
+  // En combat, la fouille est l'action Observation (PHB 2024) : le moteur dit si elle est possible et la décompte.
+  const issues = engineBudgetIssues(actor, "action");
+  if ( issues.length ) throw new Error(loc(`Hidden.Budget.${issues[0]}`, { name: actor.name }));
+  await engineSpend(actor, "action");
   const worldRadius = setting("searchRadius");
   let found = 0;
   for ( const thing of concealedThings(token.parent) ) {

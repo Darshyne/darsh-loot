@@ -448,6 +448,12 @@
         "Radius": "Rayon de fouille",
         "Found": "Trouvé",
         "Text": "Texte de découverte"
+      },
+      "Budget": {
+        "notYourTurn": "ce n'est pas le tour de {name}",
+        "noAction": "{name} n'a plus d'action ce tour-ci",
+        "noBonus": "{name} n'a plus d'action Bonus",
+        "noReaction": "{name} n'a plus de réaction"
       }
     }
   },

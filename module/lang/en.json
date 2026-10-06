@@ -448,6 +448,12 @@
         "Radius": "Search radius",
         "Found": "Found",
         "Text": "Discovery text"
+      },
+      "Budget": {
+        "notYourTurn": "it is not {name}'s turn",
+        "noAction": "{name} has no action left this turn",
+        "noBonus": "{name} has no Bonus Action left",
+        "noReaction": "{name} has no reaction left"
       }
     }
   },
