@@ -69,6 +69,10 @@
       "ThrownWeapons": {
         "Name": "Les armes de jet quittent la main",
         "Hint": "Une arme lancée avec le moteur de combat quitte le lanceur : si elle touche, une fois sur deux elle reste plantée dans la cible (dans son inventaire, récupérable à sa mort), sinon elle tombe à ses pieds ; si elle rate, elle tombe 1 à 3 cases plus loin, arrêtée par les murs."
+      },
+      "SearchRadius": {
+        "Name": "Rayon de fouille",
+        "Hint": "Distance (unités de la scène) jusqu'où « Fouiller les environs » cherche, murs compris. Un objet caché peut demander moins."
       }
     },
     "Lock": {
@@ -385,7 +389,66 @@
       "NotOnCanvas": "Cette tuile n'est pas sur la scène affichée.",
       "DefaultName": "Zone",
       "Traced": "Zone « {name} » ({type}) créée d'après le contour de l'image.",
-      "Rectangle": "Zone « {name} » ({type}) créée sur le rectangle de la tuile : l'image ne se lit pas."
+      "Rectangle": "Zone « {name} » ({type}) créée sur le rectangle de la tuile : l'image ne se lit pas.",
+      "Hidden": "Cachée",
+      "Skill": "Compétence",
+      "Dc": "DD de détection"
+    },
+    "Hidden": {
+      "FIELDS": {
+        "hidden": {
+          "enabled": {
+            "label": "Cachée",
+            "hint": "Invisible et inutilisable pour les joueurs tant qu'un personnage ne l'a pas trouvée (Perception passive en passant, ou « Fouiller les environs »). Ses tuiles sont cachées et ses comportements du cœur désactivés jusque-là."
+          },
+          "skill": {
+            "label": "Compétence",
+            "hint": "Celle qui la trouve : Perception (Observation) ou Investigation (Étude)."
+          },
+          "dc": {
+            "label": "DD de détection",
+            "hint": "Valeur passive ou jet de fouille à atteindre."
+          },
+          "passive": {
+            "label": "Distance passive",
+            "hint": "En unités de la scène : un personnage qui arrive à cette distance, en ligne de vue, la trouve si sa valeur passive atteint le DD. 0 : pas de détection passive."
+          },
+          "radius": {
+            "label": "Rayon de fouille",
+            "hint": "Distance maximale d'une fouille active (le réglage du monde, ou moins : une aiguille ne se voit qu'à 1,50 m)."
+          },
+          "found": {
+            "label": "Trouvée",
+            "hint": "Décocher pour la recacher : tuiles et comportements reprennent leur état caché, les essais s'effacent."
+          },
+          "text": {
+            "label": "Texte de découverte",
+            "hint": "Ce que lit le joueur qui la trouve. Vide : un texte générique (« Vous remarquez une cachette. »)."
+          }
+        }
+      },
+      "Search": "Fouiller les environs",
+      "Nothing": "Vous ne remarquez rien de spécial.",
+      "Found": {
+        "Cache": "Vous remarquez une cachette.",
+        "Mechanism": "Vous remarquez un mécanisme.",
+        "Passage": "Vous remarquez un passage.",
+        "Inscription": "Vous remarquez une inscription.",
+        "SecretDoor": "Vous remarquez une porte secrète.",
+        "Trap": "Vous remarquez un piège.",
+        "Something": "Vous remarquez quelque chose."
+      },
+      "Wall": {
+        "Legend": "DAS · Caché",
+        "Hint": "Porte secrète ou mur éthéré : trouvé par Perception passive ou par « Fouiller les environs », il devient une porte ordinaire ou cesse de bloquer la vue.",
+        "Enabled": "Caché",
+        "Skill": "Compétence",
+        "Dc": "DD de détection",
+        "Passive": "Distance passive",
+        "Radius": "Rayon de fouille",
+        "Found": "Trouvé",
+        "Text": "Texte de découverte"
+      }
     }
   },
   "TYPES": {

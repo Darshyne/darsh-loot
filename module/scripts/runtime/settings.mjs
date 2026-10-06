@@ -31,6 +31,12 @@ export function registerSettings() {
     scope: "world", config: true, type: Number, default: 5,
     range: { min: 5, max: 30, step: 5 }
   });
+  // Rayon de « Fouiller les environs » (SPEC §3.12) ; un objet caché peut demander moins.
+  game.settings.register(MODULE_ID, "searchRadius", {
+    name: "DLO.Settings.SearchRadius.Name", hint: "DLO.Settings.SearchRadius.Hint",
+    scope: "world", config: true, type: Number, default: 15,
+    range: { min: 5, max: 60, step: 5 }
+  });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
     scope: "world", config: true, type: String, default: "all",

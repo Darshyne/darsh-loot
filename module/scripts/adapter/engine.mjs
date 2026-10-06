@@ -48,6 +48,17 @@ export function engineApproach() {
   return (typeof fn === "function") ? fn : null;
 }
 
+/**
+ * Arrêter les marches du moteur lancées par ce client (option « cachée », SPEC §3.12 : une découverte arrête tout). Demandé
+ * au moteur (SPEC §4) : tant qu'il ne l'expose pas (`api.stopWalks`), rien — l'arrêt du cœur (`stopMovement`) reste.
+ */
+export function engineStopWalks() {
+  const fn = engineApi()?.stopWalks;
+  if ( typeof fn !== "function" ) return false;
+  try { fn(); return true; }
+  catch(err) { return false; }
+}
+
 /** Étapes finales d'une action du moteur (core/action.mjs `STEPS`). */
 const FINAL_STEPS = new Set(["done", "missed"]);
 

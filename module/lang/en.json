@@ -69,6 +69,10 @@
       "ThrownWeapons": {
         "Name": "Thrown weapons leave the hand",
         "Hint": "A weapon thrown with the combat engine leaves the thrower: on a hit it stays lodged in the target half the time (in its inventory, recoverable when it dies), otherwise it drops at the target's feet; on a miss it lands 1–3 squares beyond, stopped by walls."
+      },
+      "SearchRadius": {
+        "Name": "Search radius",
+        "Hint": "Distance (scene units) that \"Search the surroundings\" covers, stopped by walls. A hidden object may require less."
       }
     },
     "Lock": {
@@ -385,7 +389,66 @@
       "NotOnCanvas": "This tile is not on the viewed scene.",
       "DefaultName": "Zone",
       "Traced": "Zone \"{name}\" ({type}) created from the image outline.",
-      "Rectangle": "Zone \"{name}\" ({type}) created on the tile rectangle: the image cannot be read."
+      "Rectangle": "Zone \"{name}\" ({type}) created on the tile rectangle: the image cannot be read.",
+      "Hidden": "Hidden",
+      "Skill": "Skill",
+      "Dc": "Detection DC"
+    },
+    "Hidden": {
+      "FIELDS": {
+        "hidden": {
+          "enabled": {
+            "label": "Hidden",
+            "hint": "Invisible and unusable for players until a character finds it (passive Perception when passing by, or \"Search the surroundings\"). Its tiles are hidden and its core behaviors disabled until then."
+          },
+          "skill": {
+            "label": "Skill",
+            "hint": "The one that finds it: Perception (Search) or Investigation (Study)."
+          },
+          "dc": {
+            "label": "Detection DC",
+            "hint": "Passive score or search roll to reach."
+          },
+          "passive": {
+            "label": "Passive distance",
+            "hint": "In scene units: a character who comes within this distance, in line of sight, finds it if their passive score reaches the DC. 0: no passive detection."
+          },
+          "radius": {
+            "label": "Search radius",
+            "hint": "Maximum distance of an active search (the world setting, or less: a needle is only seen within 5 ft)."
+          },
+          "found": {
+            "label": "Found",
+            "hint": "Uncheck to hide it again: tiles and behaviors go back to hidden, attempts are cleared."
+          },
+          "text": {
+            "label": "Discovery text",
+            "hint": "What the finding player reads. Empty: a generic text (\"You notice a hidden cache.\")."
+          }
+        }
+      },
+      "Search": "Search the surroundings",
+      "Nothing": "You notice nothing special.",
+      "Found": {
+        "Cache": "You notice a hidden cache.",
+        "Mechanism": "You notice a mechanism.",
+        "Passage": "You notice a passage.",
+        "Inscription": "You notice an inscription.",
+        "SecretDoor": "You notice a secret door.",
+        "Trap": "You notice a trap.",
+        "Something": "You notice something."
+      },
+      "Wall": {
+        "Legend": "DAS · Hidden",
+        "Hint": "Secret door or ethereal wall: found by passive Perception or by \"Search the surroundings\", it becomes a regular door or stops blocking sight.",
+        "Enabled": "Hidden",
+        "Skill": "Skill",
+        "Dc": "Detection DC",
+        "Passive": "Passive distance",
+        "Radius": "Search radius",
+        "Found": "Found",
+        "Text": "Discovery text"
+      }
     }
   },
   "TYPES": {

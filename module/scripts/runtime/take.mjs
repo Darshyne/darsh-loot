@@ -8,6 +8,7 @@ import { transfer } from "../adapter/dnd5e.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { stolenFlag } from "../core/theft.mjs";
 import { clearIfEmpty } from "../adapter/drop.mjs";
+import { behaviorConcealed } from "../adapter/hidden.mjs";
 
 const TAKE_QUERY = `${MODULE_ID}.take`;
 
@@ -37,6 +38,7 @@ export function checkAccess({ source: ref, looter: looterUuid }, user) {
   if ( !source || !looter?.actor || !source.exists() ) throw new Error(loc("Refus.Introuvable"));
   if ( !looter.actor.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
   if ( user.isGM ) return { source, looter };
+  if ( ["container", "zone"].includes(source.kind) && behaviorConcealed(source.doc) ) throw new Error(loc("Refus.Introuvable"));
   if ( (source.kind === "corpse") && (setting("whoLoots") === "gm") ) throw new Error(loc("Refus.MJSeul"));
   if ( source.distance(looter) > setting("reach") ) throw new Error(loc("Refus.Loin"));
   return { source, looter };

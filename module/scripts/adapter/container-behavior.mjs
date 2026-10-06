@@ -9,13 +9,14 @@
  * pour tous : les joueurs reçoivent ainsi ses objets et ses mises à jour.
  */
 import { MODULE_ID } from "../shared.mjs";
+import { hiddenField, behaviorConcealed } from "./hidden.mjs";
 
 export const CONTAINER_TYPE = `${MODULE_ID}.container`;
 
 const fields = foundry.data.fields;
 
 export class ContainerBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
-  static LOCALIZATION_PREFIXES = ["DLO.ContainerBehavior"];
+  static LOCALIZATION_PREFIXES = ["DLO.ContainerBehavior", "DLO.Hidden"];
 
   static defineSchema() {
     return {
@@ -35,7 +36,9 @@ export class ContainerBehaviorType extends foundry.data.regionBehaviors.RegionBe
       dc: new fields.NumberField({ required: true, integer: true, min: 1, max: 40, initial: 15 }),
       key: new fields.StringField({ required: true, blank: true, initial: "" }),
       // Propriétaire du contenu (une personne, une maison) : ce qu'on y prend est marqué volé (SPEC §3.3).
-      owner: new fields.StringField({ required: true, blank: true, initial: "" })
+      owner: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // Option « cachée » (SPEC §3.12) : une cachette.
+      hidden: hiddenField()
     };
   }
 
@@ -52,14 +55,16 @@ export function registerContainerBehavior() {
   CONFIG.RegionBehavior.typeIcons[CONTAINER_TYPE] = "fa-solid fa-treasure-chest";
 }
 
-/** Les conteneurs actifs d'une scène, visibles pour l'utilisateur. */
+/** Les conteneurs actifs d'une scène, visibles pour l'utilisateur (une cachette pas encore trouvée : MJ seulement). */
 export function sceneContainers(scene) {
   const out = [];
   if ( !scene ) return out;
   for ( const region of scene.regions ) {
     if ( region.hidden && !game.user.isGM ) continue;
     for ( const behavior of region.behaviors ) {
-      if ( (behavior.type === CONTAINER_TYPE) && !behavior.disabled ) out.push(behavior);
+      if ( (behavior.type !== CONTAINER_TYPE) || behavior.disabled ) continue;
+      if ( !game.user.isGM && behaviorConcealed(behavior) ) continue;
+      out.push(behavior);
     }
   }
   return out;

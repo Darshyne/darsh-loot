@@ -11,6 +11,7 @@ import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
+import { registerHiddenInit, registerHidden, requestSearch } from "./runtime/hidden.mjs";
 import { registerTheft, requestSteal } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
@@ -36,6 +37,7 @@ Hooks.once("init", () => {
   registerTreasure();
   registerContainersInit();
   registerZonesInit();
+  registerHiddenInit();
   registerTheft();
   registerNecromancyInit();
   registerDropInit();
@@ -49,6 +51,7 @@ Hooks.once("ready", () => {
   registerContainers();
   registerPointer();
   registerTileZone();
+  registerHidden();
   registerStolenMark();
   registerNecromancy();
   registerDrop();
@@ -115,6 +118,8 @@ Hooks.once("ready", () => {
     },
     /** Ouvre la fenêtre de fouille d'un token mort (TokenDocument ou Token). */
     open: (token, looter) => openLoot(doc(token), doc(looter)),
+    /** « Fouiller les environs » pour ce personnage (token) : jet caché, le joueur n'apprend que ce qu'il trouve (SPEC §3.12). */
+    search: token => requestSearch(doc(token)),
     /** Se servir d'une zone « DAS · … » (macro, scène, document) comme par un clic, pour un personnage (token) ou personne. */
     useZone: (behavior, looter=null) => runZone(behavior, doc(looter)),
     /** MJ : créer une zone de la forme d'une tuile — `{ kind: "container"|"macro"|"scene"|"document", name, system }`. */

@@ -28,6 +28,11 @@ export async function promptTileZone({ types, name }) {
     <div class="form-group" data-for="document"><label>${L("Document")}</label><select name="document">${options(journals, L("None"))}</select></div>
     <div class="form-group" data-for="document"><label>${L("DocumentUuid")}</label><input type="text" name="documentUuid" placeholder="JournalEntry.xxx.JournalEntryPage.yyy"></div>
     <div class="form-group" data-for="document"><label>${L("Grant")}</label><input type="checkbox" name="grant" checked></div>
+    <div class="form-group"><label>${L("Hidden")}</label><input type="checkbox" name="hidden"></div>
+    <div class="form-group" data-hidden><label>${L("Skill")}</label><select name="skill">
+      <option value="prc">${esc(game.i18n.localize("DND5E.SkillPrc"))}</option>
+      <option value="inv">${esc(game.i18n.localize("DND5E.SkillInv"))}</option></select></div>
+    <div class="form-group" data-hidden><label>${L("Dc")}</label><input type="number" name="dc" value="15" min="1" max="40" step="1"></div>
     <p class="hint">${L("Hint")}</p>`;
 
   return foundry.applications.api.DialogV2.prompt({
@@ -41,6 +46,11 @@ export async function promptTileZone({ types, name }) {
       });
       select.addEventListener("change", sync);
       sync();
+      // Option « cachée » (SPEC §3.12) : compétence et DD seulement si elle est cochée.
+      const hidden = root.querySelector("input[name=hidden]");
+      const syncHidden = () => root.querySelectorAll("[data-hidden]").forEach(el => { el.style.display = hidden.checked ? "" : "none"; });
+      hidden.addEventListener("change", syncHidden);
+      syncHidden();
     },
     ok: {
       label: L("Create"),
@@ -55,6 +65,7 @@ export async function promptTileZone({ types, name }) {
           system.document = f.documentUuid.value.trim() || f.document.value || null;
           system.grant = f.grant.checked;
         }
+        if ( f.hidden.checked ) system.hidden = { enabled: true, skill: f.skill.value, dc: Number(f.dc.value) || 15 };
         return { kind, name: f.name.value.trim(), system };
       }
     },

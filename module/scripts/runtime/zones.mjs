@@ -8,6 +8,7 @@ import { MODULE_ID, loc, log, setting } from "../shared.mjs";
 import { askGM } from "./take.mjs";
 import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, registerZoneBehaviors } from "../adapter/zone-behaviors.mjs";
 import { regionDistance } from "../adapter/dnd5e.mjs";
+import { behaviorConcealed } from "../adapter/hidden.mjs";
 
 const GRANT_QUERY = `${MODULE_ID}.grantDocument`;
 
@@ -114,7 +115,7 @@ async function openDocument(behavior, looter) {
 async function handleGrant({ behavior: behaviorUuid, looter: looterUuid }, { user }) {
   const behavior = fromUuidSync(behaviorUuid, { strict: false });
   if ( (behavior?.type !== DOCUMENT_ZONE) || behavior.disabled || !behavior.system.grant ) throw new Error(loc("Refus.Introuvable"));
-  if ( behavior.parent?.hidden && !user.isGM ) throw new Error(loc("Refus.Introuvable"));
+  if ( (behavior.parent?.hidden || behaviorConcealed(behavior)) && !user.isGM ) throw new Error(loc("Refus.Introuvable"));
   if ( behavior.system.reach && !user.isGM ) {
     const looter = looterUuid ? fromUuidSync(looterUuid, { strict: false }) : null;
     if ( !looter?.actor?.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));

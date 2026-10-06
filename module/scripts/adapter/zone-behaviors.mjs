@@ -7,6 +7,7 @@
  * (vu dans `coc7-dialogues` 0.9.2 : `system.scene` rendait la scène courante).
  */
 import { MODULE_ID } from "../shared.mjs";
+import { hiddenField, behaviorConcealed } from "./hidden.mjs";
 
 export const MACRO_ZONE = `${MODULE_ID}.macro`;
 export const SCENE_ZONE = `${MODULE_ID}.scene`;
@@ -18,7 +19,9 @@ const fields = foundry.data.fields;
 /** Champs communs : un nom, et la portée exigée ou non (une sortie de carte, un levier : oui ; une affiche lue de loin : non). */
 const commonFields = () => ({
   label: new fields.StringField({ required: true, blank: true, initial: "" }),
-  reach: new fields.BooleanField({ initial: true })
+  reach: new fields.BooleanField({ initial: true }),
+  // Option « cachée » (SPEC §3.12) : un levier secret, un passage, une inscription.
+  hidden: hiddenField()
 });
 
 class ZoneBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
@@ -34,7 +37,7 @@ class ZoneBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
 }
 
 export class MacroZoneType extends ZoneBehaviorType {
-  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.MacroZone"];
+  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.Hidden", "DLO.MacroZone"];
 
   static defineSchema() {
     return {
@@ -47,7 +50,7 @@ export class MacroZoneType extends ZoneBehaviorType {
 }
 
 export class SceneZoneType extends ZoneBehaviorType {
-  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.SceneZone"];
+  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.Hidden", "DLO.SceneZone"];
 
   static defineSchema() {
     return {
@@ -62,7 +65,7 @@ export class SceneZoneType extends ZoneBehaviorType {
 }
 
 export class DocumentZoneType extends ZoneBehaviorType {
-  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.DocumentZone"];
+  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.Hidden", "DLO.DocumentZone"];
 
   static defineSchema() {
     return {
@@ -97,7 +100,7 @@ export function registerZoneBehaviors() {
   }
 }
 
-/** Les zones actives d'une scène, visibles pour l'utilisateur (région cachée : MJ seulement). */
+/** Les zones actives d'une scène, visibles pour l'utilisateur (région cachée, zone pas encore trouvée : MJ seulement). */
 export function sceneZones(scene) {
   const out = [];
   if ( !scene ) return out;
@@ -105,7 +108,9 @@ export function sceneZones(scene) {
   for ( const region of scene.regions ) {
     if ( region.hidden && !game.user.isGM ) continue;
     for ( const behavior of region.behaviors ) {
-      if ( types.has(behavior.type) && !behavior.disabled ) out.push(behavior);
+      if ( !types.has(behavior.type) || behavior.disabled ) continue;
+      if ( !game.user.isGM && behaviorConcealed(behavior) ) continue;
+      out.push(behavior);
     }
   }
   return out;

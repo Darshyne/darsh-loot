@@ -12,6 +12,8 @@ import { MerchantConfig } from "../apps/merchant-config.mjs";
 import { tileToZone } from "./tile-zone.mjs";
 import { runZone } from "./zones.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
+import { requestSearch, passiveCheck } from "./hidden.mjs";
+import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
 
 function tokenOf(tokenId) {
   if ( !game.user.isGM ) throw new Error("réservé au MJ");
@@ -135,6 +137,30 @@ async function zoneUse({ regionId, tokenId=null }) {
     windows: [...foundry.applications.instances.values()].filter(a => a.rendered).map(a => a.title) };
 }
 
+/** Ce qui est caché sur la scène affichée, et, pour un token, s'il l'atteint (distance) et sa valeur passive. */
+function hiddenState({ tokenId=null }={}) {
+  const token = tokenId ? tokenOf(tokenId) : null;
+  return concealedThings(canvas.scene).map(t => ({ kind: t.kind, key: t.key, hidden: t.hidden, tried: t.tried,
+    distance: token ? t.distance(token) : null, passive: token ? passiveScore(token.actor, t.hidden.skill) : null }));
+}
+
+/** « Fouiller les environs » pour ce token, comme le bouton (le MJ joue le joueur). */
+const hiddenSearch = ({ tokenId }) => requestSearch(tokenOf(tokenId));
+
+/** Rejouer la Perception passive de ce token, comme s'il venait de bouger. */
+const hiddenPassive = async ({ tokenId }) => { await passiveCheck(tokenOf(tokenId), { x: true }); return hiddenState({ tokenId }); };
+
+/** Coche ou décoche « trouvée » sur la première zone DAS d'une région (recacher : `found: false`). */
+async function hiddenSet({ regionId, found }) {
+  const behavior = regionOf(regionId).behaviors.find(b => b.type.startsWith(`${MODULE_ID}.`));
+  await behavior.update({ "system.hidden.found": !!found });
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const region = regionOf(regionId);
+  return { found: behavior.system.hidden.found, concealed: region.getFlag(MODULE_ID, "concealed") ?? null,
+    tiles: region.parent.tiles.filter(t => region.polygonTree.testPoint({ x: t.x, y: t.y })).map(t => ({ id: t.id, hidden: t.hidden })),
+    tried: behavior.getFlag(MODULE_ID, "tried") ?? null };
+}
+
 /** Retire les régions d'essai (et, par les hooks, les coffres de leurs conteneurs) sur toutes les scènes. */
 async function removeTestZones() {
   let regions = 0;
@@ -166,4 +192,4 @@ async function removeTestActors() {
 }
 
 export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
-  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones });
+  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet });
