@@ -18,6 +18,7 @@ import { askGM } from "./take.mjs";
 import { haltScene } from "./hidden.mjs";
 import { TRAP_ZONE, TrapZoneType, registerTrapBehavior, sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
 import { regionDistance } from "../adapter/dnd5e.mjs";
+import { trapChecks } from "../core/traps.mjs";
 import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid } from "../adapter/engine.mjs";
 
 const DISARM_QUERY = `${MODULE_ID}.disarm`;
@@ -205,6 +206,33 @@ async function handleDisarm({ behavior: uuid, looter: looterUuid, total }, { use
   return { ok: false, fired: false };
 }
 
+/* -------------------------------------------- */
+/*  DD lus dans un piège du DMG                 */
+/* -------------------------------------------- */
+
+/**
+ * Chez le MJ : quand un piège reçoit son acteur (création, ou acteur changé), ses DD de détection et de désamorçage sont lus
+ * dans le texte de ses capacités (core/traps.mjs : les liens de jet du DMG 2024). Une seule fois par acteur
+ * (`flags.darsh-loot.checksFrom`) : une retouche à la main n'est pas écrasée. Un acteur sans test (fait main) : rien.
+ */
+export async function applyTrapChecks(behavior) {
+  const uuid = behavior.system.actor;
+  if ( !uuid || (behavior.getFlag(MODULE_ID, "checksFrom") === uuid) ) return;
+  const actor = await fromUuid(uuid);
+  if ( !actor ) return;
+  const texts = actor.items.contents.flatMap(i => [i.system.description?.value ?? "",
+    ...(i.system.activities?.contents ?? []).map(a => a.description?.chatFlavor ?? "")]);
+  const found = trapChecks(texts);
+  const update = { [`flags.${MODULE_ID}.checksFrom`]: uuid };
+  if ( found ) {
+    Object.assign(update, { "system.hidden.skill": found.hidden.skill, "system.hidden.dc": found.hidden.dc,
+      "system.disarmDc": found.disarmDc, "system.failure": found.failure });
+    log.info(`piège ${behavior.system.displayName} : DD lus dans ${actor.name} — détection ${found.hidden.skill} ${found.hidden.dc}, `
+      + `désamorçage ${found.disarmDc} (${found.failure})`);
+  }
+  await behavior.update(update);
+}
+
 /** Les pièges repérés d'une scène, désamorçables (pour la souris). */
 export function knownTraps(scene) {
   return sceneTraps(scene).filter(b => trapKnown(b));
@@ -217,7 +245,11 @@ export function registerTrapsInit() {
 }
 
 export function registerTraps() {
-  const sync = behavior => { if ( isActiveGM() && (behavior.type === TRAP_ZONE) ) syncAvoid(behavior); };
+  const sync = behavior => {
+    if ( !isActiveGM() || (behavior.type !== TRAP_ZONE) ) return;
+    syncAvoid(behavior);
+    applyTrapChecks(behavior).catch(err => log.warn("DD du piège :", err.message));
+  };
   route("updateRegionBehavior", "piège repéré", sync);
   route("createRegionBehavior", "piège repéré", sync);
   route("createRegion", "piège repéré", region => { for ( const b of region.behaviors ) sync(b); });

@@ -14,7 +14,7 @@ import { runZone } from "./zones.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { requestSearch, passiveCheck } from "./hidden.mjs";
 import { highlightState } from "./highlight.mjs";
-import { fireTrap, requestDisarm } from "./traps.mjs";
+import { fireTrap, requestDisarm, applyTrapChecks } from "./traps.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
@@ -179,6 +179,14 @@ const trapSet = async ({ regionId, changes }) => {
   return trapState({ regionId });
 };
 
+/** Relire les DD du piège d'une région dans son acteur (efface la marque « déjà lu »). */
+const trapRecheck = async ({ regionId }) => {
+  const trap = regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE);
+  await trap.unsetFlag(MODULE_ID, "checksFrom");
+  await applyTrapChecks(trap);
+  return trapState({ regionId });
+};
+
 /** Faire partir le piège d'une région (MJ). */
 const trapFire = async ({ regionId }) => { await fireTrap(regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE)); return trapState({ regionId }); };
 
@@ -217,4 +225,4 @@ async function removeTestActors() {
 
 export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
   zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
-  trapState, trapFire, trapDisarm, trapSet });
+  trapState, trapFire, trapDisarm, trapSet, trapRecheck });
