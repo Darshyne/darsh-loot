@@ -17,6 +17,7 @@ export async function promptTileZone({ types, name }) {
   const macros = game.macros.contents.sort(byName);
   const scenes = game.scenes.contents.filter(s => s !== canvas.scene).sort(byName);
   const journals = game.journal.contents.sort(byName);
+  const actors = game.actors.contents.filter(a => a.type === "npc").sort(byName);
   const typeOptions = types.map(t =>
     `<option value="${esc(t.kind)}">${esc(game.i18n.localize(`TYPES.RegionBehavior.${t.id}`))}</option>`).join("");
 
@@ -28,6 +29,7 @@ export async function promptTileZone({ types, name }) {
     <div class="form-group" data-for="document"><label>${L("Document")}</label><select name="document">${options(journals, L("None"))}</select></div>
     <div class="form-group" data-for="document"><label>${L("DocumentUuid")}</label><input type="text" name="documentUuid" placeholder="JournalEntry.xxx.JournalEntryPage.yyy"></div>
     <div class="form-group" data-for="document"><label>${L("Grant")}</label><input type="checkbox" name="grant" checked></div>
+    <div class="form-group" data-for="trap"><label>${L("Actor")}</label><select name="trapActor">${options(actors, L("None"))}</select></div>
     <div class="form-group"><label>${L("Hidden")}</label><input type="checkbox" name="hidden"></div>
     <div class="form-group" data-hidden><label>${L("Skill")}</label><select name="skill">
       <option value="prc">${esc(game.i18n.localize("DND5E.SkillPrc"))}</option>
@@ -46,6 +48,8 @@ export async function promptTileZone({ types, name }) {
       });
       select.addEventListener("change", sync);
       sync();
+      // Un piège est caché par nature : la case se coche quand on le choisit.
+      select.addEventListener("change", () => { if ( select.value === "trap" ) { root.querySelector("input[name=hidden]").checked = true; root.querySelector("input[name=hidden]").dispatchEvent(new Event("change")); } });
       // Option « cachée » (SPEC §3.12) : compétence et DD seulement si elle est cochée.
       const hidden = root.querySelector("input[name=hidden]");
       const syncHidden = () => root.querySelectorAll("[data-hidden]").forEach(el => { el.style.display = hidden.checked ? "" : "none"; });
@@ -65,7 +69,9 @@ export async function promptTileZone({ types, name }) {
           system.document = f.documentUuid.value.trim() || f.document.value || null;
           system.grant = f.grant.checked;
         }
+        if ( kind === "trap" ) system.actor = f.trapActor.value || null;
         if ( f.hidden.checked ) system.hidden = { enabled: true, skill: f.skill.value, dc: Number(f.dc.value) || 15 };
+        else if ( kind === "trap" ) system.hidden = { enabled: false };
         return { kind, name: f.name.value.trim(), system };
       }
     },

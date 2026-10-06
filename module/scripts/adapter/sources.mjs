@@ -6,6 +6,7 @@ import { loc } from "../shared.mjs";
 import { corpseToken, tokenDistance, regionDistance } from "./dnd5e.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { ZONE_TYPES } from "./zone-behaviors.mjs";
+import { TRAP_ZONE } from "./trap-behavior.mjs";
 import { livingNPC } from "./theft.mjs";
 import { merchantToken, merchantAlive } from "./shop.mjs";
 
@@ -82,6 +83,11 @@ export function zoneSource(behavior) {
   };
 }
 
+/** Un piège repéré, à désamorcer (SPEC §3.12) : la même portée et la même marche qu'une zone. */
+export function trapSource(behavior) {
+  return { ...zoneSource(behavior), kind: "trap", key: `trap-${behavior.id}` };
+}
+
 /** Les poches d'un PNJ vivant (vol à la tire, SPEC §3.3). @param {TokenDocument} token */
 export function pocketSource(token) {
   return {
@@ -147,5 +153,6 @@ export function resolveSource({ kind, uuid }) {
   if ( (kind === "merchant") && ["Token", "Actor"].includes(doc.documentName) ) return merchantSource(doc);
   if ( (kind === "container") && (doc.type === CONTAINER_TYPE) ) return containerSource(doc);
   if ( (kind === "zone") && ZONE_TYPES.includes(doc.type) ) return zoneSource(doc);
+  if ( (kind === "trap") && (doc.type === TRAP_ZONE) ) return trapSource(doc);
   return null;
 }

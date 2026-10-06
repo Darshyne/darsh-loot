@@ -393,7 +393,8 @@
       "Rectangle": "Zone \"{name}\" ({type}) created on the tile rectangle: the image cannot be read.",
       "Hidden": "Hidden",
       "Skill": "Skill",
-      "Dc": "Detection DC"
+      "Dc": "Detection DC",
+      "Actor": "Trap actor"
     },
     "Hidden": {
       "FIELDS": {
@@ -456,6 +457,65 @@
         "noBonus": "{name} has no Bonus Action left",
         "noReaction": "{name} has no reaction left"
       }
+    },
+    "TrapZone": {
+      "Hint": "A token entering the region triggers the trap: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Hidden by default; once spotted it shows in red, the engine's pathing avoids it, and it can be disarmed with a click (thieves' tools).",
+      "FIELDS": {
+        "actor": {
+          "label": "Trap actor",
+          "hint": "The actor that 'casts' the trap (a 2024 DMG trap, or a hand-made NPC), with no token on the map."
+        },
+        "activity": {
+          "label": "Activity",
+          "hint": "Id of the activity used. Empty: the first activity of the first item that has one."
+        },
+        "effectRegion": {
+          "label": "Effect area",
+          "hint": "UUID of another region of the scene (the corridor swept by the jet of fire). Empty: this region. It stays hidden from players."
+        },
+        "height": {
+          "label": "Height",
+          "hint": "Above the area's floor (scene units), a token does not trigger: a flying creature passes. 0: only what touches the floor."
+        },
+        "armed": {
+          "label": "Armed",
+          "hint": "Check again to re-arm the trap by hand."
+        },
+        "rearm": {
+          "label": "Re-arming"
+        },
+        "delay": {
+          "label": "Re-arm delay",
+          "hint": "In minutes of world time (calendar), for 'after a delay'."
+        },
+        "triggeredAt": {
+          "label": "Triggered at",
+          "hint": "World time of the last trigger (filled automatically)."
+        },
+        "disarmDc": {
+          "label": "Disarm DC",
+          "hint": "Thieves' tools check."
+        },
+        "failure": {
+          "label": "Failed disarm"
+        },
+        "disarmed": {
+          "label": "Disarmed",
+          "hint": "Uncheck to restore it (also check 'Armed')."
+        }
+      },
+      "Rearm": {
+        "Never": "Never",
+        "Gm": "By hand (GM)",
+        "Time": "After a delay"
+      },
+      "Failure": {
+        "Nothing": "Nothing",
+        "Trigger": "The trap goes off"
+      },
+      "Disarmed": "Trap disarmed.",
+      "DisarmFailed": "The disarm attempt fails.",
+      "DisarmFired": "Failed: the trap goes off!"
     }
   },
   "TYPES": {
@@ -463,7 +523,8 @@
       "darsh-loot.container": "DAS · Container",
       "darsh-loot.macro": "DAS · Click macro",
       "darsh-loot.scene": "DAS · To scene",
-      "darsh-loot.document": "DAS · Open document"
+      "darsh-loot.document": "DAS · Open document",
+      "darsh-loot.trap": "DAS · Trap"
     }
   }
 }

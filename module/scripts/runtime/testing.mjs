@@ -14,6 +14,9 @@ import { runZone } from "./zones.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { requestSearch, passiveCheck } from "./hidden.mjs";
 import { highlightState } from "./highlight.mjs";
+import { fireTrap, requestDisarm } from "./traps.mjs";
+import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
+import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
 
 function tokenOf(tokenId) {
@@ -162,6 +165,19 @@ async function hiddenSet({ regionId, found }) {
     tried: behavior.getFlag(MODULE_ID, "tried") ?? null };
 }
 
+/** Le piège d'une région : ses réglages, et l'évitement posé pour le moteur. */
+function trapState({ regionId }) {
+  const region = regionOf(regionId);
+  const trap = region.behaviors.find(b => b.type === TRAP_ZONE);
+  return { system: trap?.system.toObject() ?? null, avoid: engineAvoids(region) };
+}
+
+/** Faire partir le piège d'une région (MJ). */
+const trapFire = async ({ regionId }) => { await fireTrap(regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE)); return trapState({ regionId }); };
+
+/** Désamorcer le piège d'une région au nom d'un token (le MJ joue le joueur, jet réel). */
+const trapDisarm = async ({ regionId, tokenId }) => requestDisarm(regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE), tokenOf(tokenId));
+
 /** Retire les régions d'essai (et, par les hooks, les coffres de leurs conteneurs) sur toutes les scènes. */
 async function removeTestZones() {
   let regions = 0;
@@ -193,4 +209,5 @@ async function removeTestActors() {
 }
 
 export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
-  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState });
+  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
+  trapState, trapFire, trapDisarm });

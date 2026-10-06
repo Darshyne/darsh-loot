@@ -53,7 +53,8 @@
       "container": {},
       "macro": {},
       "scene": {},
-      "document": {}
+      "document": {},
+      "trap": {}
     }
   },
   "esmodules": [

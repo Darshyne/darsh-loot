@@ -32,6 +32,21 @@ export const TOKEN_MENU_HOOK = `${ENGINE_ID}.tokenMenu`;
  */
 export const DROP_ITEMS_HOOK = `${ENGINE_ID}.dropItems`;
 
+/**
+ * La configuration d'utilisation qui fait passer une activité utilisée par un module sans le contrôle de légalité du moteur
+ * (« confirmé » : un piège n'a ni tour ni budget).
+ */
+export const engineUsageConfig = () => ({ [ENGINE_ID]: { confirmed: true } });
+
+/**
+ * Une région que le chemin du moteur doit contourner (son SPEC §103, `flags.dnd5e-combat.avoid`) : un piège repéré. Chez le MJ.
+ */
+export const engineAvoids = region => region.getFlag(ENGINE_ID, "avoid") === true;
+export function setEngineAvoid(region, avoid) {
+  if ( engineAvoids(region) === avoid ) return null;
+  return avoid ? region.setFlag(ENGINE_ID, "avoid", true) : region.unsetFlag(ENGINE_ID, "avoid");
+}
+
 /** L'API publique du moteur, s'il est actif. */
 function engineApi() {
   const engine = game.modules.get(ENGINE_ID);

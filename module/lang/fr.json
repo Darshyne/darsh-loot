@@ -393,7 +393,8 @@
       "Rectangle": "Zone « {name} » ({type}) créée sur le rectangle de la tuile : l'image ne se lit pas.",
       "Hidden": "Cachée",
       "Skill": "Compétence",
-      "Dc": "DD de détection"
+      "Dc": "DD de détection",
+      "Actor": "Acteur piège"
     },
     "Hidden": {
       "FIELDS": {
@@ -456,6 +457,65 @@
         "noBonus": "{name} n'a plus d'action Bonus",
         "noReaction": "{name} n'a plus de réaction"
       }
+    },
+    "TrapZone": {
+      "Hint": "Un token qui entre dans la région déclenche le piège : l'acteur piège utilise son activité sur les tokens de la zone d'effet (résolution par le moteur de combat). Caché par défaut ; repéré, il se montre en rouge, le chemin du moteur l'évite, et il se désamorce d'un clic (outils de voleur).",
+      "FIELDS": {
+        "actor": {
+          "label": "Acteur piège",
+          "hint": "L'acteur qui « lance » le piège (un piège du DMG 2024, ou un PNJ fait main), sans token sur la carte."
+        },
+        "activity": {
+          "label": "Activité",
+          "hint": "Identifiant de l'activité utilisée. Vide : la première activité du premier objet qui en a."
+        },
+        "effectRegion": {
+          "label": "Zone d'effet",
+          "hint": "UUID d'une autre région de la scène (le couloir que balaie le trait de feu). Vide : cette région. Elle reste cachée aux joueurs."
+        },
+        "height": {
+          "label": "Hauteur",
+          "hint": "Au-dessus du sol de la zone (unités de la scène), un token ne déclenche pas : une créature qui vole passe. 0 : seulement ce qui touche le sol."
+        },
+        "armed": {
+          "label": "Armé",
+          "hint": "Recocher pour réarmer le piège à la main."
+        },
+        "rearm": {
+          "label": "Réarmement"
+        },
+        "delay": {
+          "label": "Délai de réarmement",
+          "hint": "En minutes de temps du monde (calendrier), pour « après un délai »."
+        },
+        "triggeredAt": {
+          "label": "Déclenché à",
+          "hint": "Temps du monde du dernier déclenchement (rempli tout seul)."
+        },
+        "disarmDc": {
+          "label": "DD de désamorçage",
+          "hint": "Test d'outils de voleur."
+        },
+        "failure": {
+          "label": "Échec du désamorçage"
+        },
+        "disarmed": {
+          "label": "Désamorcé",
+          "hint": "Décocher pour le remettre en état (cocher aussi « Armé »)."
+        }
+      },
+      "Rearm": {
+        "Never": "Jamais",
+        "Gm": "À la main (MJ)",
+        "Time": "Après un délai"
+      },
+      "Failure": {
+        "Nothing": "Rien",
+        "Trigger": "Le piège se déclenche"
+      },
+      "Disarmed": "Piège désamorcé.",
+      "DisarmFailed": "Le désamorçage échoue.",
+      "DisarmFired": "Raté : le piège se déclenche !"
     }
   },
   "TYPES": {
@@ -463,7 +523,8 @@
       "darsh-loot.container": "DAS · Conteneur",
       "darsh-loot.macro": "DAS · Macro au clic",
       "darsh-loot.scene": "DAS · Vers une scène",
-      "darsh-loot.document": "DAS · Ouvrir un document"
+      "darsh-loot.document": "DAS · Ouvrir un document",
+      "darsh-loot.trap": "DAS · Piège"
     }
   }
 }

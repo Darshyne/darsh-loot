@@ -6,6 +6,7 @@
  *
  * - **Hors combat seulement** : en combat, Alt est la touche d'avantage que lit le moteur ; on n'y ajoute rien (le moteur
  *   reste prioritaire).
+ * - **Exception : un piège repéré** (pas désamorcé) est dessiné **en rouge en permanence**, sans touche et en combat.
  * - Forme : la zone qui contient une tuile visible prend le **contour de l'image** de la tuile (adapter/tile-outline.mjs,
  *   gardé en cache) ; sinon les polygones de la région ; un cadavre, un anneau sous son token.
  * - Tout est dessiné dans un conteneur de `canvas.interface` qui **ne prend aucun évènement** (`eventMode = "none"`) : leçon
@@ -19,9 +20,10 @@ import { behaviorConcealed, tilesIn } from "../adapter/hidden.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
+import { sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
 
 /** Couleurs : neutre pour une zone ou un cadavre, or pour une cachette trouvée, mauve (MJ seulement) pour ce qui est encore caché. */
-const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6 };
+const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6, trap: 0xe0312b };
 
 let layer = null;
 let active = false;
@@ -49,6 +51,11 @@ function zonesToDraw(scene) {
     out.push({ region, color });
   }
   return out;
+}
+
+/** Les zones de déclenchement des pièges repérés et pas désamorcés, sur le niveau affiché. */
+function trapsToDraw() {
+  return sceneTraps(canvas.scene).filter(b => trapKnown(b) && b.region?.viewed).map(b => b.region);
 }
 
 /** Les cadavres qu'on peut fouiller, visibles pour ce client. */
@@ -108,13 +115,23 @@ export function redraw() {
   if ( !canvas.ready ) return;
   const container = ensureLayer();
   for ( const child of container.removeChildren() ) child.destroy();
-  if ( !active || inCombat() ) return;
   const g = new PIXI.Graphics();
   g.eventMode = "none";
-  for ( const { region, color } of zonesToDraw(canvas.scene) ) {
-    for ( const points of regionPolygons(region) ) drawOutline(g, points, color);
+  // Toujours : les pièges repérés, en rouge (le MJ voit aussi, en mauve avec la touche, ceux qui sont encore cachés).
+  for ( const region of trapsToDraw() ) {
+    for ( const points of regionPolygons(region) ) drawOutline(g, points, COLORS.trap);
   }
-  for ( const token of corpsesToDraw() ) drawCorpse(g, token);
+  if ( active && !inCombat() ) {
+    for ( const { region, color } of zonesToDraw(canvas.scene) ) {
+      for ( const points of regionPolygons(region) ) drawOutline(g, points, color);
+    }
+    for ( const behavior of sceneTraps(canvas.scene) ) {
+      if ( game.user.isGM && !trapKnown(behavior) && !behavior.system.disarmed && behavior.region?.viewed ) {
+        for ( const points of regionPolygons(behavior.region) ) drawOutline(g, points, COLORS.concealed);
+      }
+    }
+    for ( const token of corpsesToDraw() ) drawCorpse(g, token);
+  }
   container.addChild(g);
 }
 
@@ -125,17 +142,18 @@ function onHighlight(on) {
 
 /** Ce qui est dessiné, pour les tests : nombre de zones et de cadavres. */
 export function highlightState() {
-  return { active, combat: inCombat(), zones: active ? zonesToDraw(canvas.scene).length : 0,
+  return { active, combat: inCombat(), traps: trapsToDraw().length, zones: active ? zonesToDraw(canvas.scene).length : 0,
     corpses: active ? corpsesToDraw().length : 0, drawn: layer?.children?.[0]?.geometry?.graphicsData?.length ?? 0 };
 }
 
 export function registerHighlight() {
   route("highlightObjects", "surbrillance", onHighlight);
-  route("canvasReady", "surbrillance", () => { layer = null; active = false; shapes.clear(); });
+  route("canvasReady", "surbrillance", () => { layer = null; active = false; shapes.clear(); redraw(); });
   route("canvasTearDown", "surbrillance", () => { layer = null; active = false; });
   // Tant que la touche est tenue : ce qui change sous les yeux (coffre vidé, cachette trouvée, mort, combat).
-  for ( const hook of ["updateRegionBehavior", "createRegion", "deleteRegion", "updateRegion", "updateTile", "updateToken",
+  for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "deleteRegion", "updateRegion", "updateTile", "updateToken",
     "updateActor", "createActiveEffect", "deleteActiveEffect", "updateCombat", "deleteCombat", "createCombat"] ) {
-    route(hook, "surbrillance", () => { if ( active ) redraw(); });
+    // Les pièges repérés sont dessinés en permanence : on redessine toujours (ce n'est qu'un trait par zone).
+    route(hook, "surbrillance", () => redraw());
   }
 }

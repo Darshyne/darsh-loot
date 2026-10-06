@@ -13,6 +13,7 @@ import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
 import { registerHiddenInit, registerHidden, requestSearch } from "./runtime/hidden.mjs";
 import { registerHighlight } from "./runtime/highlight.mjs";
+import { registerTrapsInit, registerTraps, fireTrap } from "./runtime/traps.mjs";
 import { registerTheft, registerTheftMenu, requestSteal } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
@@ -39,6 +40,7 @@ Hooks.once("init", () => {
   registerContainersInit();
   registerZonesInit();
   registerHiddenInit();
+  registerTrapsInit();
   registerTheft();
   registerNecromancyInit();
   registerDropInit();
@@ -53,6 +55,7 @@ Hooks.once("ready", () => {
   registerPointer();
   registerTileZone();
   registerHidden();
+  registerTraps();
   registerHighlight();
   registerStolenMark();
   registerNecromancy();
@@ -121,6 +124,8 @@ Hooks.once("ready", () => {
     },
     /** Ouvre la fenêtre de fouille d'un token mort (TokenDocument ou Token). */
     open: (token, looter) => openLoot(doc(token), doc(looter)),
+    /** MJ : faire partir un piège (comportement « DAS · Piège ») maintenant, comme si quelqu'un y entrait. */
+    fireTrap: behavior => (game.user.isGM ? fireTrap(behavior) : null),
     /** « Fouiller les environs » pour ce personnage (token) : jet caché, le joueur n'apprend que ce qu'il trouve (SPEC §3.12). */
     search: token => requestSearch(doc(token)),
     /** Se servir d'une zone « DAS · … » (macro, scène, document) comme par un clic, pour un personnage (token) ou personne. */

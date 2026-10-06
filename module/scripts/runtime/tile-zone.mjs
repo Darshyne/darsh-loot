@@ -8,6 +8,7 @@ import { loc, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { CONTAINER_TYPE } from "../adapter/container-behavior.mjs";
 import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE } from "../adapter/zone-behaviors.mjs";
+import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { prettyName } from "../core/outline.mjs";
 import { promptTileZone } from "../apps/tile-zone-dialog.mjs";
@@ -17,7 +18,9 @@ const TYPES = [
   { kind: "container", id: CONTAINER_TYPE },
   { kind: "macro", id: MACRO_ZONE },
   { kind: "scene", id: SCENE_ZONE },
-  { kind: "document", id: DOCUMENT_ZONE }
+  { kind: "document", id: DOCUMENT_ZONE },
+  // La zone de déclenchement d'un piège (une dalle) ; sa zone d'effet se dessine à la main.
+  { kind: "trap", id: TRAP_ZONE }
 ];
 
 /**

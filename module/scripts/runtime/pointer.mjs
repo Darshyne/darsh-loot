@@ -11,7 +11,8 @@ import { openSource } from "./open.mjs";
 import { setting } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
-import { corpseSource, containerSource, merchantSource, zoneSource } from "../adapter/sources.mjs";
+import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
+import { knownTraps, requestDisarm } from "./traps.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK } from "../adapter/engine.mjs";
@@ -77,7 +78,10 @@ function sourceAt(event) {
   const behavior = containerAt(point);
   if ( behavior ) return containerSource(behavior);
   const zone = zoneAt(point);
-  return zone ? zoneSource(zone) : null;
+  if ( zone ) return zoneSource(zone);
+  // Un piège repéré se désamorce d'un clic (SPEC §3.12).
+  const trap = regionAt(knownTraps(canvas.scene), point);
+  return trap ? trapSource(trap) : null;
 }
 
 /* ---- curseur ---- */
@@ -96,6 +100,7 @@ function cursorFor(source) {
   if ( !source || inCombat() ) return null;
   const actor = source.actor;
   if ( source.kind === "zone" ) return zoneCursor(source);
+  if ( source.kind === "trap" ) return trapCursor(source);
   if ( source.kind === "merchant" ) {
     const me = actingToken();
     if ( me && (source.distance(me) <= setting("reach")) ) return "shop";
@@ -127,6 +132,12 @@ function zoneCursor(source) {
   }
   if ( gmToken() && canApproach() && (source.distance(gmToken()) > setting("reach")) ) return "go";
   return "use";
+}
+
+/** Le curseur d'un piège repéré : « disarm » à portée, « go » / « far » sinon (le MJ : comme pour une zone). */
+function trapCursor(source) {
+  const cursor = zoneCursor({ ...source, doc: { system: { reach: true } } });
+  return (cursor === "use") ? "disarm" : cursor;
 }
 
 /** Le token que le MJ a sélectionné (un seul), ou null. */
@@ -202,7 +213,9 @@ function onPointerUp(event) {
 
 /** Ouvrir la fenêtre d'une source, ou se servir d'une zone. */
 function activate(source, looter) {
-  return (source.kind === "zone") ? runZone(source.doc, looter) : openSource(source, looter);
+  if ( source.kind === "zone" ) return runZone(source.doc, looter);
+  if ( source.kind === "trap" ) return requestDisarm(source.doc, looter);
+  return openSource(source, looter);
 }
 
 /** Marcher jusqu'à portée (moteur), puis ouvrir la fenêtre (ou se servir de la zone) si l'on y est arrivé. */

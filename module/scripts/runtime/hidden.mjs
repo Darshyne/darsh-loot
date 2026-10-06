@@ -188,7 +188,7 @@ async function handleSearch({ token: uuid }, { user }) {
  * Chez le MJ : tous les déplacements de cette scène s'arrêtent, sur tous les clients. Seul le client qui a lancé un
  * déplacement peut l'arrêter (`TokenDocument#stopMovement`, documents/token.mjs:762) : chacun arrête les siens.
  */
-function haltScene(scene) {
+export function haltScene(scene) {
   for ( const user of game.users.filter(u => u.active) ) {
     if ( user.isSelf ) handleHalt({ scene: scene.uuid });
     else user.query(HALT_QUERY, { scene: scene.uuid }, { timeout: 5000 }).catch(err => log.warn("arrêt des déplacements :", err.message));
