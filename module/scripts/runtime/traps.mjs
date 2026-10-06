@@ -22,6 +22,8 @@ import { trapChecks, pickTier, targetsLevel } from "../core/traps.mjs";
 import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid } from "../adapter/engine.mjs";
 
 const DISARM_QUERY = `${MODULE_ID}.disarm`;
+/** Émis chez le MJ actif quand un piège part : `{ behavior, region, effectRegion, actor, activity, triggerer, targets }`. */
+const TRAP_FIRED_HOOK = `${MODULE_ID}.trapFired`;
 
 const isActiveGM = () => game.users.activeGM?.isSelf === true;
 
@@ -126,6 +128,10 @@ export async function fireTrap(behavior, triggerer=null) {
     if ( !activity ) { log.warn(`piège ${behavior.uuid} : pas d'acteur ou d'activité`); return false; }
     log.info(`piège ${behavior.system.displayName} : ${activity.name || activity.item.name} sur ${targets.map(t => t.name).join(", ") || "personne"}`
       + (triggerer ? ` (déclenché par ${triggerer.name})` : ""));
+    // Hook public : un module d'animation peut jouer le piège (BLFX ne joue rien sans token source, et l'acteur piège n'en a
+    // pas). On ne connaît pas qui l'écoute.
+    Hooks.callAll(TRAP_FIRED_HOOK, { behavior, region: behavior.region, effectRegion: effectRegionOf(behavior),
+      actor: activity.actor, activity, triggerer, targets });
     await useOnTargets(activity, scene, targets);
     return true;
   } catch(err) {
