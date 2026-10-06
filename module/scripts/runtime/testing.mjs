@@ -9,6 +9,9 @@ import { openSource } from "./open.mjs";
 import { configureMerchant } from "./shop.mjs";
 import { ShopWindow } from "../apps/shop-window.mjs";
 import { MerchantConfig } from "../apps/merchant-config.mjs";
+import { tileToZone } from "./tile-zone.mjs";
+import { runZone } from "./zones.mjs";
+import { tileShape } from "../adapter/tile-outline.mjs";
 
 function tokenOf(tokenId) {
   if ( !game.user.isGM ) throw new Error("réservé au MJ");
@@ -83,6 +86,65 @@ async function shopClose() {
   return { closed: apps.length };
 }
 
+/* ---- zones « DAS · … » (SPEC §3.12) ---- */
+
+function regionOf(regionId) {
+  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  const region = canvas.scene?.regions.get(regionId);
+  if ( !region ) throw new Error(`région ${regionId} absente de la scène affichée`);
+  return region;
+}
+
+/** La forme qu'aurait la zone d'une tuile : contour tracé ou rectangle, nombre de points, boîte englobante. */
+function zoneShape({ tileId }) {
+  const tile = canvas.scene?.tiles.get(tileId);
+  if ( !tile ) throw new Error(`tuile ${tileId} absente de la scène affichée`);
+  const { points, traced } = tileShape(tile);
+  const xs = points.filter((_, i) => !(i % 2)), ys = points.filter((_, i) => i % 2);
+  return { traced, points: points.length / 2, box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)],
+    tile: { x: tile.x, y: tile.y, width: tile.width, height: tile.height, anchor: [tile.texture.anchorX, tile.texture.anchorY] } };
+}
+
+/** Crée la zone d'une tuile comme le bouton du HUD, marquée d'essai (`flags.darsh-loot.test`). */
+async function zoneFromTile({ tileId, kind="container", name="", system={} }) {
+  const tile = canvas.scene?.tiles.get(tileId);
+  if ( !tile ) throw new Error(`tuile ${tileId} absente de la scène affichée`);
+  const region = await tileToZone(tile, { kind, name, system, openSheet: false });
+  await region.setFlag(MODULE_ID, "test", true);
+  return zoneState({ regionId: region.id });
+}
+
+/** Une région et ses comportements, tels qu'enregistrés. */
+function zoneState({ regionId }) {
+  const region = regionOf(regionId);
+  return {
+    id: region.id, name: region.name, visibility: region.visibility, hidden: region.hidden,
+    points: (region.shapes[0]?.points?.length ?? 0) / 2,
+    behaviors: region.behaviors.map(b => ({ id: b.id, type: b.type, name: b.name, disabled: b.disabled,
+      displayName: b.system.displayName ?? null, system: b.system.toObject() }))
+  };
+}
+
+/** Se servir d'une zone comme par un clic du MJ (pour un token, ou personne) ; rend la scène vue et les fenêtres ouvertes après. */
+async function zoneUse({ regionId, tokenId=null }) {
+  const region = regionOf(regionId);
+  const behavior = region.behaviors.contents[0];
+  await runZone(behavior, tokenId ? tokenOf(tokenId) : null);
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return { viewed: canvas.scene?.name ?? null,
+    windows: [...foundry.applications.instances.values()].filter(a => a.rendered).map(a => a.title) };
+}
+
+/** Retire les régions d'essai (et, par les hooks, les coffres de leurs conteneurs) sur toutes les scènes. */
+async function removeTestZones() {
+  let regions = 0;
+  for ( const scene of game.scenes ) {
+    const ids = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true).map(r => r.id);
+    if ( ids.length ) { await scene.deleteEmbeddedDocuments("Region", ids); regions += ids.length; }
+  }
+  return { regions };
+}
+
 /**
  * Retire ce qu'un essai a créé : les acteurs et les tables du monde marqués `flags.darsh-loot.test` et leurs tokens, sur toutes les
  * scènes. Rien d'autre n'est touché.
@@ -103,4 +165,5 @@ async function removeTestActors() {
   return { actors: names, tokens, tables: tableNames };
 }
 
-export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors });
+export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
+  zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones });

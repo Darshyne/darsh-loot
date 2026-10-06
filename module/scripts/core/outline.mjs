@@ -49,6 +49,7 @@ export function largestContour(mask, W, H) {
     next++;
   }
   if ( !best ) return null;
+  largestContour.lastSize = bestSize;
   const inside = (x, y) => (x >= 0) && (y >= 0) && (x < W) && (y < H) && (label[(y * W) + x] === best);
 
   // Départ : le pixel le plus haut puis le plus à gauche de la tache (ordre de balayage).
@@ -77,6 +78,60 @@ export function largestContour(mask, W, H) {
     contour.push([cx, cy]);
   }
   return contour;
+}
+
+/**
+ * Enveloppe convexe (chaîne monotone d'Andrew) des pixels visibles du masque, coins de pixels compris : la forme d'une
+ * image faite de morceaux séparés (un levier : manche et socle), dont le plus gros seul ne dirait rien.
+ * @returns {number[][]|null}
+ */
+export function opaqueHull(mask, W, H) {
+  const pts = [];
+  for ( let y = 0; y < H; y++ ) {
+    let first = -1, last = -1;
+    for ( let x = 0; x < W; x++ ) if ( mask[(y * W) + x] ) { if ( first < 0 ) first = x; last = x; }
+    // Les extrémités de chaque ligne suffisent pour l'enveloppe.
+    if ( first >= 0 ) pts.push([first, y], [last + 1, y], [first, y + 1], [last + 1, y + 1]);
+  }
+  if ( pts.length < 3 ) return null;
+  pts.sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+  const cross = (o, a, b) => ((a[0] - o[0]) * (b[1] - o[1])) - ((a[1] - o[1]) * (b[0] - o[0]));
+  const lower = [], upper = [];
+  for ( const p of pts ) {
+    while ( (lower.length >= 2) && (cross(lower.at(-2), lower.at(-1), p) <= 0) ) lower.pop();
+    lower.push(p);
+  }
+  for ( const p of pts.toReversed() ) {
+    while ( (upper.length >= 2) && (cross(upper.at(-2), upper.at(-1), p) <= 0) ) upper.pop();
+    upper.push(p);
+  }
+  return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+
+/** Aire de la boîte englobante de points `[x, y]` de pixels (bornes comprises). */
+function boxArea(points) {
+  const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
+  return (Math.max(...xs) - Math.min(...xs) + 1) * (Math.max(...ys) - Math.min(...ys) + 1);
+}
+
+/**
+ * Le polygone d'une image : le contour de sa plus grande tache si elle **est** l'image — au moins `share` des pixels
+ * visibles **et** de l'étendue (boîte englobante) de l'image —, sinon l'enveloppe convexe de tous ses pixels visibles.
+ * Vu le 2026-10-06 : l'icône du levier (`icons/svg/lever.svg`) donnait seulement l'arc de son socle, 63 × 28 px d'une
+ * tuile de 140, le manche détaché étant plus petit en pixels mais pas en étendue.
+ * @returns {number[][]|null}  Points du masque (bordé d'un pixel).
+ */
+export function outlinePolygon(mask, W, H, count, { share=0.8, eps=1.25 }={}) {
+  const contour = largestContour(mask, W, H);
+  const opaque = [];
+  for ( let i = 0; i < mask.length; i++ ) if ( mask[i] ) opaque.push([i % W, (i / W) | 0]);
+  const whole = contour && (contour.length >= 3) && (largestContour.lastSize >= share * count)
+    && (boxArea(contour) >= share * boxArea(opaque));
+  if ( whole ) {
+    const points = simplify(contour, eps);
+    if ( points.length >= 3 ) return points;
+  }
+  return opaqueHull(mask, W, H);
 }
 
 /** Douglas-Peucker sur une chaîne ouverte (le polygone fermé part de son premier point). */

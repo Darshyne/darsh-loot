@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { alphaMask, largestContour, simplify, footprint, prettyName } from "../module/scripts/core/outline.mjs";
+import { alphaMask, largestContour, simplify, outlinePolygon, opaqueHull, footprint, prettyName } from "../module/scripts/core/outline.mjs";
 
 /** Image RGBA w × h, opaque là où `opaque(x, y)` est vrai. */
 function image(w, h, opaque) {
@@ -35,6 +35,30 @@ describe("contour d'une image", () => {
   it("image vide : rien", () => {
     const { mask, W, H } = alphaMask(image(4, 4, () => false), 4, 4);
     expect(largestContour(mask, W, H)).toBeNull();
+  });
+});
+
+describe("image en plusieurs morceaux", () => {
+  // Un manche (colonne fine) et un socle (barre), séparés : le socle seul est le plus gros morceau.
+  const px = image(20, 20, (x, y) => ((x === 10) && (y >= 1) && (y <= 12)) || ((y >= 15) && (y <= 18) && (x >= 4) && (x <= 16)));
+
+  it("enveloppe convexe de tous les morceaux", () => {
+    const { mask, W, H, count } = alphaMask(px, 20, 20);
+    const poly = outlinePolygon(mask, W, H, count);
+    const ys = poly.map(p => p[1]);
+    // Le manche commence à y = 1 (2 dans le masque bordé) : il est dans la forme.
+    expect(Math.min(...ys)).toBe(2);
+    expect(Math.max(...ys)).toBe(20);
+  });
+
+  it("une tache qui porte l'essentiel garde son contour", () => {
+    const { mask, W, H, count } = alphaMask(image(10, 10, (x, y) => (x >= 2) && (x <= 7) && (y >= 2) && (y <= 7)), 10, 10);
+    expect(outlinePolygon(mask, W, H, count)).toEqual(simplify(largestContour(mask, W, H)));
+  });
+
+  it("enveloppe d'un carré : ses quatre coins de pixels", () => {
+    const { mask, W, H } = alphaMask(image(4, 4, (x, y) => (x >= 1) && (x <= 2) && (y >= 1) && (y <= 2)), 4, 4);
+    expect(opaqueHull(mask, W, H)).toEqual([[2, 2], [4, 2], [4, 4], [2, 4]]);
   });
 });
 

@@ -2,7 +2,7 @@
  * La forme d'une tuile sur la scène (outil « tuile → zone », SPEC §3.12) : contour de son image, ou son rectangle si
  * l'image ne se lit pas. Repris de `coc7-dialogues` (scripts/tile-to-region.js) ; le calcul pur est dans core/outline.mjs.
  */
-import { alphaMask, largestContour, simplify, footprint } from "../core/outline.mjs";
+import { alphaMask, outlinePolygon, footprint } from "../core/outline.mjs";
 
 const MASK_MAX = 256;        // plus grand côté du masque alpha
 const ALPHA_THRESHOLD = 48;  // 0-255 : au-dessus, le pixel compte
@@ -37,10 +37,8 @@ export function traceTileOutline(tile) {
   ctx.drawImage(source, 0, 0, w, h);
   const { mask, W, H, count } = alphaMask(ctx.getImageData(0, 0, w, h).data, w, h, ALPHA_THRESHOLD);
   if ( count < 4 ) return null;
-  const contour = largestContour(mask, W, H);
-  if ( !contour || (contour.length < 3) ) return null;
-  const points = simplify(contour, SIMPLIFY_EPS);
-  if ( points.length < 3 ) return null;
+  const points = outlinePolygon(mask, W, H, count, { eps: SIMPLIFY_EPS });
+  if ( !points || (points.length < 3) ) return null;
 
   // Pixel du masque → pixel de la texture → repère du sprite → scène, par la transformation **locale** du mesh : le
   // groupe primaire est à l'origine, et elle est à jour même sans image rendue (onglet masqué), contrairement à
