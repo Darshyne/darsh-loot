@@ -9,6 +9,8 @@ import { registerContainersInit, registerContainers, ensureContainer, requestUnl
 import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
 import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
+import { registerZonesInit, runZone } from "./runtime/zones.mjs";
+import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
 import { registerTheft, requestSteal } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
@@ -33,6 +35,7 @@ Hooks.once("init", () => {
   registerTake();
   registerTreasure();
   registerContainersInit();
+  registerZonesInit();
   registerTheft();
   registerNecromancyInit();
   registerDropInit();
@@ -45,6 +48,7 @@ Hooks.once("ready", () => {
   registerCorpses();
   registerContainers();
   registerPointer();
+  registerTileZone();
   registerStolenMark();
   registerNecromancy();
   registerDrop();
@@ -111,6 +115,10 @@ Hooks.once("ready", () => {
     },
     /** Ouvre la fenêtre de fouille d'un token mort (TokenDocument ou Token). */
     open: (token, looter) => openLoot(doc(token), doc(looter)),
+    /** Se servir d'une zone « DAS · … » (macro, scène, document) comme par un clic, pour un personnage (token) ou personne. */
+    useZone: (behavior, looter=null) => runZone(behavior, doc(looter)),
+    /** MJ : créer une zone de la forme d'une tuile — `{ kind: "container"|"macro"|"scene"|"document", name, system }`. */
+    tileToZone: (tile, options) => tileToZone(doc(tile), { openSheet: false, ...options }),
     /** Ouvre un conteneur (le comportement de région « Conteneur »). */
     openContainer: (behavior, looter) => openSource(containerSource(behavior), doc(looter)),
     /** Ce qu'un token mort ou un coffre (acteur) porte, tel que la fenêtre le montre. */

@@ -50,7 +50,10 @@
   },
   "documentTypes": {
     "RegionBehavior": {
-      "container": {}
+      "container": {},
+      "macro": {},
+      "scene": {},
+      "document": {}
     }
   },
   "esmodules": [

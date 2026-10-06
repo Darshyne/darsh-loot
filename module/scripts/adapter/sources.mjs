@@ -5,6 +5,7 @@
 import { loc } from "../shared.mjs";
 import { corpseToken, tokenDistance, regionDistance } from "./dnd5e.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
+import { ZONE_TYPES } from "./zone-behaviors.mjs";
 import { livingNPC } from "./theft.mjs";
 import { merchantToken, merchantAlive } from "./shop.mjs";
 
@@ -55,6 +56,27 @@ export function containerSource(behavior) {
     exists: () => !!behavior.parent?.parent?.regions.get(behavior.parent.id)
       && !!behavior.parent.behaviors.get(behavior.id) && !behavior.disabled,
     locked: () => !!behavior.system.locked,
+    box: () => regionBox(behavior.region),
+    distance: looter => regionDistance(looter, behavior.region)
+  };
+}
+
+/**
+ * Une zone interactive « DAS · … » (SPEC §3.12) : rien à fouiller, mais la même portée et la même marche qu'un conteneur.
+ * @param {RegionBehavior} behavior
+ */
+export function zoneSource(behavior) {
+  return {
+    kind: "zone",
+    uuid: behavior.uuid,
+    key: `zone-${behavior.id}`,
+    doc: behavior,
+    get actor() { return null; },
+    get name() { return behavior.system.displayName; },
+    get img() { return null; },
+    exists: () => !!behavior.parent?.parent?.regions.get(behavior.parent.id)
+      && !!behavior.parent.behaviors.get(behavior.id) && !behavior.disabled,
+    locked: () => false,
     box: () => regionBox(behavior.region),
     distance: looter => regionDistance(looter, behavior.region)
   };
@@ -124,5 +146,6 @@ export function resolveSource({ kind, uuid }) {
   if ( (kind === "pocket") && (doc.documentName === "Token") ) return pocketSource(doc);
   if ( (kind === "merchant") && ["Token", "Actor"].includes(doc.documentName) ) return merchantSource(doc);
   if ( (kind === "container") && (doc.type === CONTAINER_TYPE) ) return containerSource(doc);
+  if ( (kind === "zone") && ZONE_TYPES.includes(doc.type) ) return zoneSource(doc);
   return null;
 }

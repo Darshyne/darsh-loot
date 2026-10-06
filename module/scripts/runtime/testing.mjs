@@ -23,6 +23,7 @@ function status() {
     version: game.modules.get(MODULE_ID)?.version,
     queries: Object.keys(CONFIG.queries).filter(k => k.startsWith(`${MODULE_ID}.`)).sort(),
     container: !!CONFIG.RegionBehavior.dataModels[`${MODULE_ID}.container`],
+    zones: ["macro", "scene", "document"].filter(t => !!CONFIG.RegionBehavior.dataModels[`${MODULE_ID}.${t}`]),
     world: game.world.id,
     scene: canvas.scene?.name ?? null,
     activeGM: game.users.activeGM?.name ?? null

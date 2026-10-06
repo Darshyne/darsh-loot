@@ -1,5 +1,6 @@
 /**
- * Souris sur la carte (SPEC §3.1, §3.2) : curseur au survol d'un cadavre ou d'un conteneur, clic pour fouiller.
+ * Souris sur la carte (SPEC §3.1, §3.2, §3.12) : curseur au survol d'un cadavre, d'un conteneur ou d'une zone « DAS · … »,
+ * clic pour fouiller ou pour se servir de la zone.
  *
  * Hors combat seulement : en combat, le clic gauche appartient au moteur (attaque de base sur un ennemi,
  * déplacement au sol — dnd5e-combat ui/pointer.mjs) ; voir SPEC §4. Écouteurs en capture sur le document, avant le
@@ -10,12 +11,14 @@ import { openSource } from "./open.mjs";
 import { setting } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
-import { corpseSource, containerSource, pocketSource, merchantSource } from "../adapter/sources.mjs";
+import { corpseSource, containerSource, pocketSource, merchantSource, zoneSource } from "../adapter/sources.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { livingNPC } from "../adapter/theft.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK } from "../adapter/engine.mjs";
 import { sceneContainers } from "../adapter/container-behavior.mjs";
+import { sceneZones } from "../adapter/zone-behaviors.mjs";
+import { runZone } from "./zones.mjs";
 
 const inCombat = () => game.combat?.started === true;
 const onBoard = event => !!canvas.ready && (event.target === canvas.app?.view);
@@ -42,7 +45,16 @@ function tokenAt(point) {
  * client/documents/abstract/canvas-document.mjs:86) ; test en plan, l'élévation compte dans la portée.
  */
 function containerAt(point) {
-  for ( const behavior of sceneContainers(canvas.scene) ) {
+  return regionAt(sceneContainers(canvas.scene), point);
+}
+
+/** La zone « DAS · … » sous ce point (SPEC §3.12), mêmes règles qu'un conteneur. */
+function zoneAt(point) {
+  return regionAt(sceneZones(canvas.scene), point);
+}
+
+function regionAt(behaviors, point) {
+  for ( const behavior of behaviors ) {
     const region = behavior.region;
     if ( region.viewed && region.polygonTree.testPoint(point) ) return behavior;
   }
@@ -67,7 +79,9 @@ function sourceAt(event) {
   }
   if ( !tokenLayer() ) return null;
   const behavior = containerAt(point);
-  return behavior ? containerSource(behavior) : null;
+  if ( behavior ) return containerSource(behavior);
+  const zone = zoneAt(point);
+  return zone ? zoneSource(zone) : null;
 }
 
 /* ---- curseur ---- */
@@ -90,6 +104,7 @@ function cursorFor(source) {
     if ( me && (source.distance(me) <= setting("reach")) ) return "steal";
     return tooFar(me);
   }
+  if ( source.kind === "zone" ) return zoneCursor(source);
   if ( source.kind === "merchant" ) {
     const me = actingToken();
     if ( me && (source.distance(me) <= setting("reach")) ) return "shop";
@@ -107,6 +122,20 @@ function cursorFor(source) {
   // (décision utilisateur 2026-09-30) — sans sélection, il ouvre de loin (préparation).
   else if ( gmToken() && canApproach() && (source.distance(gmToken()) > setting("reach")) ) return "go";
   return source.locked() ? "locked" : "loot";
+}
+
+/**
+ * Le curseur d'une zone « DAS · … » : « use » à portée (ou si la zone n'exige pas de portée), « go » / « far » sinon. Le
+ * MJ a les mêmes règles qu'un conteneur : pas de limite, sauf s'il a sélectionné un token hors de portée.
+ */
+function zoneCursor(source) {
+  if ( !source.doc.system.reach ) return "use";
+  if ( !game.user.isGM ) {
+    const me = actingToken();
+    return (me && (source.distance(me) <= setting("reach"))) ? "use" : tooFar(me);
+  }
+  if ( gmToken() && canApproach() && (source.distance(gmToken()) > setting("reach")) ) return "go";
+  return "use";
 }
 
 /** Le token que le MJ a sélectionné (un seul), ou null. */
@@ -177,15 +206,20 @@ function onPointerUp(event) {
   if ( Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6 ) return;
   if ( (Date.now() - start.at) > LONG_PRESS_MS ) return;   // appui long : le ping du cœur
   if ( start.cursor === "go" ) return goThenOpen(start.source, start.looter);
-  openSource(start.source, start.looter);
+  activate(start.source, start.looter);
 }
 
-/** Marcher jusqu'à portée (moteur), puis ouvrir la fenêtre si l'on y est arrivé. */
+/** Ouvrir la fenêtre d'une source, ou se servir d'une zone. */
+function activate(source, looter) {
+  return (source.kind === "zone") ? runZone(source.doc, looter) : openSource(source, looter);
+}
+
+/** Marcher jusqu'à portée (moteur), puis ouvrir la fenêtre (ou se servir de la zone) si l'on y est arrivé. */
 let walking = false;
 async function goThenOpen(source, looter) {
   if ( walking ) return;
   walking = true;
-  try { if ( await approachSource(source, looter) ) await openSource(source, looter); }
+  try { if ( await approachSource(source, looter) ) await activate(source, looter); }
   finally { walking = false; }
 }
 
@@ -212,7 +246,7 @@ export function registerPointer() {
   route("canvasTearDown", "curseur de fouille", () => setCursor(null));
   // Tout ce qui change ce qu'un clic ferait sans que la souris bouge : un tas qui apparaît sous elle, un autre
   // personnage sélectionné (la portée change), une créature qui meurt, un coffre vidé ou ouvert, un combat.
-  for ( const hook of ["updateRegionBehavior", "createRegion", "deleteRegion", "createTile", "deleteTile", "updateActor",
+  for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "updateRegion", "deleteRegion", "createTile", "deleteTile", "updateActor",
     "createItem", "updateItem", "deleteItem", "createActiveEffect", "deleteActiveEffect", "updateToken", "controlToken",
     "updateCombat", "deleteCombat"] ) {
     route(hook, "curseur de fouille", () => recheck());

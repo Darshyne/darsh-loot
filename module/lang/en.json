@@ -316,11 +316,84 @@
       "Convert": "Import its settings",
       "Converted": "{name}: Item Piles settings imported.",
       "Menu": "Merchant settings"
+    },
+    "Zone": {
+      "FIELDS": {
+        "label": {
+          "label": "Name",
+          "hint": "Zone name. Empty: the target document's name, else the region's."
+        },
+        "reach": {
+          "label": "Require reach",
+          "hint": "The character must be within reach (\"Reach\" setting); out of reach, they walk there first. Uncheck for a zone usable from afar."
+        }
+      },
+      "NoMacro": "This zone has no macro.",
+      "NoScene": "This zone leads to no scene.",
+      "NoDocument": "This zone opens no journal or page.",
+      "NoPermission": "You may not read this document.",
+      "GrantFailed": "The document could not be shared with you."
+    },
+    "MacroZone": {
+      "Hint": "Clicking the region runs a macro for whoever clicks, even without permission on it.",
+      "FIELDS": {
+        "macro": {
+          "label": "Macro",
+          "hint": "Runs for the clicking player, with their rights. Arguments: speaker, actor, token, character, scope (behavior, region, looter)."
+        }
+      }
+    },
+    "SceneZone": {
+      "Hint": "Clicking the region shows another scene to whoever clicks.",
+      "FIELDS": {
+        "targetScene": {
+          "label": "Scene",
+          "hint": "The scene shown to whoever clicks."
+        },
+        "activateForAll": {
+          "label": "Activate for everyone (GM)",
+          "hint": "When the GM clicks, the scene is activated for the whole table instead of only viewed."
+        }
+      }
+    },
+    "DocumentZone": {
+      "Hint": "Clicking the region opens a journal or a page.",
+      "FIELDS": {
+        "document": {
+          "label": "Journal or page",
+          "hint": "UUID of a journal or one of its pages."
+        },
+        "grant": {
+          "label": "Grant read permission",
+          "hint": "If the player cannot read the document, the connected GM grants them Observer (permanent)."
+        }
+      }
+    },
+    "TileZone": {
+      "HudTooltip": "Create a DAS zone shaped like this tile",
+      "Title": "Tile → DAS zone",
+      "Type": "Zone type",
+      "Name": "Name",
+      "Macro": "Macro",
+      "Scene": "Scene",
+      "Document": "Journal",
+      "DocumentUuid": "…or UUID (page)",
+      "Grant": "Grant read permission",
+      "None": "— none —",
+      "Create": "Create",
+      "Hint": "The region follows the image's visible outline (its rectangle if the image cannot be read). The other settings open next.",
+      "NotOnCanvas": "This tile is not on the viewed scene.",
+      "DefaultName": "Zone",
+      "Traced": "Zone \"{name}\" ({type}) created from the image outline.",
+      "Rectangle": "Zone \"{name}\" ({type}) created on the tile rectangle: the image cannot be read."
     }
   },
   "TYPES": {
     "RegionBehavior": {
-      "darsh-loot.container": "DAS · Container"
+      "darsh-loot.container": "DAS · Container",
+      "darsh-loot.macro": "DAS · Click macro",
+      "darsh-loot.scene": "DAS · To scene",
+      "darsh-loot.document": "DAS · Open document"
     }
   }
 }

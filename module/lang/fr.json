@@ -316,11 +316,84 @@
       "Convert": "Reprendre ses réglages",
       "Converted": "{name} : réglages d'Item Piles repris.",
       "Menu": "Réglages de marchand"
+    },
+    "Zone": {
+      "FIELDS": {
+        "label": {
+          "label": "Nom",
+          "hint": "Nom de la zone. Vide : le nom du document visé, sinon celui de la région."
+        },
+        "reach": {
+          "label": "Exiger la portée",
+          "hint": "Le personnage doit être à portée (réglage « Portée ») ; hors de portée, il y marche d'abord. Décocher pour une zone utilisable de loin."
+        }
+      },
+      "NoMacro": "Cette zone n'a pas de macro.",
+      "NoScene": "Cette zone ne mène à aucune scène.",
+      "NoDocument": "Cette zone n'ouvre aucun journal ni aucune page.",
+      "NoPermission": "Vous n'avez pas le droit de lire ce document.",
+      "GrantFailed": "Le document n'a pas pu vous être partagé."
+    },
+    "MacroZone": {
+      "Hint": "Un clic dans la région lance une macro chez celui qui clique, même sans droit sur elle.",
+      "FIELDS": {
+        "macro": {
+          "label": "Macro",
+          "hint": "Lancée chez le joueur qui clique, avec ses droits. Paramètres : speaker, actor, token, character, scope (behavior, region, looter)."
+        }
+      }
+    },
+    "SceneZone": {
+      "Hint": "Un clic dans la région affiche une autre scène à celui qui clique.",
+      "FIELDS": {
+        "targetScene": {
+          "label": "Scène",
+          "hint": "La scène affichée à celui qui clique."
+        },
+        "activateForAll": {
+          "label": "Activer pour tous (MJ)",
+          "hint": "Quand le MJ clique, la scène est activée pour toute la table au lieu d'être seulement affichée chez lui."
+        }
+      }
+    },
+    "DocumentZone": {
+      "Hint": "Un clic dans la région ouvre un journal ou une page.",
+      "FIELDS": {
+        "document": {
+          "label": "Journal ou page",
+          "hint": "UUID d'un journal ou d'une de ses pages."
+        },
+        "grant": {
+          "label": "Donner le droit de lecture",
+          "hint": "Si le joueur ne peut pas lire le document, le MJ connecté lui accorde Observateur (définitif)."
+        }
+      }
+    },
+    "TileZone": {
+      "HudTooltip": "Créer une zone DAS de la forme de cette tuile",
+      "Title": "Tuile → zone DAS",
+      "Type": "Type de zone",
+      "Name": "Nom",
+      "Macro": "Macro",
+      "Scene": "Scène",
+      "Document": "Journal",
+      "DocumentUuid": "…ou UUID (page)",
+      "Grant": "Donner le droit de lecture",
+      "None": "— aucune —",
+      "Create": "Créer",
+      "Hint": "La région suit le contour visible de l'image (son rectangle si l'image ne se lit pas). Le reste des réglages s'ouvre ensuite.",
+      "NotOnCanvas": "Cette tuile n'est pas sur la scène affichée.",
+      "DefaultName": "Zone",
+      "Traced": "Zone « {name} » ({type}) créée d'après le contour de l'image.",
+      "Rectangle": "Zone « {name} » ({type}) créée sur le rectangle de la tuile : l'image ne se lit pas."
     }
   },
   "TYPES": {
     "RegionBehavior": {
-      "darsh-loot.container": "DAS · Conteneur"
+      "darsh-loot.container": "DAS · Conteneur",
+      "darsh-loot.macro": "DAS · Macro au clic",
+      "darsh-loot.scene": "DAS · Vers une scène",
+      "darsh-loot.document": "DAS · Ouvrir un document"
     }
   }
 }
