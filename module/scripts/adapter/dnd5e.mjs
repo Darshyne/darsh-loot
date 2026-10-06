@@ -80,6 +80,12 @@ export function regionDistance(token, region) {
   return edgeDistance(me, box, scene.grid.distance);
 }
 
+/** Le niveau d'une créature pour un piège : niveau de personnage, ou FP d'un PNJ (core/traps.mjs `targetsLevel`). */
+export function trapLevelOf(actor) {
+  if ( actor?.type === "character" ) return { character: true, level: Number(actor.system.details?.level) };
+  return { character: false, level: Number(actor?.system?.details?.cr) };
+}
+
 /** L'acteur possède-t-il des outils de voleur (objet d'outil de base « thief », CONFIG.DND5E.tools) ? */
 export function hasThievesTools(actor) {
   return actor.items.some(i => (i.type === "tool") && (i.system.type?.baseItem === "thief"));

@@ -17,8 +17,8 @@ import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { haltScene } from "./hidden.mjs";
 import { TRAP_ZONE, TrapZoneType, registerTrapBehavior, sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
-import { regionDistance } from "../adapter/dnd5e.mjs";
-import { trapChecks } from "../core/traps.mjs";
+import { regionDistance, trapLevelOf } from "../adapter/dnd5e.mjs";
+import { trapChecks, pickTier, targetsLevel } from "../core/traps.mjs";
 import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid } from "../adapter/engine.mjs";
 
 const DISARM_QUERY = `${MODULE_ID}.disarm`;
@@ -65,16 +65,21 @@ function tokensIn(region) {
   });
 }
 
-/** L'activité du piège : celle qui est nommée, sinon la première activité du premier objet qui en a. */
-async function activityOf(behavior) {
+/**
+ * L'activité du piège : celle qui est nommée ; sinon, parmi les activités du premier objet qui en a, celle de la tranche de
+ * niveaux des cibles (un piège du DMG 2024 en a une par tranche, core/traps.mjs `pickTier`), à défaut la première.
+ */
+async function activityOf(behavior, targets=[]) {
   const actor = behavior.system.actor ? await fromUuid(behavior.system.actor) : null;
   if ( !actor ) return null;
   const id = behavior.system.activity;
   for ( const item of actor.items ) {
     const activities = item.system.activities;
     if ( !activities?.size ) continue;
-    if ( id ) { const found = activities.get(id); if ( found ) return found; }
-    else return activities.contents[0];
+    if ( id ) { const found = activities.get(id); if ( found ) return found; continue; }
+    const level = targetsLevel(targets.filter(t => t.actor).map(t => trapLevelOf(t.actor)));
+    const tier = pickTier(activities.contents.map(a => ({ id: a.id, name: a.name })), level);
+    return activities.get(tier) ?? activities.contents[0];
   }
   return null;
 }
@@ -116,10 +121,10 @@ export async function fireTrap(behavior, triggerer=null) {
     haltScene(scene);
     if ( triggerer ) snapToCell(triggerer);
     await behavior.update({ "system.armed": false, "system.triggeredAt": game.time.worldTime, "system.hidden.found": true });
-    const activity = await activityOf(behavior);
-    if ( !activity ) { log.warn(`piège ${behavior.uuid} : pas d'acteur ou d'activité`); return false; }
     const targets = tokensIn(effectRegionOf(behavior));
-    log.info(`piège ${behavior.system.displayName} : ${activity.item.name} sur ${targets.map(t => t.name).join(", ") || "personne"}`
+    const activity = await activityOf(behavior, targets);
+    if ( !activity ) { log.warn(`piège ${behavior.uuid} : pas d'acteur ou d'activité`); return false; }
+    log.info(`piège ${behavior.system.displayName} : ${activity.name || activity.item.name} sur ${targets.map(t => t.name).join(", ") || "personne"}`
       + (triggerer ? ` (déclenché par ${triggerer.name})` : ""));
     await useOnTargets(activity, scene, targets);
     return true;

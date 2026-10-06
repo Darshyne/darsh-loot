@@ -396,7 +396,7 @@
       "Dc": "DD de détection",
       "Actor": "Acteur piège",
       "Activity": "Activité",
-      "FirstActivity": "La première"
+      "FirstActivity": "Selon le niveau des cibles"
     },
     "Hidden": {
       "FIELDS": {
@@ -469,7 +469,7 @@
         },
         "activity": {
           "label": "Activité",
-          "hint": "Identifiant de l'activité utilisée. Vide : la première activité du premier objet qui en a."
+          "hint": "Identifiant de l'activité utilisée. Vide : celle dont la tranche de niveaux (« niveaux 5 à 10 ») contient le niveau des cibles (le plus haut personnage, sinon le plus haut FP), à défaut la première."
         },
         "effectRegion": {
           "label": "Zone d'effet",

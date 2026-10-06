@@ -396,7 +396,7 @@
       "Dc": "Detection DC",
       "Actor": "Trap actor",
       "Activity": "Activity",
-      "FirstActivity": "The first one"
+      "FirstActivity": "By the targets' level"
     },
     "Hidden": {
       "FIELDS": {
@@ -469,7 +469,7 @@
         },
         "activity": {
           "label": "Activity",
-          "hint": "Id of the activity used. Empty: the first activity of the first item that has one."
+          "hint": "Id of the activity used. Empty: the one whose level range (\"Levels 5–10\") contains the targets' level (highest character, else highest CR), otherwise the first."
         },
         "effectRegion": {
           "label": "Effect area",
