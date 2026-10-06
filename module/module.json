@@ -1,8 +1,8 @@
 {
   "id": "darsh-loot",
-  "title": "darsh-dnd · Butin et commerce",
+  "title": "DAS · Loot & Trade",
   "description": "Cadavres fouillables, conteneurs, vol, nécromancie, lancer de torche, échange et marchands pour dnd5e, interface façon Baldur's Gate 3.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "authors": [
     {
       "name": "Darshyne"
