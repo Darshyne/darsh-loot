@@ -394,7 +394,9 @@
       "Hidden": "Hidden",
       "Skill": "Skill",
       "Dc": "Detection DC",
-      "Actor": "Trap actor"
+      "Actor": "Trap actor",
+      "Activity": "Activity",
+      "FirstActivity": "The first one"
     },
     "Hidden": {
       "FIELDS": {

@@ -39,6 +39,12 @@ export const DROP_ITEMS_HOOK = `${ENGINE_ID}.dropItems`;
 export const engineUsageConfig = () => ({ [ENGINE_ID]: { confirmed: true } });
 
 /**
+ * La configuration du message d'utilisation qui dit au moteur que les cibles sont fournies (son SPEC §104) : une activité à
+ * zone (un piège du DMG déclare un cône) se résout alors sur les cibles du message, sans attendre la pose d'un gabarit.
+ */
+export const engineGivenTargetsMessage = () => ({ data: { flags: { [ENGINE_ID]: { givenTargets: true } } } });
+
+/**
  * Une région que le chemin du moteur doit contourner (son SPEC §103, `flags.dnd5e-combat.avoid`) : un piège repéré. Chez le MJ.
  */
 export const engineAvoids = region => region.getFlag(ENGINE_ID, "avoid") === true;

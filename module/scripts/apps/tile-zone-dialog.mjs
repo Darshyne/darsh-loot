@@ -30,6 +30,7 @@ export async function promptTileZone({ types, name }) {
     <div class="form-group" data-for="document"><label>${L("DocumentUuid")}</label><input type="text" name="documentUuid" placeholder="JournalEntry.xxx.JournalEntryPage.yyy"></div>
     <div class="form-group" data-for="document"><label>${L("Grant")}</label><input type="checkbox" name="grant" checked></div>
     <div class="form-group" data-for="trap"><label>${L("Actor")}</label><select name="trapActor">${options(actors, L("None"))}</select></div>
+    <div class="form-group" data-for="trap"><label>${L("Activity")}</label><select name="trapActivity"><option value="">${esc(L("FirstActivity"))}</option></select></div>
     <div class="form-group"><label>${L("Hidden")}</label><input type="checkbox" name="hidden"></div>
     <div class="form-group" data-hidden><label>${L("Skill")}</label><select name="skill">
       <option value="prc">${esc(game.i18n.localize("DND5E.SkillPrc"))}</option>
@@ -48,6 +49,16 @@ export async function promptTileZone({ types, name }) {
       });
       select.addEventListener("change", sync);
       sync();
+      // Les activités de l'acteur piège choisi (un piège du DMG en a une par tranche de niveaux).
+      const actorSelect = root.querySelector("select[name=trapActor]");
+      const activitySelect = root.querySelector("select[name=trapActivity]");
+      const fillActivities = () => {
+        const actor = actorSelect.value ? fromUuidSync(actorSelect.value, { strict: false }) : null;
+        const list = (actor?.items.contents ?? []).flatMap(i => (i.system.activities?.contents ?? [])
+          .map(a => `<option value="${esc(a.id)}">${esc(`${i.name} — ${a.name || a.type}`)}</option>`));
+        activitySelect.innerHTML = `<option value="">${esc(L("FirstActivity"))}</option>${list.join("")}`;
+      };
+      actorSelect.addEventListener("change", fillActivities);
       // Un piège est caché par nature : la case se coche quand on le choisit.
       select.addEventListener("change", () => { if ( select.value === "trap" ) { root.querySelector("input[name=hidden]").checked = true; root.querySelector("input[name=hidden]").dispatchEvent(new Event("change")); } });
       // Option « cachée » (SPEC §3.12) : compétence et DD seulement si elle est cochée.
@@ -69,7 +80,10 @@ export async function promptTileZone({ types, name }) {
           system.document = f.documentUuid.value.trim() || f.document.value || null;
           system.grant = f.grant.checked;
         }
-        if ( kind === "trap" ) system.actor = f.trapActor.value || null;
+        if ( kind === "trap" ) {
+          system.actor = f.trapActor.value || null;
+          system.activity = f.trapActivity.value || "";
+        }
         if ( f.hidden.checked ) system.hidden = { enabled: true, skill: f.skill.value, dc: Number(f.dc.value) || 15 };
         else if ( kind === "trap" ) system.hidden = { enabled: false };
         return { kind, name: f.name.value.trim(), system };

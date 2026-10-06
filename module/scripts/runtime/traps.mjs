@@ -18,7 +18,7 @@ import { askGM } from "./take.mjs";
 import { haltScene } from "./hidden.mjs";
 import { TRAP_ZONE, TrapZoneType, registerTrapBehavior, sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
 import { regionDistance } from "../adapter/dnd5e.mjs";
-import { engineUsageConfig, setEngineAvoid } from "../adapter/engine.mjs";
+import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid } from "../adapter/engine.mjs";
 
 const DISARM_QUERY = `${MODULE_ID}.disarm`;
 
@@ -140,7 +140,10 @@ async function useOnTargets(activity, scene, targets) {
   const viewed = canvas.scene === scene;
   if ( viewed ) canvas.tokens.setTargets(targets.map(t => t.id), { mode: "replace" });
   try {
-    await activity.use({ ...engineUsageConfig(), consume: false }, { configure: false });
+    // Sans gabarit : la zone d'effet est la nôtre. Un piège du DMG 2024 en déclare un (la Statue au souffle de feu : un cône
+    // de 15 ft) que dnd5e ferait poser à la souris (activity/mixin.mjs:449-451, `create.measuredTemplate`).
+    await activity.use({ ...engineUsageConfig(), consume: false, create: { measuredTemplate: false } }, { configure: false },
+      engineGivenTargetsMessage());
   } finally {
     if ( viewed ) canvas.tokens.setTargets(before.filter(id => canvas.tokens.get(id)), { mode: "replace" });
   }

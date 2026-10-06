@@ -394,7 +394,9 @@
       "Hidden": "Cachée",
       "Skill": "Compétence",
       "Dc": "DD de détection",
-      "Actor": "Acteur piège"
+      "Actor": "Acteur piège",
+      "Activity": "Activité",
+      "FirstActivity": "La première"
     },
     "Hidden": {
       "FIELDS": {
