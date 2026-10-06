@@ -320,7 +320,7 @@
   },
   "TYPES": {
     "RegionBehavior": {
-      "darsh-loot.container": "Container"
+      "darsh-loot.container": "DAS · Container"
     }
   }
 }
