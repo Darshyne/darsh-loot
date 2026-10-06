@@ -11,9 +11,8 @@ import { openSource } from "./open.mjs";
 import { setting } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
-import { corpseSource, containerSource, pocketSource, merchantSource, zoneSource } from "../adapter/sources.mjs";
+import { corpseSource, containerSource, merchantSource, zoneSource } from "../adapter/sources.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
-import { livingNPC } from "../adapter/theft.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK } from "../adapter/engine.mjs";
 import { sceneContainers } from "../adapter/container-behavior.mjs";
@@ -23,8 +22,6 @@ import { runZone } from "./zones.mjs";
 const inCombat = () => game.combat?.started === true;
 const onBoard = event => !!canvas.ready && (event.target === canvas.app?.view);
 const plain = event => !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey;
-/** Alt seul : le geste du vol à la tire. */
-const stealing = event => event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey;
 /** Le MJ n'ouvre un conteneur que depuis la couche des tokens : les outils d'édition gardent leurs clics. */
 const tokenLayer = () => canvas.activeLayer === canvas.tokens;
 const LONG_PRESS_MS = 350;
@@ -62,15 +59,14 @@ function regionAt(behaviors, point) {
 }
 
 /**
- * La source sous la souris : un cadavre ; avec Alt, les poches d'un PNJ vivant (SPEC §3.3) ; sinon, s'il n'y a pas
- * de token dessus, un conteneur ; sinon null.
+ * La source sous la souris : un cadavre, un marchand ; sinon, s'il n'y a pas de token dessus, un conteneur ou une zone ;
+ * sinon null. Le vol à la tire n'est plus un geste de souris (« Voler » au menu contextuel, SPEC §3.3).
  */
 function sourceAt(event) {
   const point = canvas.canvasCoordinatesFromClient({ x: event.clientX, y: event.clientY });
   const token = tokenAt(point);
   if ( token ) {
     if ( corpseToken(token.document) ) return corpseSource(token.document);
-    if ( stealing(event) && livingNPC(token.document) && !token.document.isOwner ) return pocketSource(token.document);
     // Un marchand qu'on ne tient pas : sa boutique (§3.7). Le MJ, qui tient tout, passe par le HUD ou le menu.
     if ( plain(event) && merchantToken(token.document) && !token.document.isOwner ) return merchantSource(token.document);
     // Un token à soi garde son clic (le sélectionner) ; un token qu'on ne contrôle pas laisse voir le conteneur dessous
@@ -99,11 +95,6 @@ function setCursor(kind) {
 function cursorFor(source) {
   if ( !source || inCombat() ) return null;
   const actor = source.actor;
-  if ( source.kind === "pocket" ) {
-    const me = actingToken();
-    if ( me && (source.distance(me) <= setting("reach")) ) return "steal";
-    return tooFar(me);
-  }
   if ( source.kind === "zone" ) return zoneCursor(source);
   if ( source.kind === "merchant" ) {
     const me = actingToken();
@@ -176,9 +167,9 @@ let down = null;
  */
 /** La source que ce clic gauche ouvrirait (hors combat, geste simple ou Alt pour les poches), ou null. */
 function clickedSource(event) {
-  if ( !onBoard(event) || (event.button !== 0) || !(plain(event) || stealing(event)) || inCombat() ) return null;
+  if ( !onBoard(event) || (event.button !== 0) || !plain(event) || inCombat() ) return null;
   const source = sourceAt(event);
-  if ( !source || ((source.kind !== "pocket") && !plain(event)) ) return null;
+  if ( !source ) return null;
   return cursorFor(source) ? source : null;
 }
 
@@ -228,20 +219,8 @@ function recheck() {
   if ( lastMove && canvas.ready ) setCursor(onBoard(lastMove) ? cursorFor(sourceAt(lastMove)) : null);
 }
 
-/** Alt enfoncé ou relâché sans bouger la souris : le curseur de vol apparaît ou disparaît sur place. */
-function onAltKey(event) {
-  if ( (event.key !== "Alt") || !lastMove || !canvas.ready ) return;
-  const pressed = event.type === "keydown";
-  const probe = { clientX: lastMove.clientX, clientY: lastMove.clientY, target: lastMove.target,
-    altKey: pressed, shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, metaKey: event.metaKey };
-  lastMove = probe;
-  setCursor(onBoard(probe) ? cursorFor(sourceAt(probe)) : null);
-}
-
 export function registerPointer() {
   routeClaim(CLAIM_CLICK_HOOK, "clic de fouille", onClaimClick);
-  document.addEventListener("keydown", onAltKey, true);
-  document.addEventListener("keyup", onAltKey, true);
   route("hoverToken", "curseur de fouille", onHoverToken);
   route("canvasTearDown", "curseur de fouille", () => setCursor(null));
   // Tout ce qui change ce qu'un clic ferait sans que la souris bouge : un tas qui apparaît sous elle, un autre

@@ -5,6 +5,9 @@
  * Hors combat, au contact (réglage de portée), un seul essai par objet et par voleur.
  */
 import { MODULE_ID, loc, setting } from "../shared.mjs";
+import { route } from "./router.mjs";
+import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
+import { pocketSource } from "../adapter/sources.mjs";
 import { askGM, checkAccess, sourceRef, announce } from "./take.mjs";
 import { ensureRolled } from "./treasure.mjs";
 import { transfer } from "../adapter/dnd5e.mjs";
@@ -72,4 +75,18 @@ export function preparePocket(source) {
 
 export function registerTheft() {
   CONFIG.queries[STEAL_QUERY] = handleSteal;
+}
+
+/**
+ * « Voler » dans le menu contextuel d'un PNJ vivant qu'on ne possède pas (menu du moteur, hook `tokenMenu`), hors combat,
+ * pour le personnage en main — décision utilisateur du 2026-10-06 : le vol quitte Alt + clic, Alt étant la touche de
+ * surbrillance (§3.12) et celle d'avantage de l'attaque au clic du moteur, qui peut valoir hors combat. `visit` : y aller
+ * d'abord si l'on est trop loin, puis ouvrir les poches (runtime/open.mjs).
+ */
+export function registerTheftMenu(visit) {
+  route(TOKEN_MENU_HOOK, "menu : Voler", (entries, { token, target }) => {
+    if ( !token?.actor || !target || (target === token) || game.combat?.started ) return;
+    if ( !livingNPC(target) || target.isOwner ) return;
+    entries.push({ icon: "fa-solid fa-hand", label: loc("Steal.Menu"), run: () => visit(pocketSource(target), token) });
+  });
 }

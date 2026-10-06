@@ -178,7 +178,8 @@
       "Impossible": "Cela ne se vole pas.",
       "Success": "C'est dans la poche, personne n'a rien vu.",
       "Caught": "{name} vous a pris la main dans le sac !",
-      "StolenFrom": "Volé à {name}"
+      "StolenFrom": "Volé à {name}",
+      "Menu": "Voler"
     },
     "Necro": {
       "Hud": "Relever le mort",

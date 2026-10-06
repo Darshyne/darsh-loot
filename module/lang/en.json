@@ -178,7 +178,8 @@
       "Impossible": "That cannot be stolen.",
       "Success": "Got it, unnoticed.",
       "Caught": "{name} caught you!",
-      "StolenFrom": "Stolen from {name}"
+      "StolenFrom": "Stolen from {name}",
+      "Menu": "Pickpocket"
     },
     "Necro": {
       "Hud": "Raise the dead",

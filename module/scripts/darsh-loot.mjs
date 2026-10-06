@@ -13,7 +13,7 @@ import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
 import { registerHiddenInit, registerHidden, requestSearch } from "./runtime/hidden.mjs";
 import { registerHighlight } from "./runtime/highlight.mjs";
-import { registerTheft, requestSteal } from "./runtime/theft.mjs";
+import { registerTheft, registerTheftMenu, requestSteal } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
 import { registerDropInit, registerDrop, requestDrop, dropEnabled } from "./runtime/drop.mjs";
@@ -60,6 +60,7 @@ Hooks.once("ready", () => {
   registerDropFx();
   registerThrow();
   registerTrade();
+  registerTheftMenu(visitSource);
   registerShop({ open: openSource, visit: visitSource });
   game.modules.get(MODULE_ID).api = {
     /* ---- marchands (SPEC §3.7) ---- */
