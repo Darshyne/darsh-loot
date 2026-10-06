@@ -82,6 +82,25 @@ async function activityOf(behavior) {
 /*  Déclenchement                               */
 /* -------------------------------------------- */
 
+/**
+ * Le token arrêté en pleine animation reste à cheval sur deux cases (vu le 2026-10-06 : x = 3571 au lieu de 3640) : le MJ
+ * le pose sur la case où est son centre — la dalle, où il a mis le pied — par un déplacement instantané (`displace`).
+ */
+async function snapToCell(token) {
+  await new Promise(resolve => setTimeout(resolve, 400));   // le temps que le client qui déplace ait arrêté
+  const grid = token.parent.grid;
+  if ( grid.isGridless ) return;
+  const size = grid.size;
+  const center = { x: token._source.x + (token._source.width * size / 2), y: token._source.y + (token._source.height * size / 2) };
+  const cell = grid.getTopLeftPoint(grid.getOffset(center));
+  // Le coin de la case de son centre, moins sa demi-taille au-delà d'une case (un grand token reste centré).
+  const x = cell.x - (Math.floor((token._source.width - 1) / 2) * size);
+  const y = cell.y - (Math.floor((token._source.height - 1) / 2) * size);
+  if ( (x === token._source.x) && (y === token._source.y) ) return;
+  try { await token.move({ x, y, action: "displace" }); }
+  catch(err) { log.warn(`piège : ${token.name} pas recalé`, err.message); }
+}
+
 const firing = new Set();
 
 /**
@@ -94,6 +113,7 @@ export async function fireTrap(behavior, triggerer=null) {
   try {
     const scene = behavior.region.parent;
     haltScene(scene);
+    if ( triggerer ) snapToCell(triggerer);
     await behavior.update({ "system.armed": false, "system.triggeredAt": game.time.worldTime, "system.hidden.found": true });
     const activity = await activityOf(behavior);
     if ( !activity ) { log.warn(`piège ${behavior.uuid} : pas d'acteur ou d'activité`); return false; }

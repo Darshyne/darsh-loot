@@ -172,6 +172,13 @@ function trapState({ regionId }) {
   return { system: trap?.system.toObject() ?? null, avoid: engineAvoids(region) };
 }
 
+/** Régler le piège d'une région (`changes` : champs de `system`, ex. { armed: true }). */
+const trapSet = async ({ regionId, changes }) => {
+  await regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE).update({ system: changes });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  return trapState({ regionId });
+};
+
 /** Faire partir le piège d'une région (MJ). */
 const trapFire = async ({ regionId }) => { await fireTrap(regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE)); return trapState({ regionId }); };
 
@@ -210,4 +217,4 @@ async function removeTestActors() {
 
 export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
   zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
-  trapState, trapFire, trapDisarm });
+  trapState, trapFire, trapDisarm, trapSet });
