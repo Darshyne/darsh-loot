@@ -9,7 +9,8 @@
       "TakeCoins": "Prendre les pièces",
       "NoLooter": "Sélectionnez d'abord votre personnage.",
       "Container": "Conteneur",
-      "OpenStore": "Fiche du contenu"
+      "OpenStore": "Fiche du contenu",
+      "SearchCorpse": "Fouiller le corps"
     },
     "Hud": {
       "Search": "Fouiller le cadavre"

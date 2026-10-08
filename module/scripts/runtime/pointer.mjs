@@ -7,15 +7,15 @@
  * canevas, comme le moteur. Un token sous la souris passe avant une région.
  */
 import { route, routeClaim } from "./router.mjs";
-import { openSource } from "./open.mjs";
-import { setting } from "../shared.mjs";
+import { openSource, visitSource } from "./open.mjs";
+import { setting, loc } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
 import { knownTraps, requestDisarm } from "./traps.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
-import { CLAIM_CLICK_HOOK } from "../adapter/engine.mjs";
+import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 import { sceneContainers } from "../adapter/container-behavior.mjs";
 import { sceneZones } from "../adapter/zone-behaviors.mjs";
 import { runZone } from "./zones.mjs";
@@ -67,6 +67,9 @@ function sourceAt(event) {
   const point = canvas.canvasCoordinatesFromClient({ x: event.clientX, y: event.clientY });
   const token = tokenAt(point);
   if ( token ) {
+    // 0.14.2 (retour de séance) : chez le MJ, le clic gauche sur un token reste celui du cœur — sélection, HUD. Fouiller un corps :
+    // « Fouiller le corps » au clic droit (menu du moteur).
+    if ( game.user.isGM ) return null;
     if ( corpseToken(token.document) ) return corpseSource(token.document);
     // Un marchand qu'on ne tient pas : sa boutique (§3.7). Le MJ, qui tient tout, passe par le HUD ou le menu.
     if ( plain(event) && merchantToken(token.document) && !token.document.isOwner ) return merchantSource(token.document);
@@ -232,8 +235,15 @@ function recheck() {
   if ( lastMove && canvas.ready ) setCursor(onBoard(lastMove) ? cursorFor(sourceAt(lastMove)) : null);
 }
 
+/** « Fouiller le corps » au menu contextuel d'un cadavre (menu du moteur), hors combat, pour le personnage en main. */
+function onTokenMenu(entries, { token, target }) {
+  if ( !token?.actor || !target || (target === token) || inCombat() || !corpseToken(target) ) return;
+  entries.push({ icon: "fa-solid fa-sack", label: loc("Window.SearchCorpse"), run: () => visitSource(corpseSource(target), token) });
+}
+
 export function registerPointer() {
   routeClaim(CLAIM_CLICK_HOOK, "clic de fouille", onClaimClick);
+  route(TOKEN_MENU_HOOK, "menu : Fouiller le corps", onTokenMenu);
   route("hoverToken", "curseur de fouille", onHoverToken);
   route("canvasTearDown", "curseur de fouille", () => setCursor(null));
   // Tout ce qui change ce qu'un clic ferait sans que la souris bouge : un tas qui apparaît sous elle, un autre
