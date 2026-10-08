@@ -518,7 +518,12 @@
       },
       "Disarmed": "Trap disarmed.",
       "DisarmFailed": "The disarm attempt fails.",
-      "DisarmFired": "Failed: the trap goes off!"
+      "DisarmFired": "Failed: the trap goes off!",
+      "ConfirmTitle": "Disarm the trap",
+      "ConfirmText": "Try to disarm {trap}? {name} will make a thieves' tools check.",
+      "ConfirmYes": "Try",
+      "ConfirmNo": "Give up",
+      "ThisTrap": "this trap"
     }
   },
   "TYPES": {

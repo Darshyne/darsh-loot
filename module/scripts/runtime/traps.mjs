@@ -189,6 +189,16 @@ async function syncAvoid(behavior) {
  */
 export async function requestDisarm(behavior, looter) {
   if ( !looter ) { ui.notifications.warn(loc("Window.NoLooter")); return null; }
+  // 0.14.3 (retour de séance) : confirmer avant le jet — un clic sur le piège ne doit pas lancer les dés par mégarde. Ni le DD ni
+  // l'issue d'un échec ne sont dits.
+  const ok = await foundry.applications.api.DialogV2.confirm({
+    window: { title: loc("TrapZone.ConfirmTitle"), icon: "fa-solid fa-screwdriver-wrench" },
+    content: `<p>${loc("TrapZone.ConfirmText", { name: foundry.utils.escapeHTML(looter.name ?? ""), trap: foundry.utils.escapeHTML(behavior.region?.name || loc("TrapZone.ThisTrap")) })}</p>`,
+    yes: { label: loc("TrapZone.ConfirmYes"), icon: "fa-solid fa-dice-d20" },
+    no: { label: loc("TrapZone.ConfirmNo") },
+    rejectClose: false
+  }).catch(() => false);
+  if ( !ok ) return null;
   const rolls = await looter.actor.rollToolCheck({ tool: "thief", target: behavior.system.disarmDc }, { configure: false });
   const total = rolls?.[0]?.total;
   if ( total === undefined ) return null;

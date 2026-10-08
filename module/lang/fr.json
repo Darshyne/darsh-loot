@@ -518,7 +518,12 @@
       },
       "Disarmed": "Piège désamorcé.",
       "DisarmFailed": "Le désamorçage échoue.",
-      "DisarmFired": "Raté : le piège se déclenche !"
+      "DisarmFired": "Raté : le piège se déclenche !",
+      "ConfirmTitle": "Désamorcer le piège",
+      "ConfirmText": "Tenter de désamorcer {trap} ? {name} fera un test d'outils de voleur.",
+      "ConfirmYes": "Tenter",
+      "ConfirmNo": "Renoncer",
+      "ThisTrap": "ce piège"
     }
   },
   "TYPES": {
