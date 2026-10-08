@@ -87,6 +87,9 @@ export function registerTheftMenu(visit) {
   route(TOKEN_MENU_HOOK, "menu : Voler", (entries, { token, target }) => {
     if ( !token?.actor || !target || (target === token) || game.combat?.started ) return;
     if ( !livingNPC(target) || target.isOwner ) return;
+    // Jamais une créature invoquée (familier, invocation) : dnd5e la marque de l'item qui l'a appelée (`flags.dnd5e.summon.origin`,
+    // documents/activity/summon.mjs:145) — 0.14.1, retour de séance : « Voler » s'offrait sur le familier d'un joueur.
+    if ( target.actor?.getFlag("dnd5e", "summon.origin") ) return;
     entries.push({ icon: "fa-solid fa-hand", label: loc("Steal.Menu"), run: () => visit(pocketSource(target), token) });
   });
 }
