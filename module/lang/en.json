@@ -78,6 +78,10 @@
       "SearchCooldown": {
         "Name": "Delay between searches",
         "Hint": "Out of combat, minutes of world time before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching costs the action."
+      },
+      "SearchDuration": {
+        "Name": "Search duration",
+        "Hint": "Out of combat, real seconds that \"Search the surroundings\" lasts: a progress bar for the player, a ping around the token; moving interrupts it (0: instant)."
       }
     },
     "Lock": {
@@ -437,6 +441,9 @@
         }
       },
       "Search": "Search the surroundings",
+      "Searching": "{name} searches the surroundings.",
+      "SearchingBar": "{name} is searching the surroundings…",
+      "Interrupted": "{name} moved: search interrupted.",
       "Nothing": "You notice nothing special.",
       "Found": {
         "Cache": "You notice a hidden cache.",

@@ -78,6 +78,10 @@
       "SearchCooldown": {
         "Name": "Délai entre deux fouilles",
         "Hint": "Hors combat, minutes de temps du monde avant qu'un même personnage puisse refaire « Fouiller les environs » (0 : aucun délai). En combat, la fouille coûte l'action."
+      },
+      "SearchDuration": {
+        "Name": "Durée d'une fouille",
+        "Hint": "Hors combat, secondes réelles que dure « Fouiller les environs » : une barre de progression chez le joueur, un ping autour du token ; bouger l'interrompt (0 : aussitôt)."
       }
     },
     "Lock": {
@@ -437,6 +441,9 @@
         }
       },
       "Search": "Fouiller les environs",
+      "Searching": "{name} fouille les environs.",
+      "SearchingBar": "{name} fouille les environs…",
+      "Interrupted": "{name} a bougé : fouille interrompue.",
       "Nothing": "Vous ne remarquez rien de spécial.",
       "Found": {
         "Cache": "Vous remarquez une cachette.",

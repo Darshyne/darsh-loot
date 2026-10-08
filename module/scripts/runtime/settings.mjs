@@ -43,6 +43,12 @@ export function registerSettings() {
     scope: "world", config: true, type: Number, default: 1,
     range: { min: 0, max: 60, step: 1 }
   });
+  // 0.14.5 : durée d'une fouille hors combat, en secondes réelles (barre de progression chez le joueur ; 0 : aussitôt).
+  game.settings.register(MODULE_ID, "searchDuration", {
+    name: "DLO.Settings.SearchDuration.Name", hint: "DLO.Settings.SearchDuration.Hint",
+    scope: "world", config: true, type: Number, default: 10,
+    range: { min: 0, max: 30, step: 1 }
+  });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
     scope: "world", config: true, type: String, default: "all",

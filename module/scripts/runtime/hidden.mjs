@@ -149,9 +149,74 @@ async function onMoveToken(token, changes) {
  */
 export async function requestSearch(token) {
   if ( !token ) { ui.notifications.warn(loc("Window.NoLooter")); return null; }
+  // 0.14.5 : ce qui refuserait la fouille se dit avant d'attendre (le MJ revérifie tout ensuite) ; puis le chat, le ping autour du
+  // token et, hors combat, la barre de la durée de la fouille — un déplacement l'interrompt.
+  const refusal = searchRefusal(token);
+  if ( refusal ) { ui.notifications.warn(refusal); return null; }
+  await announceSearch(token);
+  if ( !(await searchDelay(token)) ) { ui.notifications.info(loc("Hidden.Interrupted", { name: token.name })); return null; }
   const result = await askGM(SEARCH_QUERY, handleSearch, { token: token.uuid });
   if ( result && !result.found ) ui.notifications.info(loc("Hidden.Nothing"));
   return result;
+}
+
+/** Ce qui refuse la fouille de ce token, en clair (même règle que chez le MJ, `handleSearch`), ou null. */
+function searchRefusal(token) {
+  const actor = token.actor;
+  if ( !actor ) return loc("Refus.Introuvable");
+  const issues = engineBudgetIssues(actor, "action");
+  if ( issues.length ) return loc("Notice.Refused", { reason: loc(`Hidden.Budget.${issues[0]}`, { name: actor.name }) });
+  if ( game.combat?.started === true ) return null;
+  const wait = searchWait(actor.getFlag(MODULE_ID, "lastSearch"), game.time.worldTime, setting("searchCooldown"));
+  return (wait > 0) ? loc("Notice.Refused", { reason: loc("Hidden.Cooldown", { name: actor.name, minutes: Math.ceil(wait / 60) }) }) : null;
+}
+
+/** Le message public « X fouille les environs », et un ping de la taille du rayon de fouille autour du token (vu de tous). */
+async function announceSearch(token) {
+  await ChatMessage.implementation.create({
+    speaker: ChatMessage.implementation.getSpeaker({ token, actor: token.actor }),
+    content: `<p><i class="fa-solid fa-magnifying-glass"></i> ${foundry.utils.escapeHTML(loc("Hidden.Searching", { name: token.name }))}</p>`
+  });
+  pingAround(token);
+}
+
+/**
+ * Un ping « pulse » autour du token, du diamètre de la fouille. `canvas.ping` le diffuse à tous les clients
+ * (client/canvas/board.mjs:1871-1891) ; style et `pull` forcés, pour qu'une touche tenue n'en fasse ni une alerte ni un recentrage.
+ */
+function pingAround(token) {
+  const placeable = token.object;
+  if ( !placeable || !canvas.ready ) return;
+  const size = Math.max(canvas.grid.size, 2 * setting("searchRadius") * canvas.dimensions.distancePixels);
+  canvas.ping(placeable.center, { style: CONFIG.Canvas.pings.types.PULSE, pull: false, size, duration: 1500, rings: 2 })
+    .catch(() => {});
+}
+
+/**
+ * Hors combat, la durée de la fouille (réglage `searchDuration`, en secondes réelles) : une barre de progression chez le joueur
+ * (ui.notifications, `progress` : client/applications/ui/notifications.mjs:23-27) et un ping toutes les 2,5 s. Rend false si le
+ * token a bougé entre-temps (fouille interrompue). En combat, rien à attendre : l'action Fouille suffit.
+ */
+async function searchDelay(token) {
+  const seconds = Number(setting("searchDuration")) || 0;
+  if ( (seconds <= 0) || (game.combat?.started === true) ) return true;
+  const start = { x: token._source.x, y: token._source.y, elevation: token._source.elevation };
+  const bar = ui.notifications.info(loc("Hidden.SearchingBar", { name: token.name }), { progress: true });
+  const began = Date.now();
+  let lastPing = began;
+  const moved = () => !token.parent || (token._source.x !== start.x) || (token._source.y !== start.y) || (token._source.elevation !== start.elevation);
+  try {
+    while ( (Date.now() - began) < (seconds * 1000) ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if ( moved() ) return false;
+      bar.update({ pct: Math.min(1, (Date.now() - began) / (seconds * 1000)) });
+      if ( (Date.now() - lastPing) >= 2500 ) { lastPing = Date.now(); pingAround(token); }
+    }
+    return true;
+  } finally {
+    bar.update({ pct: 1 });
+    bar.remove?.();
+  }
 }
 
 async function handleSearch({ token: uuid }, { user }) {
