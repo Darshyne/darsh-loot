@@ -40,6 +40,17 @@ export function searchReach(hidden, worldRadius) {
   return Math.min(worldRadius, h.radius || worldRadius);
 }
 
+/**
+ * 0.14.4 : ce qu'il reste à attendre avant une nouvelle fouille hors combat, en secondes de temps du monde (0 : rien). `last` :
+ * temps du monde de la dernière fouille du personnage (absent : jamais) ; `minutes` : délai du réglage (0 : pas de délai). Un
+ * temps du monde revenu en arrière (calendrier reculé) ne bloque pas.
+ */
+export function searchWait(last, now, minutes) {
+  const delay = (Number(minutes) || 0) * 60;
+  if ( !(delay > 0) || (last === undefined) || (last === null) || !Number.isFinite(Number(last)) || (Number(now) < Number(last)) ) return 0;
+  return Math.max(0, (Number(last) + delay) - Number(now));
+}
+
 /** Le personnage a-t-il déjà raté cet objet (un essai par objet et par personnage) ? */
 export const alreadyTried = (tried, actorId) => Array.isArray(tried) && tried.includes(actorId);
 

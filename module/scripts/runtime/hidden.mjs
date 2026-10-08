@@ -14,7 +14,7 @@
 import { MODULE_ID, loc, log, setting } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
-import { passiveFinds, searchReach, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
+import { passiveFinds, searchReach, searchWait, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
 import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playerToken, wallHidden } from "../adapter/hidden.mjs";
 import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend } from "../adapter/engine.mjs";
 
@@ -162,7 +162,13 @@ async function handleSearch({ token: uuid }, { user }) {
   // En combat, la fouille est l'action Observation (PHB 2024) : le moteur dit si elle est possible et la décompte.
   const issues = engineBudgetIssues(actor, "action");
   if ( issues.length ) throw new Error(loc(`Hidden.Budget.${issues[0]}`, { name: actor.name }));
+  // 0.14.4 : hors combat, une fouille prend du temps — délai en minutes de temps du monde (réglage `searchCooldown`), par
+  // personnage ; en combat, l'action Fouille suffit.
+  const inCombat = game.combat?.started === true;
+  const wait = inCombat ? 0 : searchWait(actor.getFlag(MODULE_ID, "lastSearch"), game.time.worldTime, setting("searchCooldown"));
+  if ( wait > 0 ) throw new Error(loc("Hidden.Cooldown", { name: actor.name, minutes: Math.ceil(wait / 60) }));
   await engineSpend(actor, "action");
+  if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", game.time.worldTime);
   const worldRadius = setting("searchRadius");
   let found = 0;
   for ( const thing of concealedThings(token.parent) ) {

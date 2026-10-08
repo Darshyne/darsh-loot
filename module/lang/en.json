@@ -74,6 +74,10 @@
       "SearchRadius": {
         "Name": "Search radius",
         "Hint": "Distance (scene units) that \"Search the surroundings\" covers, stopped by walls. A hidden object may require less."
+      },
+      "SearchCooldown": {
+        "Name": "Delay between searches",
+        "Hint": "Out of combat, minutes of world time before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching costs the action."
       }
     },
     "Lock": {
@@ -454,6 +458,7 @@
         "Found": "Found",
         "Text": "Discovery text"
       },
+      "Cooldown": "{name} has just searched: {minutes} more min of game time before searching again.",
       "Budget": {
         "notYourTurn": "it is not {name}'s turn",
         "noAction": "{name} has no action left this turn",

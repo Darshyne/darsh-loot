@@ -74,6 +74,10 @@
       "SearchRadius": {
         "Name": "Rayon de fouille",
         "Hint": "Distance (unités de la scène) jusqu'où « Fouiller les environs » cherche, murs compris. Un objet caché peut demander moins."
+      },
+      "SearchCooldown": {
+        "Name": "Délai entre deux fouilles",
+        "Hint": "Hors combat, minutes de temps du monde avant qu'un même personnage puisse refaire « Fouiller les environs » (0 : aucun délai). En combat, la fouille coûte l'action."
       }
     },
     "Lock": {
@@ -454,6 +458,7 @@
         "Found": "Trouvé",
         "Text": "Texte de découverte"
       },
+      "Cooldown": "{name} vient de fouiller : encore {minutes} min de temps de jeu avant de recommencer.",
       "Budget": {
         "notYourTurn": "ce n'est pas le tour de {name}",
         "noAction": "{name} n'a plus d'action ce tour-ci",

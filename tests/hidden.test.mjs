@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeHidden, concealed, passiveFinds, searchReach, alreadyTried, withTry, wallKind, revealWall, discoveryKey,
+import { normalizeHidden, concealed, passiveFinds, searchReach, searchWait, alreadyTried, withTry, wallKind, revealWall, discoveryKey,
   pointSegmentDistance, closestOnSegment, stepToward, DOOR, SENSE } from "../module/scripts/core/hidden.mjs";
 
 describe("réglages d'un objet caché", () => {
@@ -72,4 +72,12 @@ describe("texte et géométrie", () => {
     expect(closestOnSegment({ x: -2, y: 1 }, a, b)).toEqual({ x: 0, y: 0 });
     expect(stepToward({ x: 0, y: 0 }, { x: 10, y: 0 }, 2)).toEqual({ x: 2, y: 0 });
   });
+});
+
+describe("0.14.4 : délai entre deux fouilles (temps du monde)", () => {
+  it("jamais fouillé : rien à attendre", () => expect(searchWait(undefined, 1000, 1)).toBe(0));
+  it("aucun délai réglé : rien à attendre", () => expect(searchWait(990, 1000, 0)).toBe(0));
+  it("une minute de délai, 10 s écoulées : 50 s", () => expect(searchWait(990, 1000, 1)).toBe(50));
+  it("délai écoulé : rien", () => expect(searchWait(900, 1000, 1)).toBe(0));
+  it("calendrier reculé : ne bloque pas", () => expect(searchWait(2000, 1000, 10)).toBe(0));
 });
