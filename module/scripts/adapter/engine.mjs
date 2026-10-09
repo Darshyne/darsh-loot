@@ -33,6 +33,27 @@ export const TOKEN_MENU_HOOK = `${ENGINE_ID}.tokenMenu`;
 export const DROP_ITEMS_HOOK = `${ENGINE_ID}.dropItems`;
 
 /**
+ * Le hook par lequel le moteur annonce que sa visée s'ouvre ou se ferme sur ce client (son SPEC §118, 0.203.0) : `(state)`,
+ * `{ token, activity, identifier }` ou null. Tant qu'elle est ouverte, le clic gauche est à lui.
+ */
+export const TARGETING_HOOK = `${ENGINE_ID}.targeting`;
+
+/**
+ * Le hook par lequel le moteur laisse un module reprendre une invocation lancée sur des cibles (son SPEC §118, 0.203.0) :
+ * `(takers, { activity, caster, targets })` sur le client qui lance ; pousser dans `takers` une fonction
+ * `async ({ profile }) => boolean` (vrai : fait) — dnd5e ne pose alors rien.
+ */
+export const SUMMON_ON_TARGETS_HOOK = `${ENGINE_ID}.summonOnTargets`;
+
+/** La visée que le moteur attend sur ce client (`api.ui.targeting()`, son §118), ou null — sans le moteur, ou plus ancien : null. */
+export function engineTargeting() {
+  const fn = engineApi()?.ui?.targeting;
+  if ( typeof fn !== "function" ) return null;
+  try { return fn() ?? null; }
+  catch(err) { return null; }
+}
+
+/**
  * La configuration d'utilisation qui fait passer une activité utilisée par un module sans le contrôle de légalité du moteur
  * (« confirmé » : un piège n'a ni tour ni budget).
  */

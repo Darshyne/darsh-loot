@@ -7,6 +7,11 @@
  *  2. le token du mort est **remplacé** par le mort-vivant : un acteur du monde créé depuis le Monster Manual (nom
  *     traduit par Babele), « Squelette (Bandit) », token lié, propriété des joueurs du lanceur, même disposition que lui.
  * Seule exception à « le token d'un mort reste sur la scène » (SPEC §2), voulue.
+ *
+ * Deux portes : le bouton « Relever » du HUD (MJ), et le sort lui-même — *Animation des morts* ou la « Relever un zombi » de
+ * *Doigt de mort* lancés sur un cadavre relevable : le moteur annonce l'invocation visée (hook `summonOnTargets`, son §118),
+ * ce module la reprend chez le joueur qui lance (profil Squelette / Zombi choisi dans la fenêtre de dnd5e) et la fait faire
+ * par le MJ actif ; dnd5e ne pose alors pas de créature neuve.
  */
 import { MODULE_ID, loc, log } from "../shared.mjs";
 import { route } from "./router.mjs";
@@ -16,37 +21,43 @@ import { ensureStore } from "./containers.mjs";
 import { corpseToken, tokenDistance, transfer, lootView } from "../adapter/dnd5e.mjs";
 import { createPile, pileAt, MIXED_PILE_IMG } from "../adapter/drop.mjs";
 import { pileSpot } from "../core/drop.mjs";
-import { UNDEAD, SPELL_RANGE_FT, canAnimate, feetToSceneUnits } from "../core/necromancy.mjs";
+import { UNDEAD, SPELL_RANGE_FT, RAISING_SPELLS, canAnimate, undeadKindOf, feetToSceneUnits } from "../core/necromancy.mjs";
+import { SUMMON_ON_TARGETS_HOOK } from "../adapter/engine.mjs";
 
 const ANIMATE_QUERY = `${MODULE_ID}.animate`;
 const MM_ACTORS = "dnd-monster-manual.actors";
 const FOLDER_FLAG = "undead";
 
-/** Ce cadavre peut-il être relevé ? */
-export function raisable(tokenDoc) {
+/** Ce cadavre peut-il être relevé (par ce sort, identifiant dnd5e, s'il est donné) ? */
+export function raisable(tokenDoc, spell=null) {
   const actor = tokenDoc?.actor;
   if ( !actor || !corpseToken(tokenDoc) ) return false;
-  return canAnimate({ type: actor.system.details?.type?.value, size: actor.system.traits?.size });
+  return canAnimate({ type: actor.system.details?.type?.value, size: actor.system.traits?.size }, spell);
 }
 
 /**
  * Relever un cadavre.
  * @param {TokenDocument} corpse
- * @param {{ kind: "skeleton"|"zombie", caster?: TokenDocument|null }} options
+ * @param {{ kind: "skeleton"|"zombie", caster?: TokenDocument|null, spell?: string|null }} options
+ *   `spell` : le sort qui relève (identifiant dnd5e, RAISING_SPELLS) — ses règles de portée et de taille ; sans : Animation des morts.
  */
-export function requestAnimate(corpse, { kind, caster=null }) {
-  return askGM(ANIMATE_QUERY, handleAnimate, { corpse: corpse.uuid, caster: caster?.uuid ?? null, kind });
+export function requestAnimate(corpse, { kind, caster=null, spell=null }) {
+  return askGM(ANIMATE_QUERY, handleAnimate, { corpse: corpse.uuid, caster: caster?.uuid ?? null, kind, spell });
 }
 
-async function handleAnimate({ corpse: corpseUuid, caster: casterUuid, kind }, { user }) {
+async function handleAnimate({ corpse: corpseUuid, caster: casterUuid, kind, spell=null }, { user }) {
   const corpse = fromUuidSync(corpseUuid, { strict: false });
   const caster = casterUuid ? fromUuidSync(casterUuid, { strict: false }) : null;
-  if ( !corpse || !UNDEAD[kind] ) throw new Error(loc("Refus.Introuvable"));
-  if ( !raisable(corpse) ) throw new Error(loc("Necro.NotRaisable"));
+  const rules = spell ? RAISING_SPELLS[spell] : null;
+  if ( !corpse || !UNDEAD[kind] || (spell && !rules) ) throw new Error(loc("Refus.Introuvable"));
+  if ( !raisable(corpse, spell) || (rules && !rules.kinds.includes(kind)) ) throw new Error(loc("Necro.NotRaisable"));
   if ( !user.isGM ) {
     if ( !caster?.actor?.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
-    const range = feetToSceneUnits(SPELL_RANGE_FT, corpse.parent.grid.units);
-    if ( (caster.parent !== corpse.parent) || (tokenDistance(caster, corpse) > range) ) throw new Error(loc("Refus.Loin"));
+    // Un sort nommé doit être sur la fiche du lanceur : un joueur ne choisit pas la portée de Doigt de mort sans le connaître.
+    if ( spell && !caster.actor.items.some(i => i.system?.identifier === spell) ) throw new Error(loc("Refus.PasAToi"));
+    const rangeFt = rules ? rules.rangeFt : SPELL_RANGE_FT;
+    if ( caster.parent !== corpse.parent ) throw new Error(loc("Refus.Loin"));
+    if ( (rangeFt !== null) && (tokenDistance(caster, corpse) > feetToSceneUnits(rangeFt, corpse.parent.grid.units)) ) throw new Error(loc("Refus.Loin"));
   }
   const pack = game.packs.get(MM_ACTORS);
   if ( !pack ) throw new Error(loc("Necro.NeedMM"));
@@ -155,6 +166,29 @@ export function registerNecromancyInit() {
   CONFIG.queries[ANIMATE_QUERY] = handleAnimate;
 }
 
+/* ---- le sort (moteur, §118) ---- */
+
+/**
+ * Le moteur demande qui reprend une invocation lancée sur des cibles, chez le joueur qui lance : un sort qui relève, visant au
+ * moins un cadavre relevable — on relève ces cadavres-là (les autres cibles ne donnent rien) ; dnd5e ne pose rien. Un profil
+ * qui ne dit pas quel mort-vivant : on rend la main (faux), dnd5e pose son invocation.
+ */
+function onSummonOnTargets(takers, { activity, caster, targets }) {
+  const spell = activity?.item?.system?.identifier ?? "";
+  if ( !RAISING_SPELLS[spell] ) return;
+  const corpses = (targets ?? []).filter(t => raisable(t, spell));
+  if ( !corpses.length ) return;
+  takers.push(async ({ profile }) => {
+    const kind = undeadKindOf(spell, profile);
+    if ( !kind ) { log.warn(`${activity.item.name}: no undead for profile`, profile?.name); return false; }
+    // Un refus du MJ (portée, pas de MJ) est déjà signalé par askGM ; le sort est pris en charge ici quoi qu'il arrive : pas de
+    // créature neuve posée par dnd5e à la place du cadavre.
+    for ( const corpse of corpses ) await requestAnimate(corpse, { kind, caster, spell });
+    return true;
+  });
+}
+
 export function registerNecromancy() {
   route("renderTokenHUD", "Raise button", onRenderTokenHUD);
+  route(SUMMON_ON_TARGETS_HOOK, "raise the targeted corpse", onSummonOnTargets);
 }

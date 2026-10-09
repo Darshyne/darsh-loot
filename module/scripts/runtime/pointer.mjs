@@ -15,7 +15,7 @@ import { corpseSource, containerSource, merchantSource, zoneSource, trapSource }
 import { knownTraps, requestDisarm } from "./traps.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
-import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
+import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
 import { sceneContainers } from "../adapter/container-behavior.mjs";
 import { sceneZones } from "../adapter/zone-behaviors.mjs";
 import { runZone } from "./zones.mjs";
@@ -100,7 +100,8 @@ function setCursor(kind) {
  * n'a plus rien à tirer, en combat, ou sans droit de fouille.
  */
 function cursorFor(source) {
-  if ( !source || inCombat() ) return null;
+  // La visée du moteur passe avant la fouille (§3.4, 2026-10-09) : *Animation des morts* vise le cadavre qu'on fouillerait.
+  if ( !source || inCombat() || engineTargeting() ) return null;
   const actor = source.actor;
   if ( source.kind === "zone" ) return zoneCursor(source);
   if ( source.kind === "trap" ) return trapCursor(source);
@@ -181,7 +182,7 @@ let down = null;
  */
 /** La source que ce clic gauche ouvrirait (hors combat, geste simple ou Alt pour les poches), ou null. */
 function clickedSource(event) {
-  if ( !onBoard(event) || (event.button !== 0) || !plain(event) || inCombat() ) return null;
+  if ( !onBoard(event) || (event.button !== 0) || !plain(event) || inCombat() || engineTargeting() ) return null;
   const source = sourceAt(event);
   if ( !source ) return null;
   return cursorFor(source) ? source : null;
@@ -246,6 +247,8 @@ export function registerPointer() {
   route(TOKEN_MENU_HOOK, "menu: Search the body", onTokenMenu);
   route("hoverToken", "search cursor", onHoverToken);
   route("canvasTearDown", "search cursor", () => setCursor(null));
+  // La visée du moteur qui s'ouvre ou se ferme sous la souris : le curseur de fouille s'efface ou revient.
+  route(TARGETING_HOOK, "search cursor", () => recheck());
   // Tout ce qui change ce qu'un clic ferait sans que la souris bouge : un tas qui apparaît sous elle, un autre
   // personnage sélectionné (la portée change), une créature qui meurt, un coffre vidé ou ouvert, un combat.
   for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "updateRegion", "deleteRegion", "createTile", "deleteTile", "updateActor",

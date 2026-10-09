@@ -106,11 +106,11 @@ Hooks.once("ready", () => {
     dropEnabled: () => dropEnabled(),
     /**
      * Relever un cadavre d'humanoïde (Petit ou Moyen) : kind "skeleton" ou "zombie", caster = token du lanceur
-     * (propriétaire du mort-vivant ; un joueur doit le posséder et être à 10 ft). Pour le moteur : Animation des morts,
-     * Doigt de mort (SPEC §4).
+     * (propriétaire du mort-vivant ; un joueur doit le posséder et être à 10 ft). `spell` ("animate-dead", "finger-of-death") :
+     * les règles de ce sort (portée, taille). Lancer le sort sur le cadavre fait la même chose (moteur, SPEC §3.4).
      */
-    animate: (corpse, { kind, caster=null }={}) => requestAnimate(doc(corpse), { kind, caster: doc(caster) }),
-    raisable: token => raisable(doc(token)),
+    animate: (corpse, { kind, caster=null, spell=null }={}) => requestAnimate(doc(corpse), { kind, caster: doc(caster), spell }),
+    raisable: (token, spell=null) => raisable(doc(token), spell),
     /** Ouvre les poches d'un PNJ vivant (vol à la tire). */
     openPockets: (token, thief) => openSource(pocketSource(doc(token)), doc(thief)),
     /** Tenter un vol sans fenêtre (tests) : un id d'objet, ou "coins" pour la bourse. */
