@@ -35,7 +35,7 @@ export async function tileToZone(tile, { kind="container", name="", system={}, o
     return null;
   }
   const type = TYPES.find(t => t.kind === kind);
-  if ( !type ) throw new Error(`type de zone inconnu : ${kind}`);
+  if ( !type ) throw new Error(`unknown zone type: ${kind}`);
   const { points, traced } = tileShape(tile);
   name ||= prettyName(tile.texture?.src) || loc("TileZone.DefaultName");
   const typeName = game.i18n.localize(`TYPES.RegionBehavior.${type.id}`);
@@ -58,7 +58,7 @@ async function promptAndCreate(tile) {
   if ( !choice ) return null;
   try { return await tileToZone(tile, choice); }
   catch(err) {
-    log.warn("tuile → zone :", err.message);
+    log.warn("tile → zone:", err.message);
     ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
     return null;
   }
@@ -84,5 +84,5 @@ function onRenderTileHUD(hud, html) {
 }
 
 export function registerTileZone() {
-  route("renderTileHUD", "bouton tuile → zone", onRenderTileHUD);
+  route("renderTileHUD", "tile → zone button", onRenderTileHUD);
 }

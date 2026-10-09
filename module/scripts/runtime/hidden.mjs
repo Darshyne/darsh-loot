@@ -57,7 +57,7 @@ async function syncRegion(region) {
       await region.unsetFlag(MODULE_ID, "concealed");
     }
   } catch(err) {
-    log.warn("région cachée :", err.message);
+    log.warn("hidden region:", err.message);
   } finally {
     syncing.delete(region.uuid);
   }
@@ -90,7 +90,7 @@ async function syncWall(wall) {
       await wall.update({ ...revealed, [`flags.${MODULE_ID}.-=revealed`]: null, [`flags.${MODULE_ID}.-=tried`]: null });
     }
   } catch(err) {
-    log.warn("mur caché :", err.message);
+    log.warn("hidden wall:", err.message);
   }
 }
 
@@ -119,7 +119,7 @@ async function reveal(thing, finder) {
     content: `<p>${foundry.utils.escapeHTML(text)}</p>`,
     whisper: readersOf(finder.actor)
   });
-  log.info(`${finder.name} trouve ${thing.key}`);
+  log.info(`${finder.name} finds ${thing.key}`);
   haltScene(finder.parent);
 }
 
@@ -262,7 +262,7 @@ async function handleSearch({ token: uuid }, { user }) {
 export function haltScene(scene) {
   for ( const user of game.users.filter(u => u.active) ) {
     if ( user.isSelf ) handleHalt({ scene: scene.uuid });
-    else user.query(HALT_QUERY, { scene: scene.uuid }, { timeout: 5000 }).catch(err => log.warn("arrêt des déplacements :", err.message));
+    else user.query(HALT_QUERY, { scene: scene.uuid }, { timeout: 5000 }).catch(err => log.warn("movement halt:", err.message));
   }
 }
 
@@ -274,7 +274,7 @@ function handleHalt({ scene: uuid }) {
   for ( const token of scene.tokens ) {
     const movement = token.movement;
     if ( movement?.user?.isSelf && ["pending", "paused"].includes(movement.state) ) {
-      try { token.stopMovement(); } catch(err) { log.warn(`arrêt de ${token.name} :`, err.message); }
+      try { token.stopMovement(); } catch(err) { log.warn(`stopping ${token.name}:`, err.message); }
     }
   }
   return true;
@@ -354,15 +354,15 @@ export function registerHiddenInit() {
 }
 
 export function registerHidden() {
-  route("updateRegionBehavior", "zone cachée", onUpdateBehavior);
-  route("createRegionBehavior", "zone cachée", behavior => { if ( isActiveGM() && isDasZone(behavior) ) syncRegion(behavior.parent); });
-  route("createRegion", "zone cachée", region => { if ( isActiveGM() ) syncRegion(region); });
-  route("deleteRegionBehavior", "zone cachée", behavior => { if ( isActiveGM() && isDasZone(behavior) ) syncRegion(behavior.parent); });
-  route("updateWall", "mur caché", onUpdateWall);
-  route("updateToken", "perception passive", onMoveToken);
-  route("renderTokenHUD", "bouton Fouiller les environs", onRenderTokenHUD);
-  route("renderWallConfig", "réglages de mur caché", onRenderWallConfig);
-  route(TOKEN_MENU_HOOK, "menu : Fouiller les environs", onTokenMenu);
+  route("updateRegionBehavior", "hidden zone", onUpdateBehavior);
+  route("createRegionBehavior", "hidden zone", behavior => { if ( isActiveGM() && isDasZone(behavior) ) syncRegion(behavior.parent); });
+  route("createRegion", "hidden zone", region => { if ( isActiveGM() ) syncRegion(region); });
+  route("deleteRegionBehavior", "hidden zone", behavior => { if ( isActiveGM() && isDasZone(behavior) ) syncRegion(behavior.parent); });
+  route("updateWall", "hidden wall", onUpdateWall);
+  route("updateToken", "passive Perception", onMoveToken);
+  route("renderTokenHUD", "Search the surroundings button", onRenderTokenHUD);
+  route("renderWallConfig", "hidden wall settings", onRenderWallConfig);
+  route(TOKEN_MENU_HOOK, "menu: Search the surroundings", onTokenMenu);
 }
 
 /** Pour les fonctions de test (runtime/testing.mjs). */

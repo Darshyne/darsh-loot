@@ -22,7 +22,7 @@ export async function askGM(name, handler, payload) {
   try {
     return gm.isSelf ? await handler(payload, { user: game.user }) : await gm.query(name, payload, { timeout: 15000 });
   } catch(err) {
-    log.warn(`${name} refusé :`, err.message);
+    log.warn(`${name} refused:`, err.message);
     ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
     return null;
   }

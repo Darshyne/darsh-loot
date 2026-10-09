@@ -87,6 +87,6 @@ function onUpdateTile(tile, changes) {
 }
 
 export function registerDropFx() {
-  route("createTile", "effet de lancer", onCreateTile);
-  route("updateTile", "effet de lancer", onUpdateTile);
+  route("createTile", "throw effect", onCreateTile);
+  route("updateTile", "throw effect", onUpdateTile);
 }

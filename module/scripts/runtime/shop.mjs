@@ -62,7 +62,7 @@ async function deal(source, looter, payload) {
   if ( q.empty ) throw new Error(loc("Shop.Nothing"));
   if ( !q.ok ) throw new Error(loc(q.reason === "playerFunds" ? "Shop.NoFunds" : "Shop.MerchantNoFunds"));
   const names = await executeDeal(actor, buyer, q);
-  log.info(`troc : ${buyer.name} chez ${actor.name} — achète [${names.bought.join(", ")}], vend [${names.sold.join(", ")}], solde ${q.net} pc`);
+  log.info(`trade: ${buyer.name} with ${actor.name} — buys [${names.bought.join(", ")}], sells [${names.sold.join(", ")}], balance ${q.net} cp`);
   announceDeal(looter, source, names, q);
   return { bought: names.bought, sold: names.sold, net: q.net };
 }
@@ -133,7 +133,7 @@ export async function showShop(source) {
   if ( !gmOnly() ) return 0;
   const players = game.users.filter(u => u.active && !u.isGM);
   for ( const user of players ) {
-    user.query(SHOW_QUERY, { source: sourceRef(source) }, { timeout: 10000 }).catch(err => log.warn("boutique non montrée :", err.message));
+    user.query(SHOW_QUERY, { source: sourceRef(source) }, { timeout: 10000 }).catch(err => log.warn("shop not shown:", err.message));
   }
   ui.notifications.info(loc("Shop.Shown", { name: source.name, count: players.length }));
   return players.length;
@@ -221,7 +221,7 @@ export function registerShopInit(open) {
  *   (`visit(source, looter)`) — passés par le point d'entrée : runtime/open.mjs connaît déjà ce fichier.
  */
 export function registerShop({ open, visit }) {
-  route(TOKEN_MENU_HOOK, "menu : Commercer", tokenMenu(visit));
-  route("renderTokenHUD", "bouton Boutique", hudButton(open));
-  route("getActorContextOptions", "barre latérale : Boutique", directoryMenu(open));
+  route(TOKEN_MENU_HOOK, "menu: Shop", tokenMenu(visit));
+  route("renderTokenHUD", "Shop button", hudButton(open));
+  route("getActorContextOptions", "sidebar: Shop", directoryMenu(open));
 }

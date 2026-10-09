@@ -536,6 +536,33 @@
       "ConfirmYes": "Tenter",
       "ConfirmNo": "Renoncer",
       "ThisTrap": "ce piège"
+    },
+    "Pack": {
+      "Outils": "DAS · Butin et commerce · Outils du MJ"
+    },
+    "Macro": {
+      "ConvertItemPiles": {
+        "NeedModule": "darsh-loot 0.13.0 ou plus récent est requis (module actif ?).",
+        "GMOnly": "Réservé au MJ.",
+        "Title": "Reprise des marchands d'Item Piles",
+        "Intro": "« Rapport » ne modifie rien : il dit quels marchands seraient repris.",
+        "Report": "Rapport",
+        "Convert": "Reprendre",
+        "NoneFound": "<strong>Marchands d'Item Piles</strong> : aucun dans ce monde, rien à faire.",
+        "SummaryDry": "Marchands d'Item Piles — rapport, rien n'a été modifié : {count} sur {total} à reprendre",
+        "Summary": "Marchands d'Item Piles repris : {count} sur {total}",
+        "StatusDone": "repris",
+        "StatusTodo": "à reprendre",
+        "StatusAlready": "déjà fait",
+        "ColumnMerchant": "Marchand",
+        "ColumnGoods": "Étal",
+        "ColumnHidden": "Cachés",
+        "ColumnNotForSale": "Exposés",
+        "ColumnTables": "Tables",
+        "ColumnTill": "Caisse",
+        "NotifyDry": "{count} marchand(s) à reprendre — bilan dans le chat.",
+        "Notify": "{count} marchand(s) repris — bilan dans le chat."
+      }
     }
   },
   "TYPES": {

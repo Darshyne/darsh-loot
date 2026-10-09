@@ -1,8 +1,8 @@
 {
   "id": "darsh-loot",
   "title": "DAS · Loot & Trade",
-  "description": "Cadavres fouillables, conteneurs, vol, nécromancie, lancer de torche, échange et marchands pour dnd5e, interface façon Baldur's Gate 3.",
-  "version": "0.14.5",
+  "description": "Loot and trade for dnd5e: lootable corpses, containers, items dropped on the ground, pickpocketing, necromancy, thrown weapons, trading between players and merchants, with a Baldur's Gate 3-style interface.",
+  "version": "0.15.0",
   "authors": [
     {
       "name": "Darshyne"
@@ -39,12 +39,12 @@
       {
         "id": "item-piles",
         "type": "module",
-        "reason": "Butin et commerce le remplace : tas au sol, fouille, marchands. Ses marchands se reprennent par la macro du module."
+        "reason": "DAS · Loot & Trade replaces it: ground piles, searching, merchants. Its merchants are imported by the module's macro."
       },
       {
         "id": "itempilesdnd5e",
         "type": "module",
-        "reason": "Complément d'Item Piles."
+        "reason": "Add-on for Item Piles."
       }
     ]
   },
@@ -78,7 +78,7 @@
   "packs": [
     {
       "name": "outils",
-      "label": "darsh-loot · Outils du MJ",
+      "label": "DLO.Pack.Outils",
       "path": "packs/outils",
       "type": "Macro",
       "system": "dnd5e",
@@ -91,7 +91,7 @@
   ],
   "packFolders": [
     {
-      "name": "darsh-dnd",
+      "name": "DAS",
       "sorting": "m",
       "packs": [
         "outils"

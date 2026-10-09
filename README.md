@@ -27,7 +27,19 @@ https://github.com/Darshyne/darsh-loot/releases/latest/download/module.json
 From source: the Foundry module is the `module/` subfolder, to copy or link into `Data/modules/darsh-loot`.
 Compendiums are not versioned: run `npm install` then `npm run packs`, with Foundry closed. Tests: `npm test`.
 
-The interface is in French only for now. Under active development.
+Under active development.
+
+## Translations
+
+The module ships in **English** and **French**. To add a language:
+
+1. copy `module/lang/en.json` to `module/lang/<code>.json` (e.g. `de.json`) and translate the values — keep the keys
+   and the `{placeholders}` as they are;
+2. add an entry to `languages` in `module/module.json`, e.g.
+   `{ "lang": "de", "name": "Deutsch", "path": "lang/de.json" }`.
+
+Missing keys fall back to English. `npm test` checks that the English and French files have the same keys and that
+every key used by the code exists.
 
 ## License
 

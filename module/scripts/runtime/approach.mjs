@@ -27,7 +27,7 @@ export async function approachSource(source, looter) {
   try {
     await approach(looter, { cells, level: s.level ?? null });
   } catch(err) {
-    log.warn("aller fouiller :", err.message);
+    log.warn("walk to search:", err.message);
     return false;
   }
   return source.distance(looter) <= setting("reach");

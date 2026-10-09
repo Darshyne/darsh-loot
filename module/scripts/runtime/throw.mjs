@@ -50,7 +50,7 @@ async function onResolution(resolution) {
   if ( target.hit && lodges(await roll("1d2")) && target.token.actor && (target.token.actor !== thrower.actor) ) {
     // Plantée : aucun effet de notre part (le lancer est déjà animé par le moteur et ses animations).
     await moveItem(thrower.actor, target.token.actor, item.id, 1);
-    log.info(`${item.name} plantée dans ${target.token.name}`);
+    log.info(`${item.name} lodged in ${target.token.name}`);
     return;
   }
   let point = at;
@@ -59,9 +59,9 @@ async function onResolution(resolution) {
     point = blockedByWalls(scene, at, landing);
   }
   await putOnGround({ scene, point, level, elevation, from, item, owner: thrower.actor, quantity: 1, flight: false });
-  log.info(`${item.name} ${target.hit ? "tombée aux pieds de" : "ratée, tombée au-delà de"} ${target.token.name}`);
+  log.info(`${item.name} ${target.hit ? "dropped at the feet of" : "missed, landed beyond"} ${target.token.name}`);
 }
 
 export function registerThrow() {
-  route(RESOLUTION_HOOK, "armes de jet", resolution => { onResolution(resolution); });
+  route(RESOLUTION_HOOK, "thrown weapons", resolution => { onResolution(resolution); });
 }

@@ -62,7 +62,7 @@ function handleState(trade) {
     TradeWindow.show(trade, tradeActions);
   } catch(err) {
     // Sans ceci, l'erreur ne remontait qu'au MJ, en simple avertissement : rien ne s'ouvrait, sans rien dire.
-    log.error("fenêtre d'échange", err);
+    log.error("trade window", err);
     ui.notifications.error(loc("Trade.WindowFailed", { reason: err.message }));
     throw err;
   }
@@ -107,7 +107,7 @@ async function broadcast(trade) {
     const user = game.users.get(id);
     if ( !user?.active ) continue;
     if ( user.isSelf ) handleState(state);
-    else user.query(Q.state, state, { timeout: 10000 }).catch(err => log.warn("échange : état non remis", err.message));
+    else user.query(Q.state, state, { timeout: 10000 }).catch(err => log.warn("trade: state not delivered", err.message));
   }
 }
 
@@ -221,5 +221,5 @@ export function registerTradeInit() {
 }
 
 export function registerTrade() {
-  route(TOKEN_MENU_HOOK, "menu : Échanger", onTokenMenu);
+  route(TOKEN_MENU_HOOK, "menu: Trade", onTokenMenu);
 }

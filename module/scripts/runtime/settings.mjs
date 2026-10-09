@@ -15,7 +15,7 @@ class CreateTablesMenu extends foundry.applications.api.ApplicationV2 {
       const created = await createGenericTables();
       ui.notifications.info(loc("Tables.Created", { count: created.length }));
     } catch(err) {
-      log.warn("tables génériques :", err.message);
+      log.warn("generic tables:", err.message);
       ui.notifications.warn(loc("Tables.NeedPHB"));
     }
   }

@@ -20,9 +20,9 @@ import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
 
 function tokenOf(tokenId) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const token = canvas.scene?.tokens.get(tokenId);
-  if ( !token ) throw new Error(`token ${tokenId} absent de la scène affichée`);
+  if ( !token ) throw new Error(`token ${tokenId} is not on the viewed scene`);
   return token;
 }
 
@@ -95,16 +95,16 @@ async function shopClose() {
 /* ---- zones « DAS · … » (SPEC §3.12) ---- */
 
 function regionOf(regionId) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const region = canvas.scene?.regions.get(regionId);
-  if ( !region ) throw new Error(`région ${regionId} absente de la scène affichée`);
+  if ( !region ) throw new Error(`region ${regionId} is not on the viewed scene`);
   return region;
 }
 
 /** La forme qu'aurait la zone d'une tuile : contour tracé ou rectangle, nombre de points, boîte englobante. */
 function zoneShape({ tileId }) {
   const tile = canvas.scene?.tiles.get(tileId);
-  if ( !tile ) throw new Error(`tuile ${tileId} absente de la scène affichée`);
+  if ( !tile ) throw new Error(`tile ${tileId} is not on the viewed scene`);
   const { points, traced } = tileShape(tile);
   const xs = points.filter((_, i) => !(i % 2)), ys = points.filter((_, i) => i % 2);
   return { traced, points: points.length / 2, box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)],
@@ -114,7 +114,7 @@ function zoneShape({ tileId }) {
 /** Crée la zone d'une tuile comme le bouton du HUD, marquée d'essai (`flags.darsh-loot.test`). */
 async function zoneFromTile({ tileId, kind="container", name="", system={} }) {
   const tile = canvas.scene?.tiles.get(tileId);
-  if ( !tile ) throw new Error(`tuile ${tileId} absente de la scène affichée`);
+  if ( !tile ) throw new Error(`tile ${tileId} is not on the viewed scene`);
   const region = await tileToZone(tile, { kind, name, system, openSheet: false });
   await region.setFlag(MODULE_ID, "test", true);
   return zoneState({ regionId: region.id });

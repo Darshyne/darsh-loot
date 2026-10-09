@@ -66,7 +66,7 @@ async function handleAnimate({ corpse: corpseUuid, caster: casterUuid, kind }, {
     speaker: caster ? ChatMessage.implementation.getSpeaker({ token: caster }) : undefined,
     flags: { [MODULE_ID]: { animate: true } }
   });
-  log.info(`${corpseName} relevé :`, undead.name, remains ? `(affaires : ${remains.name})` : "");
+  log.info(`${corpseName} raised:`, undead.name, remains ? `(belongings: ${remains.name})` : "");
   return { undead: undead.uuid, token: token.uuid, remains: remains?.uuid ?? null };
 }
 
@@ -156,5 +156,5 @@ export function registerNecromancyInit() {
 }
 
 export function registerNecromancy() {
-  route("renderTokenHUD", "bouton Relever", onRenderTokenHUD);
+  route("renderTokenHUD", "Raise button", onRenderTokenHUD);
 }

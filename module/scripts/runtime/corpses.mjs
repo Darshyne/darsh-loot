@@ -27,5 +27,5 @@ function onRenderTokenHUD(hud, html) {
 }
 
 export function registerCorpses() {
-  route("renderTokenHUD", "bouton Fouiller", onRenderTokenHUD);
+  route("renderTokenHUD", "Search button", onRenderTokenHUD);
 }

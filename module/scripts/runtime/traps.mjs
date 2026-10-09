@@ -106,7 +106,7 @@ async function snapToCell(token) {
   const y = cell.y - (Math.floor((token._source.height - 1) / 2) * size);
   if ( (x === token._source.x) && (y === token._source.y) ) return;
   try { await token.move({ x, y, action: "displace" }); }
-  catch(err) { log.warn(`piège : ${token.name} pas recalé`, err.message); }
+  catch(err) { log.warn(`trap: ${token.name} not snapped to its cell`, err.message); }
 }
 
 const firing = new Set();
@@ -125,9 +125,9 @@ export async function fireTrap(behavior, triggerer=null) {
     await behavior.update({ "system.armed": false, "system.triggeredAt": game.time.worldTime, "system.hidden.found": true });
     const targets = tokensIn(effectRegionOf(behavior));
     const activity = await activityOf(behavior, targets);
-    if ( !activity ) { log.warn(`piège ${behavior.uuid} : pas d'acteur ou d'activité`); return false; }
-    log.info(`piège ${behavior.system.displayName} : ${activity.name || activity.item.name} sur ${targets.map(t => t.name).join(", ") || "personne"}`
-      + (triggerer ? ` (déclenché par ${triggerer.name})` : ""));
+    if ( !activity ) { log.warn(`trap ${behavior.uuid}: no actor or activity`); return false; }
+    log.info(`trap ${behavior.system.displayName}: ${activity.name || activity.item.name} on ${targets.map(t => t.name).join(", ") || "nobody"}`
+      + (triggerer ? ` (triggered by ${triggerer.name})` : ""));
     // Hook public : un module d'animation peut jouer le piège (BLFX ne joue rien sans token source, et l'acteur piège n'en a
     // pas). On ne connaît pas qui l'écoute.
     Hooks.callAll(TRAP_FIRED_HOOK, { behavior, region: behavior.region, effectRegion: effectRegionOf(behavior),
@@ -135,7 +135,7 @@ export async function fireTrap(behavior, triggerer=null) {
     await useOnTargets(activity, scene, targets);
     return true;
   } catch(err) {
-    log.warn("piège :", err.message);
+    log.warn("trap:", err.message);
     return false;
   } finally {
     firing.delete(behavior.uuid);
@@ -147,7 +147,7 @@ export async function fireTrap(behavior, triggerer=null) {
  * donc les désigner, sur la scène affichée par le MJ. Ses cibles d'avant lui sont rendues.
  */
 async function useOnTargets(activity, scene, targets) {
-  if ( canvas.scene !== scene ) log.warn("piège : le MJ n'affiche pas la scène du piège, l'activité part sans cible");
+  if ( canvas.scene !== scene ) log.warn("trap: the GM is not viewing the trap's scene, the activity goes off without targets");
   const before = [...game.user.targets].map(t => t.id);
   const viewed = canvas.scene === scene;
   if ( viewed ) canvas.tokens.setTargets(targets.map(t => t.id), { mode: "replace" });
@@ -248,8 +248,8 @@ export async function applyTrapChecks(behavior) {
   if ( found ) {
     Object.assign(update, { "system.hidden.skill": found.hidden.skill, "system.hidden.dc": found.hidden.dc,
       "system.disarmDc": found.disarmDc, "system.failure": found.failure });
-    log.info(`piège ${behavior.system.displayName} : DD lus dans ${actor.name} — détection ${found.hidden.skill} ${found.hidden.dc}, `
-      + `désamorçage ${found.disarmDc} (${found.failure})`);
+    log.info(`trap ${behavior.system.displayName}: DCs read from ${actor.name} — detection ${found.hidden.skill} ${found.hidden.dc}, `
+      + `disarm ${found.disarmDc} (${found.failure})`);
   }
   await behavior.update(update);
 }
@@ -269,9 +269,9 @@ export function registerTraps() {
   const sync = behavior => {
     if ( !isActiveGM() || (behavior.type !== TRAP_ZONE) ) return;
     syncAvoid(behavior);
-    applyTrapChecks(behavior).catch(err => log.warn("DD du piège :", err.message));
+    applyTrapChecks(behavior).catch(err => log.warn("trap DCs:", err.message));
   };
-  route("updateRegionBehavior", "piège repéré", sync);
-  route("createRegionBehavior", "piège repéré", sync);
-  route("createRegion", "piège repéré", region => { for ( const b of region.behaviors ) sync(b); });
+  route("updateRegionBehavior", "spotted trap", sync);
+  route("createRegionBehavior", "spotted trap", sync);
+  route("createRegion", "spotted trap", region => { for ( const b of region.behaviors ) sync(b); });
 }

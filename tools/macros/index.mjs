@@ -4,6 +4,6 @@
  * macro de ce dossier doit figurer ici (`tests/macros.test.mjs`).
  */
 export const MACROS = [
-  { file: "reprendre-marchands-item-piles.js", name: "Reprendre les marchands d'Item Piles",
+  { file: "reprendre-marchands-item-piles.js", name: "Import Item Piles merchants",
     img: "icons/commodities/currency/coins-assorted-mix-copper-silver-gold.webp" }
 ];

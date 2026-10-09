@@ -21,7 +21,7 @@ export async function ensureRolled(corpse) {
     if ( gm.isSelf ) await handleRoll({ corpse: corpse.uuid });
     else await gm.query(ROLL_QUERY, { corpse: corpse.uuid }, { timeout: 15000 });
   } catch(err) {
-    log.warn("tirage du trésor impossible :", err.message);
+    log.warn("could not roll treasure:", err.message);
   }
 }
 
@@ -31,7 +31,7 @@ async function handleRoll({ corpse: uuid }) {
   if ( !corpse?.actor || !(corpseToken(corpse) || livingNPC(corpse)) || isRolled(corpse.actor) ) return null;
   if ( !pending.has(uuid) ) {
     const run = rollTreasure(corpse.actor, { pockets: setting("pockets") })
-      .then(result => { log.info(`trésor de ${corpse.name} :`, result); return result; })
+      .then(result => { log.info(`treasure of ${corpse.name}:`, result); return result; })
       .finally(() => pending.delete(uuid));
     pending.set(uuid, run);
   }

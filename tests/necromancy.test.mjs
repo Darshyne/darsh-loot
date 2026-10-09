@@ -18,5 +18,8 @@ describe("nécromancie", () => {
     expect(feetToSceneUnits(SPELL_RANGE_FT, "ft")).toBe(10);
     expect(feetToSceneUnits(SPELL_RANGE_FT, undefined)).toBe(10);
     expect(feetToSceneUnits(SPELL_RANGE_FT, "m")).toBeCloseTo(3);
+    // Ce que le MJ a tapé, sans casse ni accents (« mètres » d'une scène française).
+    expect(feetToSceneUnits(SPELL_RANGE_FT, "Mètres")).toBeCloseTo(3);
+    expect(feetToSceneUnits(SPELL_RANGE_FT, " Meters ")).toBeCloseTo(3);
   });
 });

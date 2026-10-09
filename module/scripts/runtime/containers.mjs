@@ -65,7 +65,7 @@ async function prepare(behavior) {
   const actor = await ensureStore(behavior);
   if ( !behavior.system.rolled && !behavior.system.locked ) {
     const result = await rollContainer(behavior, actor);
-    log.info(`contenu de ${behavior.system.displayName} :`, result);
+    log.info(`contents of ${behavior.system.displayName}:`, result);
   }
   return actor;
 }
@@ -89,7 +89,7 @@ export async function ensureContainer(behavior) {
     if ( gm.isSelf ) await handleRoll({ behavior: behavior.uuid });
     else await gm.query(ROLL_QUERY, { behavior: behavior.uuid }, { timeout: 15000 });
   } catch(err) {
-    log.warn("préparation du conteneur impossible :", err.message);
+    log.warn("could not prepare the container:", err.message);
   }
 }
 
@@ -156,9 +156,9 @@ export function registerContainersInit() {
 }
 
 export function registerContainers() {
-  route("createRegionBehavior", "coffre du conteneur", behavior => onCreateBehavior(behavior));
-  route("deleteRegionBehavior", "coffre du conteneur", behavior => onDeleteBehavior(behavior));
+  route("createRegionBehavior", "container store", behavior => onCreateBehavior(behavior));
+  route("deleteRegionBehavior", "container store", behavior => onDeleteBehavior(behavior));
   // Des comportements créés avec leur région (ou supprimés avec elle) ne tirent que les hooks de la région.
-  route("createRegion", "coffre du conteneur", region => { for ( const b of region.behaviors ) onCreateBehavior(b); });
-  route("deleteRegion", "coffre du conteneur", region => { for ( const b of region.behaviors ) onDeleteBehavior(b); });
+  route("createRegion", "container store", region => { for ( const b of region.behaviors ) onCreateBehavior(b); });
+  route("deleteRegion", "container store", region => { for ( const b of region.behaviors ) onDeleteBehavior(b); });
 }

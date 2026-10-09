@@ -242,16 +242,16 @@ function onTokenMenu(entries, { token, target }) {
 }
 
 export function registerPointer() {
-  routeClaim(CLAIM_CLICK_HOOK, "clic de fouille", onClaimClick);
-  route(TOKEN_MENU_HOOK, "menu : Fouiller le corps", onTokenMenu);
-  route("hoverToken", "curseur de fouille", onHoverToken);
-  route("canvasTearDown", "curseur de fouille", () => setCursor(null));
+  routeClaim(CLAIM_CLICK_HOOK, "search click", onClaimClick);
+  route(TOKEN_MENU_HOOK, "menu: Search the body", onTokenMenu);
+  route("hoverToken", "search cursor", onHoverToken);
+  route("canvasTearDown", "search cursor", () => setCursor(null));
   // Tout ce qui change ce qu'un clic ferait sans que la souris bouge : un tas qui apparaît sous elle, un autre
   // personnage sélectionné (la portée change), une créature qui meurt, un coffre vidé ou ouvert, un combat.
   for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "updateRegion", "deleteRegion", "createTile", "deleteTile", "updateActor",
     "createItem", "updateItem", "deleteItem", "createActiveEffect", "deleteActiveEffect", "updateToken", "controlToken",
     "updateCombat", "deleteCombat"] ) {
-    route(hook, "curseur de fouille", () => recheck());
+    route(hook, "search cursor", () => recheck());
   }
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("pointerup", onPointerUp, true);

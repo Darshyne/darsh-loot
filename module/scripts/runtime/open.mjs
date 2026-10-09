@@ -62,23 +62,23 @@ function refreshForDoc(doc) {
 
 export function registerWindows() {
   for ( const hook of ["createItem", "updateItem", "deleteItem"] ) {
-    route(hook, "fenêtres de fouille", item => { if ( item.parent ) refreshForActor(item.parent); });
+    route(hook, "search windows", item => { if ( item.parent ) refreshForActor(item.parent); });
   }
-  route("updateActor", "fenêtres de fouille", actor => refreshForActor(actor));
+  route("updateActor", "search windows", actor => refreshForActor(actor));
   // L'état « mort » posé ou retiré (un soin, une résurrection) : fermer la fenêtre.
   for ( const hook of ["createActiveEffect", "deleteActiveEffect"] ) {
-    route(hook, "fenêtres de fouille", effect => { if ( effect.parent instanceof Actor ) refreshForActor(effect.parent); });
+    route(hook, "search windows", effect => { if ( effect.parent instanceof Actor ) refreshForActor(effect.parent); });
   }
-  route("updateToken", "fenêtres de fouille", doc => refreshForDoc(doc));
-  route("deleteToken", "fenêtres de fouille", doc => refreshForDoc(doc));
-  route("updateRegionBehavior", "fenêtres de fouille", doc => refreshForDoc(doc));
-  route("deleteRegionBehavior", "fenêtres de fouille", doc => refreshForDoc(doc));
+  route("updateToken", "search windows", doc => refreshForDoc(doc));
+  route("deleteToken", "search windows", doc => refreshForDoc(doc));
+  route("updateRegionBehavior", "search windows", doc => refreshForDoc(doc));
+  route("deleteRegionBehavior", "search windows", doc => refreshForDoc(doc));
   // Une région supprimée (un tas vidé) ne tire que son propre hook : fermer les fenêtres de ses conteneurs.
-  route("deleteRegion", "fenêtres de fouille", region => {
+  route("deleteRegion", "search windows", region => {
     for ( const app of openWindows() ) if ( app.source.doc?.parent === region ) app.refresh();
   });
   // Un combat qui commence ferme la porte au vol à la tire.
   for ( const hook of ["updateCombat", "deleteCombat"] ) {
-    route(hook, "fenêtres de vol", () => { for ( const app of StealWindow.open.values() ) app.refresh(); });
+    route(hook, "pickpocket windows", () => { for ( const app of StealWindow.open.values() ) app.refresh(); });
   }
 }

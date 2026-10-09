@@ -219,7 +219,7 @@ async function asWare(data) {
     const scroll = await CONFIG.Item.documentClass.createScrollFromSpell(data, {}, { dialog: false });
     return scroll ? (scroll.toObject?.() ?? scroll) : null;
   } catch(err) {
-    console.warn(`${MODULE_ID} | parchemin de « ${data.name} » impossible :`, err.message);
+    console.warn(`${MODULE_ID} | could not create the scroll for "${data.name}":`, err.message);
     return null;
   }
 }

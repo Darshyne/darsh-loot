@@ -23,7 +23,7 @@ export async function runZone(behavior, looter=null) {
     if ( behavior.type === SCENE_ZONE ) return await goToScene(behavior);
     if ( behavior.type === DOCUMENT_ZONE ) return await openDocument(behavior, looter);
   } catch(err) {
-    log.warn(`zone ${behavior.uuid} :`, err.message);
+    log.warn(`zone ${behavior.uuid}:`, err.message);
     ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
   }
   return null;

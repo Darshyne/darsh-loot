@@ -110,7 +110,7 @@ async function itemFromResult(result) {
     // Un résultat qui désigne un document introuvable (compendium absent de ce monde) ne donne rien : mieux que de
     // fabriquer un objet « butin » au nom du sort attendu (vu le 2026-10-01 sur les tables de sorts de la campagne).
     if ( result.type === "document" ) {
-      console.warn(`${MODULE_ID} | table : document introuvable, résultat ignoré —`, uuid);
+      console.warn(`${MODULE_ID} | table: document not found, result skipped —`, uuid);
       return null;
     }
   }

@@ -22,5 +22,5 @@ function markStolen(sheet, html) {
 }
 
 export function registerStolenMark() {
-  route("renderActorSheetV2", "marque des objets volés", markStolen);
+  route("renderActorSheetV2", "stolen item mark", markStolen);
 }

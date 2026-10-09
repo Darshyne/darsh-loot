@@ -162,7 +162,7 @@ function onEngineDrop(takers, { token, items }) {
         await putOnGround({ scene, point: center, level: s.level ?? null, elevation: s.elevation ?? 0, from: center,
           item, owner: token.actor, quantity: item.system.quantity ?? 1 });
       } catch ( err ) {
-        log.warn(`objet lâché non posé (${item.name}) :`, err.message);
+        log.warn(`dropped item not placed (${item.name}):`, err.message);
         if ( token.actor.items.has(item.id) ) await item.update({ "system.equipped": false });
       }
     }
@@ -175,8 +175,8 @@ export function registerDropInit() {
 }
 
 export function registerDrop() {
-  route("dropCanvasData", "poser un objet au sol", (board, data) => { onDropCanvasData(board, data); });
-  route(DROP_ITEMS_HOOK, "objets lâchés sur ordre du moteur", onEngineDrop);
+  route("dropCanvasData", "drop an item on the ground", (board, data) => { onDropCanvasData(board, data); });
+  route(DROP_ITEMS_HOOK, "items dropped by the engine", onEngineDrop);
   // Tas posés avant la 0.7.1 : tuile recalée au centre de sa case (une fois, par le MJ actif).
-  if ( game.users.activeGM?.isSelf ) realignPiles().catch(err => log.warn("recalage des tas :", err.message));
+  if ( game.users.activeGM?.isSelf ) realignPiles().catch(err => log.warn("pile realignment:", err.message));
 }

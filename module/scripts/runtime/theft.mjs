@@ -84,7 +84,7 @@ export function registerTheft() {
  * d'abord si l'on est trop loin, puis ouvrir les poches (runtime/open.mjs).
  */
 export function registerTheftMenu(visit) {
-  route(TOKEN_MENU_HOOK, "menu : Voler", (entries, { token, target }) => {
+  route(TOKEN_MENU_HOOK, "menu: Pickpocket", (entries, { token, target }) => {
     if ( !token?.actor || !target || (target === token) || game.combat?.started ) return;
     if ( !livingNPC(target) || target.isOwner ) return;
     // Jamais une créature invoquée (familier, invocation) : dnd5e la marque de l'item qui l'a appelée (`flags.dnd5e.summon.origin`,

@@ -73,11 +73,11 @@
       },
       "SearchRadius": {
         "Name": "Search radius",
-        "Hint": "Distance (scene units) that \"Search the surroundings\" covers, stopped by walls. A hidden object may require less."
+        "Hint": "Distance (in scene units) covered by \"Search the surroundings\", stopped by walls. A hidden object may require the searcher to be closer."
       },
       "SearchCooldown": {
         "Name": "Delay between searches",
-        "Hint": "Out of combat, minutes of world time before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching costs the action."
+        "Hint": "Out of combat, minutes of world time before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching takes an action."
       },
       "SearchDuration": {
         "Name": "Search duration",
@@ -139,7 +139,7 @@
         },
         "dc": {
           "label": "Lock DC",
-          "hint": "Thieves' tools check to pick the lock."
+          "hint": "DC of the thieves' tools check to pick the lock."
         },
         "key": {
           "label": "Key",
@@ -222,14 +222,14 @@
       "Nothing": "Nothing yet.",
       "Remove": "Remove",
       "Accept": "Agree",
-      "Unaccept": "Take back",
+      "Unaccept": "Withdraw agreement",
       "Cancel": "Cancel the trade",
       "Cancelled": "Trade cancelled by {name}.",
       "Done": "Trade done.",
       "Over": "This trade is over.",
       "NotYours": "Only items of your own character can be offered.",
       "NobodyThere": "Nobody holds {name} right now.",
-      "Chat": "Trade between {a} and {b} — {a} gives: {gaveA} ; {b} gives: {gaveB}.",
+      "Chat": "Trade between {a} and {b} — {a} gives: {gaveA}; {b} gives: {gaveB}.",
       "Menu": "Trade",
       "Impossible": "You can only trade with another player character.",
       "WindowFailed": "The trade window could not open: {reason}"
@@ -251,8 +251,8 @@
       "Deal": "Deal",
       "Clear": "Clear",
       "Done": "Deal done.",
-      "Hint": "Click: one item onto the tray (Shift: the whole stack). Click on the tray: take it back.",
-      "GMHint": "Right-click an item: displayed but not for sale → hidden → for sale.",
+      "Hint": "Click an item to put one on the tray (Shift: the whole stack). Click it on the tray to take it back.",
+      "GMHint": "Right-click an item to cycle it: on display but not for sale → hidden → for sale.",
       "Configure": "Settings",
       "Restock": "Restock",
       "Sheet": "Sheet",
@@ -293,7 +293,7 @@
       "Sell": "Sell",
       "SellHint": "What the merchant gives: item price × this factor (0.5: half price).",
       "AttitudeField": "Attitude",
-      "AttitudeHint": "Friendly: 10% in the player's favour. Hostile: 20% against.",
+      "AttitudeHint": "Friendly: 10% in the player's favor. Hostile: 20% against them.",
       "Attitude": {
         "friendly": "Friendly",
         "indifferent": "Indifferent",
@@ -316,13 +316,13 @@
       "TableMissing": "Table not found",
       "Rolls": "Number of draws (formula)",
       "RemoveTable": "Remove",
-      "Memorize": "Set stock as reference",
+      "Memorize": "Save current stock as reference",
       "MemorizeHint": "Restocking will bring the fixed stock and the till back to their present state.",
       "Memorized": "Reference set ({count} item(s)).",
       "Types": "By item type",
-      "TypesHint": "Factors multiplied with the merchant's (1: no effect).",
+      "TypesHint": "Multiplied by the merchant's factors (1: no effect).",
       "Characters": "By character",
-      "CharactersHint": "Attitude towards them, and discount in % (positive: in their favour).",
+      "CharactersHint": "Attitude toward them, and a discount in % (positive: in their favor).",
       "Discount": "Discount %",
       "NoCharacters": "No player character.",
       "Save": "Save",
@@ -339,7 +339,7 @@
         },
         "reach": {
           "label": "Require reach",
-          "hint": "The character must be within reach (\"Reach\" setting); out of reach, they walk there first. Uncheck for a zone usable from afar."
+          "hint": "The character must be within reach (\"Search reach\" setting); out of reach, they walk there first. Uncheck for a zone usable from afar."
         }
       },
       "NoMacro": "This zone has no macro.",
@@ -416,7 +416,7 @@
           },
           "skill": {
             "label": "Skill",
-            "hint": "The one that finds it: Perception (Search) or Investigation (Study)."
+            "hint": "The skill that finds it: Perception (Search action) or Investigation (Study action)."
           },
           "dc": {
             "label": "Detection DC",
@@ -465,20 +465,20 @@
         "Found": "Found",
         "Text": "Discovery text"
       },
-      "Cooldown": "{name} has just searched: {minutes} more min of game time before searching again.",
+      "Cooldown": "{name} has just searched: wait {minutes} more minute(s) of game time before searching again.",
       "Budget": {
         "notYourTurn": "it is not {name}'s turn",
         "noAction": "{name} has no action left this turn",
         "noBonus": "{name} has no Bonus Action left",
-        "noReaction": "{name} has no reaction left"
+        "noReaction": "{name} has no Reaction left"
       }
     },
     "TrapZone": {
-      "Hint": "A token entering the region triggers the trap: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Hidden by default; once spotted it shows in red, the engine's pathing avoids it, and it can be disarmed with a click (thieves' tools).",
+      "Hint": "A token entering the region triggers the trap: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Hidden by default; once spotted it shows in red, the combat engine's pathfinding avoids it, and it can be disarmed with a click (thieves' tools).",
       "FIELDS": {
         "actor": {
           "label": "Trap actor",
-          "hint": "The actor that 'casts' the trap (a 2024 DMG trap, or a hand-made NPC), with no token on the map."
+          "hint": "The actor that \"casts\" the trap (a trap from the DMG 2024, or a homemade NPC), with no token on the map."
         },
         "activity": {
           "label": "Activity",
@@ -494,14 +494,14 @@
         },
         "armed": {
           "label": "Armed",
-          "hint": "Check again to re-arm the trap by hand."
+          "hint": "Check again to re-arm the trap manually."
         },
         "rearm": {
           "label": "Re-arming"
         },
         "delay": {
           "label": "Re-arm delay",
-          "hint": "In minutes of world time (calendar), for 'after a delay'."
+          "hint": "In minutes of world time (calendar), for \"After a delay\"."
         },
         "triggeredAt": {
           "label": "Triggered at",
@@ -516,7 +516,7 @@
         },
         "disarmed": {
           "label": "Disarmed",
-          "hint": "Uncheck to restore it (also check 'Armed')."
+          "hint": "Uncheck to restore it (also check \"Armed\")."
         }
       },
       "Rearm": {
@@ -536,6 +536,33 @@
       "ConfirmYes": "Try",
       "ConfirmNo": "Give up",
       "ThisTrap": "this trap"
+    },
+    "Pack": {
+      "Outils": "DAS · Loot & Trade · GM tools"
+    },
+    "Macro": {
+      "ConvertItemPiles": {
+        "NeedModule": "DAS · Loot & Trade (darsh-loot) 0.13.0 or later is required (is the module active?).",
+        "GMOnly": "GM only.",
+        "Title": "Import Item Piles merchants",
+        "Intro": "“Report” changes nothing: it lists the merchants that would be imported.",
+        "Report": "Report",
+        "Convert": "Import",
+        "NoneFound": "<strong>Item Piles merchants</strong>: none in this world, nothing to do.",
+        "SummaryDry": "Item Piles merchants — report, nothing was changed: {count} of {total} to import",
+        "Summary": "Item Piles merchants imported: {count} of {total}",
+        "StatusDone": "imported",
+        "StatusTodo": "to import",
+        "StatusAlready": "already done",
+        "ColumnMerchant": "Merchant",
+        "ColumnGoods": "Goods",
+        "ColumnHidden": "Hidden",
+        "ColumnNotForSale": "On display",
+        "ColumnTables": "Tables",
+        "ColumnTill": "Till",
+        "NotifyDry": "{count} merchant(s) to import — summary in the chat.",
+        "Notify": "{count} merchant(s) imported — summary in the chat."
+      }
     }
   },
   "TYPES": {

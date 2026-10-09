@@ -147,13 +147,13 @@ export function highlightState() {
 }
 
 export function registerHighlight() {
-  route("highlightObjects", "surbrillance", onHighlight);
-  route("canvasReady", "surbrillance", () => { layer = null; active = false; shapes.clear(); redraw(); });
-  route("canvasTearDown", "surbrillance", () => { layer = null; active = false; });
+  route("highlightObjects", "highlight", onHighlight);
+  route("canvasReady", "highlight", () => { layer = null; active = false; shapes.clear(); redraw(); });
+  route("canvasTearDown", "highlight", () => { layer = null; active = false; });
   // Tant que la touche est tenue : ce qui change sous les yeux (coffre vidé, cachette trouvée, mort, combat).
   for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "deleteRegion", "updateRegion", "updateTile", "updateToken",
     "updateActor", "createActiveEffect", "deleteActiveEffect", "updateCombat", "deleteCombat", "createCombat"] ) {
     // Les pièges repérés sont dessinés en permanence : on redessine toujours (ce n'est qu'un trait par zone).
-    route(hook, "surbrillance", () => redraw());
+    route(hook, "highlight", () => redraw());
   }
 }
