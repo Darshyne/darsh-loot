@@ -210,7 +210,8 @@
       "Quantity": "How many?",
       "Confirm": "Drop",
       "PileName": "Items on the ground",
-      "NotOnScene": "Your character is not on this scene."
+      "NotOnScene": "Your character is not on this scene.",
+      "NotGear": "{item}: a creature's attack, not an object — nothing is dropped"
     },
     "Trade": {
       "Title": "Trade: {a} ⇄ {b}",

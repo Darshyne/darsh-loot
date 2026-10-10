@@ -5,7 +5,7 @@
  */
 import { MODULE_ID } from "../shared.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
-import { stackTarget } from "../core/loot.mjs";
+import { stackTarget, canLeaveOwner } from "../core/loot.mjs";
 import { PILE_FRACTION, pileSpot } from "../core/drop.mjs";
 
 /** Icône d'un tas de plusieurs objets différents. */
@@ -117,8 +117,14 @@ export async function clearIfEmpty(region) {
  */
 export async function moveItem(from, to, itemId, quantity, { anyType=false, launder=false, shop=null, copy=false }={}) {
   const Item5e = CONFIG.Item.documentClass;
-  const item = from.items.get(itemId);
-  const available = item.system.quantity ?? 1;
+  const held = from.items.get(itemId);
+  // 0.15.1 : d'un PNJ, seul l'équipement part, et sous sa version « équipement » (`asGear`, data/item/templates/
+  // physical-item.mjs:367 : la Dague du Manuel des joueurs plutôt que la « Dague ombrale » du Familier vampire), comme à la
+  // fouille (adapter/dnd5e.mjs `transfer`). Une attaque de créature ne devient pas un objet : rien ne bouge.
+  const fromNpc = from.type === "npc";
+  if ( !canLeaveOwner({ fromNpc, properties: held.system.properties }) ) return { name: held.name, quantity: 0, kept: true };
+  const item = fromNpc ? ((await held.system.asGear?.()) ?? held) : held;
+  const available = held.system.quantity ?? 1;
   // Un stock infini (`copy`) ne plafonne pas à ce qui reste sur la fiche.
   const moved = copy ? Math.max(1, Math.floor(Number(quantity) || 1)) : Math.max(1, Math.min(Number(quantity) || available, available));
   // Prix à l'unité en pc (pour l'empilement à l'étal d'objets sans source de compendium).
@@ -135,6 +141,7 @@ export async function moveItem(from, to, itemId, quantity, { anyType=false, laun
     await target.update({ "system.quantity": (target.system.quantity ?? 0) + moved });
   } else {
     const data = await Item5e.createWithContents([item]);
+    // La version « équipement » d'un objet de PNJ garde l'id de l'objet du PNJ (`keepId`) : sans conflit chez le receveur.
     foundry.utils.setProperty(data[0], "system.quantity", moved);
     if ( foundry.utils.hasProperty(data[0], "system.equipped") ) foundry.utils.setProperty(data[0], "system.equipped", false);
     // Les drapeaux d'étal (caché, quantité de référence, tiré…) ne suivent pas l'objet ; ceux du receveur sont posés.
@@ -146,7 +153,7 @@ export async function moveItem(from, to, itemId, quantity, { anyType=false, laun
     await Item5e.createDocuments(data, { keepId: true, parent: to });
   }
   if ( copy ) return { name: item.name, quantity: moved };
-  if ( moved >= available ) await item.delete({ deleteContents: true });
-  else await item.update({ "system.quantity": available - moved });
+  if ( moved >= available ) await held.delete({ deleteContents: true });
+  else await held.update({ "system.quantity": available - moved });
   return { name: item.name, quantity: moved };
 }

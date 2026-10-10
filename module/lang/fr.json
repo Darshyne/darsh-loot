@@ -210,7 +210,8 @@
       "Quantity": "Combien ?",
       "Confirm": "Poser",
       "PileName": "Objets au sol",
-      "NotOnScene": "Votre personnage n'est pas sur cette scène."
+      "NotOnScene": "Votre personnage n'est pas sur cette scène.",
+      "NotGear": "{item} : une attaque de créature, pas un objet — rien n'est posé"
     },
     "Trade": {
       "Title": "Échange : {a} ⇄ {b}",

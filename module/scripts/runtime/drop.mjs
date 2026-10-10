@@ -9,7 +9,7 @@ import { MODULE_ID, loc, setting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { ensureStore } from "./containers.mjs";
-import { PHYSICAL_TYPES } from "../core/loot.mjs";
+import { PHYSICAL_TYPES, canLeaveOwner } from "../core/loot.mjs";
 import { FLIGHT_MS, clampDrop, outsideRect, soundKind, pileSpot } from "../core/drop.mjs";
 import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, MIXED_PILE_IMG } from "../adapter/drop.mjs";
 import { DROP_ITEMS_HOOK } from "../adapter/engine.mjs";
@@ -95,16 +95,20 @@ async function handleDrop(payload, { user }) {
 
   const quantity = owner ? payload.quantity : (item.system.quantity ?? 1);
   const region = await putOnGround({ scene, point, level, elevation, from, item, owner, quantity });
+  if ( !region ) throw new Error(loc("Drop.NotGear", { item: item.name }));
   return { region: region.uuid, quantity };
 }
 
 /**
+ * `alreadySpent` (0.15.1) : l'unité a déjà été retirée de la fiche du porteur (arme lancée, décomptée par dnd5e).
  * Chez le MJ : pose un objet au sol, **au centre de la case** où tombe `point` — dans le tas de cette case s'il y en
  * a un (un seul tas par case, §3.8), sinon dans un nouveau — avec l'effet de lancer depuis `from`. Sert au geste de
  * poser, aux armes de jet (§3.10) ; `owner` : l'acteur qui perd l'objet (sinon une copie de `item`).
  * @returns {Promise<RegionDocument>}  La région du tas.
  */
-export async function putOnGround({ scene, point, level=null, elevation=0, from, item, owner=null, quantity=1, flight=true }) {
+export async function putOnGround({ scene, point, level=null, elevation=0, from, item, owner=null, quantity=1, flight=true, alreadySpent=false }) {
+  // 0.15.1 : l'attaque d'un PNJ (arme naturelle, « Dague ombrale » sans équipement) ne tombe pas au sol : pas de tas.
+  if ( owner && !canLeaveOwner({ fromNpc: owner.type === "npc", properties: item.system.properties }) ) return null;
   // Dans le quart haut-gauche de la case où tombe le point (visible sous une créature, un seul tas par case).
   const center = pileSpot(scene.grid.getTopLeftPoint(point), scene.grid.size);
   // `flight: false` (arme de jet, §3.10) : pas de vol — le lancer est déjà animé par le moteur ; le son seul.
@@ -121,7 +125,8 @@ export async function putOnGround({ scene, point, level=null, elevation=0, from,
     created = true;
   }
   const store = await ensureStore(region.behaviors.contents[0]);
-  if ( owner ) await moveItem(owner, store, item.id, quantity);
+  // `alreadySpent` : l'unité a déjà quitté la fiche (un lancer : dnd5e la décompte lui-même) — on la crée sans en retirer une autre.
+  if ( owner ) await moveItem(owner, store, item.id, quantity, { copy: alreadySpent });
   else await store.createEmbeddedDocuments("Item", [game.items.fromCompendium(item)]);
 
   // L'icône du tas : celle de l'objet s'il est seul, un sac sinon.

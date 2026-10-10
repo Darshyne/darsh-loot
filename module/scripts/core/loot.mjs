@@ -39,6 +39,16 @@ export function gearEntries(items, requireGear=true) {
     .map(i => ({ ...i, contents: (i.type === "container") ? inside(i.id) : 0 }));
 }
 
+/**
+ * Un objet peut-il quitter son porteur pour devenir un objet du monde (lancé, lâché, planté, posé) ? Un PNJ ne cède que son
+ * équipement (propriété `gear`) : ses attaques (« Dague ombrale » du Familier vampire, un rocher de géant, une morsure) restent
+ * des attaques. Un personnage ou un coffre cède tout objet physique.
+ * @param {{ fromNpc: boolean, properties?: Iterable<string> }} data
+ */
+export function canLeaveOwner({ fromNpc, properties }) {
+  return !fromNpc || new Set(properties ?? []).has("gear");
+}
+
 /** Les pièces présentes (valeurs positives seulement), dans l'ordre de COINS. */
 export function coinsOf(currency={}) {
   return COINS.filter(c => (Number(currency[c]) || 0) > 0).map(c => ({ key: c, value: Number(currency[c]) }));

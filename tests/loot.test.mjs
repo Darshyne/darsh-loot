@@ -1,3 +1,4 @@
+import { canLeaveOwner } from "../module/scripts/core/loot.mjs";
 import { describe, it, expect } from "vitest";
 import { isCorpse, gearEntries, coinsOf, addCoins, hasLoot, stackTarget, edgeDistance } from "../module/scripts/core/loot.mjs";
 
@@ -92,5 +93,14 @@ describe("gearEntries dans un coffre", () => {
     ];
     expect(gearEntries(items, false).map(e => e.id)).toEqual(["a", "c"]);
     expect(gearEntries(items).map(e => e.id)).toEqual([]);
+  });
+});
+
+describe("0.15.1 : ce qui peut quitter son porteur", () => {
+  it("un PNJ ne cède que son équipement ; un personnage, tout", () => {
+    expect(canLeaveOwner({ fromNpc: true, properties: ["fin", "thr", "gear"] })).toBe(true);
+    expect(canLeaveOwner({ fromNpc: true, properties: ["fin", "thr"] })).toBe(false);
+    expect(canLeaveOwner({ fromNpc: true })).toBe(false);
+    expect(canLeaveOwner({ fromNpc: false, properties: [] })).toBe(true);
   });
 });
