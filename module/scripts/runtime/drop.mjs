@@ -164,8 +164,10 @@ function onEngineDrop(takers, { token, items }) {
     const center = { x: s.x + ((s.width * size) / 2), y: s.y + ((s.height * size) / 2) };
     for ( const item of items ) {
       try {
-        await putOnGround({ scene, point: center, level: s.level ?? null, elevation: s.elevation ?? 0, from: center,
+        const region = await putOnGround({ scene, point: center, level: s.level ?? null, elevation: s.elevation ?? 0, from: center,
           item, owner: token.actor, quantity: item.system.quantity ?? 1 });
+        // 0.15.2 : une attaque de créature ne tombe pas (pas d'objet à poser) — lâchée quand même : déséquipée, comme le repli du moteur.
+        if ( !region && token.actor.items.has(item.id) ) await item.update({ "system.equipped": false });
       } catch ( err ) {
         log.warn(`dropped item not placed (${item.name}):`, err.message);
         if ( token.actor.items.has(item.id) ) await item.update({ "system.equipped": false });

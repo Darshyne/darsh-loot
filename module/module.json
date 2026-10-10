@@ -2,7 +2,7 @@
   "id": "darsh-loot",
   "title": "DAS · Loot & Trade",
   "description": "Loot and trade for dnd5e: lootable corpses, containers, items dropped on the ground, pickpocketing, necromancy, thrown weapons, trading between players and merchants, with a Baldur's Gate 3-style interface.",
-  "version": "0.15.1",
+  "version": "0.15.2",
   "authors": [
     {
       "name": "Darshyne"
