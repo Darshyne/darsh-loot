@@ -1,5 +1,7 @@
 # DAS · Loot & Trade (`darsh-loot`)
 
+**[Website](https://darshyne.github.io)** · **[Discord](https://discord.gg/PDSq8dYdTP)** (questions, bugs, ideas)
+
 Part of **Darshyne's Automation Suite (DAS)**. Loot and trade for **Foundry VTT V14** and **dnd5e 6.x**, with a
 Baldur's Gate 3-style interface:
 
