@@ -8,7 +8,7 @@
  */
 import { route, routeClaim } from "./router.mjs";
 import { openSource, visitSource } from "./open.mjs";
-import { setting, loc } from "../shared.mjs";
+import { setting, sceneSetting, loc } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
@@ -107,7 +107,7 @@ function cursorFor(source) {
   if ( source.kind === "trap" ) return trapCursor(source);
   if ( source.kind === "merchant" ) {
     const me = actingToken();
-    if ( me && (source.distance(me) <= setting("reach")) ) return "shop";
+    if ( me && (source.distance(me) <= sceneSetting("reach", me.parent)) ) return "shop";
     return tooFar(me);
   }
   if ( source.kind === "corpse" ) {
@@ -116,11 +116,11 @@ function cursorFor(source) {
   } else if ( source.doc.system.rolled && !source.locked() && actor && lootView(actor).empty ) return null;
   if ( !game.user.isGM ) {
     const me = actingToken();
-    if ( !me || (source.distance(me) > setting("reach")) ) return tooFar(me);
+    if ( !me || (source.distance(me) > sceneSetting("reach", me.parent)) ) return tooFar(me);
   }
   // Le MJ n'a pas de limite de portée ; mais avec un token sélectionné hors de portée, il y marche comme un joueur
   // (décision utilisateur 2026-09-30) — sans sélection, il ouvre de loin (préparation).
-  else if ( gmToken() && canApproach() && (source.distance(gmToken()) > setting("reach")) ) return "go";
+  else if ( gmToken() && canApproach() && (source.distance(gmToken()) > sceneSetting("reach", gmToken().parent)) ) return "go";
   return source.locked() ? "locked" : "loot";
 }
 
@@ -132,9 +132,9 @@ function zoneCursor(source) {
   if ( !source.doc.system.reach ) return "use";
   if ( !game.user.isGM ) {
     const me = actingToken();
-    return (me && (source.distance(me) <= setting("reach"))) ? "use" : tooFar(me);
+    return (me && (source.distance(me) <= sceneSetting("reach", me.parent))) ? "use" : tooFar(me);
   }
-  if ( gmToken() && canApproach() && (source.distance(gmToken()) > setting("reach")) ) return "go";
+  if ( gmToken() && canApproach() && (source.distance(gmToken()) > sceneSetting("reach", gmToken().parent)) ) return "go";
   return "use";
 }
 

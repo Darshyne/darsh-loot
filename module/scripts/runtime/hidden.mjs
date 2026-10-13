@@ -11,7 +11,8 @@
  *   active** (« Fouiller les environs », jet caché au joueur, un essai par objet et par personnage). Elle arrête tous les
  *   déplacements de la scène.
  */
-import { MODULE_ID, loc, log, setting } from "../shared.mjs";
+import { MODULE_ID, loc, log, setting, sceneSetting } from "../shared.mjs";
+import { feetToSceneUnits } from "../core/units.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { passiveFinds, searchReach, searchWait, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
@@ -123,6 +124,13 @@ async function reveal(thing, finder) {
   haltScene(finder.parent);
 }
 
+/** Les distances d'un objet caché (détection passive, rayon de fouille), écrites en pieds, dans l'unité de cette scène. */
+function inSceneUnits(hidden, scene) {
+  const h = normalizeHidden(hidden);
+  const units = scene?.grid?.units;
+  return { ...h, passive: feetToSceneUnits(h.passive, units), radius: feetToSceneUnits(h.radius, units) };
+}
+
 /**
  * Chez le MJ : un personnage de joueur a bougé — sa Perception (ou Investigation) passive trouve-t-elle quelque chose ?
  * Rien n'est montré tant que rien n'est trouvé.
@@ -131,7 +139,8 @@ async function onMoveToken(token, changes) {
   if ( !isActiveGM() || !playerToken(token) ) return;
   if ( !["x", "y", "elevation", "level"].some(k => k in changes) ) return;
   for ( const thing of concealedThings(token.parent) ) {
-    const h = thing.hidden;
+    // Distances de l'objet écrites en pieds, comparées dans l'unité de la scène (darsh-loot#1).
+    const h = inSceneUnits(thing.hidden, token.parent);
     if ( !passiveFinds(h, thing.distance(token), passiveScore(token.actor, h.skill)) ) continue;
     if ( !reaches(token, thing, h.passive) ) continue;
     await reveal(thing, token);
@@ -187,7 +196,7 @@ async function announceSearch(token) {
 function pingAround(token) {
   const placeable = token.object;
   if ( !placeable || !canvas.ready ) return;
-  const size = Math.max(canvas.grid.size, 2 * setting("searchRadius") * canvas.dimensions.distancePixels);
+  const size = Math.max(canvas.grid.size, 2 * sceneSetting("searchRadius", placeable.document.parent) * canvas.dimensions.distancePixels);
   canvas.ping(placeable.center, { style: CONFIG.Canvas.pings.types.PULSE, pull: false, size, duration: 1500, rings: 2 })
     .catch(() => {});
 }
@@ -234,11 +243,11 @@ async function handleSearch({ token: uuid }, { user }) {
   if ( wait > 0 ) throw new Error(loc("Hidden.Cooldown", { name: actor.name, minutes: Math.ceil(wait / 60) }));
   await engineSpend(actor, "action");
   if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", game.time.worldTime);
-  const worldRadius = setting("searchRadius");
+  const worldRadius = sceneSetting("searchRadius", token.parent);
   let found = 0;
   for ( const thing of concealedThings(token.parent) ) {
     const h = thing.hidden;
-    if ( !reaches(token, thing, searchReach(h, worldRadius)) ) continue;
+    if ( !reaches(token, thing, searchReach(inSceneUnits(h, token.parent), worldRadius)) ) continue;
     if ( alreadyTried(thing.tried, actor.id) ) continue;
     // Jet chez le MJ, caché au joueur : mode de message « gm » (V14, CONFIG.ChatMessage.modes). Pas l'ancien
     // CONST.DICE_ROLL_MODES.BLIND (« blindroll », déprécié en V14) : dnd5e 6 le passe tel quel en `messageMode`

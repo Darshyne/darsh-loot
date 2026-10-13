@@ -34,7 +34,7 @@
     "Settings": {
       "Reach": {
         "Name": "Search reach",
-        "Hint": "How close a character must be to a corpse to search it, in scene units (edge to edge)."
+        "Hint": "How close a character must be to a corpse to search it, in feet (edge to edge). Converted on metric scenes: 5 ft = 1.5 m."
       },
       "WhoLoots": {
         "Name": "Who can search corpses",
@@ -73,7 +73,7 @@
       },
       "SearchRadius": {
         "Name": "Search radius",
-        "Hint": "Distance (in scene units) covered by \"Search the surroundings\", stopped by walls. A hidden object may require the searcher to be closer."
+        "Hint": "Distance in feet covered by \"Search the surroundings\", stopped by walls (converted on metric scenes: 5 ft = 1.5 m). A hidden object may require the searcher to be closer."
       },
       "SearchCooldown": {
         "Name": "Delay between searches",
@@ -425,11 +425,11 @@
           },
           "passive": {
             "label": "Passive distance",
-            "hint": "In scene units: a character who comes within this distance, in line of sight, finds it if their passive score reaches the DC. 0: no passive detection."
+            "hint": "In feet (converted on metric scenes: 5 ft = 1.5 m): a character who comes within this distance, in line of sight, finds it if their passive score reaches the DC. 0: no passive detection."
           },
           "radius": {
             "label": "Search radius",
-            "hint": "Maximum distance of an active search (the world setting, or less: a needle is only seen within 5 ft)."
+            "hint": "Maximum distance of an active search, in feet (the world setting, or less: a needle is only seen within 5 ft)."
           },
           "found": {
             "label": "Found",

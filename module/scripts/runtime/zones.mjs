@@ -4,7 +4,7 @@
  * document-behavior.js) ; le droit de lecture d'un document passe ici par une requête au MJ actif (`User#query`, comme
  * nos autres écritures) au lieu du socket de `coc7-dialogues`.
  */
-import { MODULE_ID, loc, log, setting } from "../shared.mjs";
+import { MODULE_ID, loc, log, setting, sceneSetting } from "../shared.mjs";
 import { askGM } from "./take.mjs";
 import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, registerZoneBehaviors } from "../adapter/zone-behaviors.mjs";
 import { regionDistance } from "../adapter/dnd5e.mjs";
@@ -119,7 +119,7 @@ async function handleGrant({ behavior: behaviorUuid, looter: looterUuid }, { use
   if ( behavior.system.reach && !user.isGM ) {
     const looter = looterUuid ? fromUuidSync(looterUuid, { strict: false }) : null;
     if ( !looter?.actor?.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
-    if ( regionDistance(looter, behavior.region) > setting("reach") ) throw new Error(loc("Refus.Loin"));
+    if ( regionDistance(looter, behavior.region) > sceneSetting("reach", looter.parent) ) throw new Error(loc("Refus.Loin"));
   }
   const doc = await fromUuid(behavior.system.document ?? "");
   if ( !isJournalTarget(doc) ) throw new Error(loc("Zone.NoDocument"));

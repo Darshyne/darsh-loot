@@ -4,7 +4,7 @@
  * attaques d'opportunité), puis ouvre la fenêtre à l'arrivée. Hors combat seulement (en combat, le clic est au moteur).
  * Tant que le moteur n'expose pas `api.approach` (SPEC §4), rien ne change : curseur « trop loin ».
  */
-import { setting, log } from "../shared.mjs";
+import { sceneSetting, log } from "../shared.mjs";
 import { goalCells } from "../core/approach.mjs";
 import { engineApproach } from "../adapter/engine.mjs";
 
@@ -22,7 +22,7 @@ export async function approachSource(source, looter) {
   const size = scene.grid.size;
   const s = looter._source;
   const mover = { col: s.x / size, row: s.y / size, w: s.width, h: s.height };
-  const cells = goalCells(source.box(), mover, setting("reach"), scene.grid.distance);
+  const cells = goalCells(source.box(), mover, sceneSetting("reach", scene), scene.grid.distance);
   if ( !cells.length ) return false;
   try {
     await approach(looter, { cells, level: s.level ?? null });
@@ -30,5 +30,5 @@ export async function approachSource(source, looter) {
     log.warn("walk to search:", err.message);
     return false;
   }
-  return source.distance(looter) <= setting("reach");
+  return source.distance(looter) <= sceneSetting("reach", scene);
 }

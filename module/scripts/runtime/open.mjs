@@ -12,7 +12,7 @@ import { StealWindow } from "../apps/steal-window.mjs";
 import { ShopWindow } from "../apps/shop-window.mjs";
 import { SHOP_ACTIONS } from "./shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
-import { setting } from "../shared.mjs";
+import { setting, sceneSetting } from "../shared.mjs";
 
 const HANDLERS = { onTake: requestTake, onUnlock: requestUnlock };
 
@@ -37,7 +37,7 @@ export async function openSource(source, looter=actingToken()) {
  * (§3.9) ; la fenêtre s'ouvre de toute façon — elle dit « trop loin » s'il n'a pas pu arriver.
  */
 export async function visitSource(source, looter=actingToken()) {
-  if ( looter && canApproach() && (source.distance(looter) > setting("reach")) ) await approachSource(source, looter);
+  if ( looter && canApproach() && (source.distance(looter) > sceneSetting("reach", looter.parent)) ) await approachSource(source, looter);
   return openSource(source, looter);
 }
 

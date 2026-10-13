@@ -12,7 +12,7 @@
  *   ne fait rien, ou déclenche le piège, selon son réglage.
  * - La détection (passive, fouille active) est celle de l'option « cachée » (runtime/hidden.mjs).
  */
-import { MODULE_ID, loc, log, setting } from "../shared.mjs";
+import { MODULE_ID, loc, log, setting, sceneSetting } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { haltScene } from "./hidden.mjs";
@@ -214,7 +214,7 @@ async function handleDisarm({ behavior: uuid, looter: looterUuid, total }, { use
   if ( (behavior?.type !== TRAP_ZONE) || !looter?.actor ) throw new Error(loc("Refus.Introuvable"));
   if ( !looter.actor.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
   if ( !user.isGM && !trapKnown(behavior) ) throw new Error(loc("Refus.Introuvable"));
-  if ( !user.isGM && (regionDistance(looter, behavior.region) > setting("reach")) ) throw new Error(loc("Refus.Loin"));
+  if ( !user.isGM && (regionDistance(looter, behavior.region) > sceneSetting("reach", looter.parent)) ) throw new Error(loc("Refus.Loin"));
   if ( behavior.system.disarmed ) return { ok: true };
   if ( Number(total) >= behavior.system.disarmDc ) {
     await behavior.update({ "system.disarmed": true, "system.armed": false });

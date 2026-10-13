@@ -5,7 +5,7 @@
  * révèle la tuile à la fin de l'effet de lancer (runtime/drop-fx.mjs). Le MJ peut aussi lâcher un objet du monde ou
  * d'un compendium : une copie, exactement là où il la pose.
  */
-import { MODULE_ID, loc, setting, log } from "../shared.mjs";
+import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { ensureStore } from "./containers.mjs";
@@ -85,7 +85,7 @@ async function handleDrop(payload, { user }) {
     const rect = { x: s.x, y: s.y, w: s.width * size, h: s.height * size };
     const center = { x: rect.x + (rect.w / 2), y: rect.y + (rect.h / 2) };
     // Portée : du centre du token, sa demi-taille plus la portée de fouille (5 ft : la case voisine).
-    const maxDist = (Math.max(rect.w, rect.h) / 2) + ((setting("reach") / scene.grid.distance) * size);
+    const maxDist = (Math.max(rect.w, rect.h) / 2) + ((sceneSetting("reach", scene) / scene.grid.distance) * size);
     // Hors de son propre token (1 px au-delà du bord suffit : le centrage ci-dessous prend la case voisine).
     point = outsideRect(rect, clampDrop(center, point, maxDist), 1);
     level = s.level ?? level;

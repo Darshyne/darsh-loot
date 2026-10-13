@@ -6,7 +6,7 @@
  * La fenêtre ne décide rien : le panier est local, le devis (adapter/shop.mjs `quote`) n'est qu'un affichage ; « Conclure »
  * envoie le panier au MJ (`actions.deal`), qui refait le devis et exécute.
  */
-import { MODULE_ID, loc, setting } from "../shared.mjs";
+import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { merchantOf, stockView, waresView, quote, formatPrice, purseView } from "../adapter/shop.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -75,7 +75,7 @@ export class ShopWindow extends ApplicationV2 {
     if ( !this.buyer ) return loc("Window.NoLooter");
     if ( game.user.isGM ) return null;
     if ( merchantOf(this.source.actor).closed ) return loc("Shop.Closed");
-    if ( this.source.distance(this.looter) > setting("reach") ) return loc("Shop.TooFar");
+    if ( this.source.distance(this.looter) > sceneSetting("reach", this.looter?.parent) ) return loc("Shop.TooFar");
     return null;
   }
 

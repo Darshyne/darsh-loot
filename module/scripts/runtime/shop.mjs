@@ -3,7 +3,7 @@
  * aucun droit sur le marchand) ; réassort, réglages et drapeaux d'étal sont au MJ. Entrées : clic sur le marchand hors
  * combat (runtime/pointer.mjs), « Commercer » dans le menu contextuel du moteur, bouton du HUD de token (MJ).
  */
-import { MODULE_ID, loc, setting, log } from "../shared.mjs";
+import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM, sourceRef } from "./take.mjs";
 import { resolveSource, merchantSource } from "../adapter/sources.mjs";
@@ -44,7 +44,7 @@ async function handleDeal(payload, { user }) {
   if ( buyer === source.actor ) throw new Error(loc("Refus.PasAToi"));
   if ( !user.isGM ) {
     if ( merchantOf(source.actor).closed ) throw new Error(loc("Shop.Closed"));
-    if ( source.distance(looter) > setting("reach") ) throw new Error(loc("Shop.TooFar"));
+    if ( source.distance(looter) > sceneSetting("reach", looter.parent) ) throw new Error(loc("Shop.TooFar"));
   }
   const previous = busy.get(source.uuid) ?? Promise.resolve();
   const run = previous.catch(() => {}).then(() => deal(source, looter, payload));

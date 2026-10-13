@@ -3,7 +3,7 @@
  * BG3 définitif viendra ensuite. Une fenêtre par source. Elle ne décide rien : les actions sont les fonctions reçues à
  * l'ouverture (`onTake`, `onUnlock`).
  */
-import { MODULE_ID, loc, setting } from "../shared.mjs";
+import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { lootView, hasThievesTools, keyItem } from "../adapter/dnd5e.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -58,7 +58,7 @@ export class LootWindow extends ApplicationV2 {
     if ( !this.looter?.actor ) return loc("Window.NoLooter");
     if ( game.user.isGM ) return null;
     if ( (this.source.kind === "corpse") && (setting("whoLoots") === "gm") ) return loc("Refus.MJSeul");
-    if ( this.source.distance(this.looter) > setting("reach") ) return loc("Refus.Loin");
+    if ( this.source.distance(this.looter) > sceneSetting("reach", this.looter.parent) ) return loc("Refus.Loin");
     return null;
   }
 

@@ -3,7 +3,7 @@
  * et exécute (le joueur n'a aucun droit sur la source). Requête du cœur V14 : `User#query`, le gestionnaire reçoit
  * l'utilisateur qui demande (documents/collections/users.mjs:230).
  */
-import { MODULE_ID, loc, setting, log } from "../shared.mjs";
+import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
 import { transfer } from "../adapter/dnd5e.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { stolenFlag } from "../core/theft.mjs";
@@ -40,7 +40,7 @@ export function checkAccess({ source: ref, looter: looterUuid }, user) {
   if ( user.isGM ) return { source, looter };
   if ( ["container", "zone"].includes(source.kind) && behaviorConcealed(source.doc) ) throw new Error(loc("Refus.Introuvable"));
   if ( (source.kind === "corpse") && (setting("whoLoots") === "gm") ) throw new Error(loc("Refus.MJSeul"));
-  if ( source.distance(looter) > setting("reach") ) throw new Error(loc("Refus.Loin"));
+  if ( source.distance(looter) > sceneSetting("reach", looter.parent) ) throw new Error(loc("Refus.Loin"));
   return { source, looter };
 }
 

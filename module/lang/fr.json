@@ -34,7 +34,7 @@
     "Settings": {
       "Reach": {
         "Name": "Portée de fouille",
-        "Hint": "Distance maximale entre un personnage et un cadavre pour le fouiller, en unités de la scène (de bord à bord)."
+        "Hint": "Distance maximale entre un personnage et un cadavre pour le fouiller, en pieds (de bord à bord). Convertie sur une scène en mètres : 5 ft = 1,5 m."
       },
       "WhoLoots": {
         "Name": "Qui fouille les cadavres",
@@ -73,7 +73,7 @@
       },
       "SearchRadius": {
         "Name": "Rayon de fouille",
-        "Hint": "Distance (unités de la scène) jusqu'où « Fouiller les environs » cherche, murs compris. Un objet caché peut demander moins."
+        "Hint": "Distance en pieds jusqu'où « Fouiller les environs » cherche, murs compris (convertie sur une scène en mètres : 5 ft = 1,5 m). Un objet caché peut demander moins."
       },
       "SearchCooldown": {
         "Name": "Délai entre deux fouilles",
@@ -425,11 +425,11 @@
           },
           "passive": {
             "label": "Distance passive",
-            "hint": "En unités de la scène : un personnage qui arrive à cette distance, en ligne de vue, la trouve si sa valeur passive atteint le DD. 0 : pas de détection passive."
+            "hint": "En pieds (convertie sur une scène en mètres : 5 ft = 1,5 m) : un personnage qui arrive à cette distance, en ligne de vue, la trouve si sa valeur passive atteint le DD. 0 : pas de détection passive."
           },
           "radius": {
             "label": "Rayon de fouille",
-            "hint": "Distance maximale d'une fouille active (le réglage du monde, ou moins : une aiguille ne se voit qu'à 1,50 m)."
+            "hint": "Distance maximale d'une fouille active, en pieds (le réglage du monde, ou moins : une aiguille ne se voit qu'à 5 ft, 1,5 m)."
           },
           "found": {
             "label": "Trouvée",

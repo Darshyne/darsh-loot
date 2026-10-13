@@ -2,7 +2,7 @@
  * Fenêtre du vol à la tire (SPEC §3.3) : ce que la victime a sur elle, la difficulté de chaque objet (jamais le DD),
  * ce qui est porté (impossible) et ce qui a déjà été tenté. Un clic tente le vol : `onSteal` reçue à l'ouverture.
  */
-import { MODULE_ID, loc, setting } from "../shared.mjs";
+import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { pocketView } from "../adapter/theft.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -45,7 +45,7 @@ export class StealWindow extends ApplicationV2 {
   #blocked() {
     if ( !this.thief?.actor ) return loc("Window.NoLooter");
     if ( game.combat?.started ) return loc("Steal.InCombat");
-    if ( this.source.distance(this.thief) > setting("reach") ) return loc("Refus.Loin");
+    if ( this.source.distance(this.thief) > sceneSetting("reach", this.thief.parent) ) return loc("Refus.Loin");
     return null;
   }
 
