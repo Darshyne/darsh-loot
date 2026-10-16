@@ -92,7 +92,7 @@ function usage() {
 }
 
 describe("traductions", () => {
-  it("en, fr et pt-BR ont exatamente as mesmas chaves", () => {
+  it("en, fr et pt-BR ont exactement les mêmes clés", () => {
     for ( const [l, translation] of Object.entries({ fr: FR, "pt-BR": PT }) ) {
       expect(Object.keys(translation).filter(k => !(k in EN)), `chaves extras em ${l}`).toEqual([]);
       expect(Object.keys(EN).filter(k => !(k in translation)), `chaves ausentes em ${l}`).toEqual([]);
