@@ -1,0 +1,578 @@
+{
+  "DLO": {
+    "Window": {
+      "Title": "Revistar: {name}",
+      "Corpse": "Cadáver",
+      "To": "Recolhido por {name}",
+      "Empty": "Nada para pegar.",
+      "TakeAll": "Pegar tudo",
+      "TakeCoins": "Pegar as moedas",
+      "NoLooter": "Selecione seu personagem primeiro.",
+      "Container": "Contêiner",
+      "SearchCorpse": "Revistar o cadáver",
+      "OpenStore": "Ficha do conteúdo"
+    },
+    "Hud": {
+      "Search": "Revistar o cadáver"
+    },
+    "Refus": {
+      "Introuvable": "Cadáver ou personagem não encontrado.",
+      "PasCadavre": "Esta criatura não está morta.",
+      "PasAToi": "Você não controla este personagem.",
+      "MJSeul": "Somente o mestre pode revistar cadáveres.",
+      "Loin": "Muito longe: aproxime-se para revistar."
+    },
+    "Notice": {
+      "NoGM": "Nenhum mestre conectado: é necessário um mestre ativo para revistar.",
+      "Refused": "Não é possível: {reason}"
+    },
+    "Chat": {
+      "Took": "{looter} pega de {corpse}: {what}.",
+      "Stole": "{looter} rouba de {corpse}: {what}.",
+      "Caught": "{thief} tentou furtar {victim} e foi descoberto (Prestidigitação {total} contra CD {dc})."
+    },
+    "Settings": {
+      "Reach": {
+        "Name": "Alcance para revistar",
+        "Hint": "Distância máxima entre o personagem e o cadáver para revistá-lo, em pés (de borda a borda). Convertida em cenas métricas: 5 ft = 1,5 m."
+      },
+      "WhoLoots": {
+        "Name": "Quem pode revistar cadáveres",
+        "Hint": "Os próprios jogadores ou somente o mestre.",
+        "All": "Todos",
+        "GM": "Somente o mestre"
+      },
+      "Announce": {
+        "Name": "Anunciar os itens recolhidos",
+        "Hint": "Envia ao chat uma mensagem com os itens recolhidos do cadáver.",
+        "GM": "Mensagem privada ao mestre",
+        "All": "Público",
+        "None": "Nenhuma mensagem"
+      },
+      "AutoTreasure": {
+        "Name": "Sortear tesouros nos cadáveres",
+        "Hint": "Na primeira vez que um cadáver é revistado, sorteia seu tesouro individual por ND (Livro do Mestre 2024): moedas ou gemas (Arcana) e objetos de arte (Relíquias) quando o módulo do Livro do Mestre está ativo. Criaturas sem preferência de tesouro não recebem nada."
+      },
+      "Pockets": {
+        "Name": "Bolsos de humanoides",
+        "Hint": "Humanoides também podem carregar alguns itens comuns (rações, velas, tocha, bugiganga…) do Livro do Jogador."
+      },
+      "TheftHostile": {
+        "Name": "Ladrões descobertos criam inimigos",
+        "Hint": "Quando uma tentativa de bater carteira falha, o token da vítima se torna Hostil. Caso contrário, ela apenas fica desconfiada e o mestre é informado."
+      },
+      "DropMode": {
+        "Name": "Largar itens no chão",
+        "Hint": "Arraste um item da ficha do personagem para o mapa para largá-lo no chão (uma pilha de meia casa que pode ser recolhida como um contêiner).",
+        "On": "Sim",
+        "Off": "Não"
+      },
+      "ThrownWeapons": {
+        "Name": "Armas arremessadas saem da mão",
+        "Hint": "Uma arma arremessada pelo sistema de combate sai do inventário de quem a arremessou: ao acertar, há 50% de chance de ficar cravada no alvo (em seu inventário, recuperável quando morrer); caso contrário, cai aos pés dele. Ao errar, cai de 1 a 3 casas além do alvo, sendo bloqueada por paredes."
+      },
+      "SearchRadius": {
+        "Name": "Raio de busca",
+        "Hint": "Distância, em pés, coberta por \"Vasculhar os arredores\", limitada por paredes (convertida em cenas métricas: 5 ft = 1,5 m). Um objeto oculto pode exigir maior proximidade."
+      },
+      "SearchCooldown": {
+        "Name": "Intervalo entre buscas",
+        "Hint": "Fora de combate, minutos de tempo do mundo necessários para o mesmo personagem usar \"Vasculhar os arredores\" novamente (0: sem intervalo). Em combate, vasculhar consome uma ação."
+      },
+      "SearchDuration": {
+        "Name": "Duração da busca",
+        "Hint": "Fora de combate, quantos segundos reais dura \"Vasculhar os arredores\": mostra uma barra de progresso ao jogador e um sinal ao redor do token; mover-se interrompe a busca (0: instantâneo)."
+      }
+    },
+    "Lock": {
+      "Locked": "Trancado.",
+      "UseKey": "Abrir com {name}",
+      "Pick": "Abrir a fechadura (CD {dc})",
+      "GMOpen": "Destrancar (mestre)",
+      "NoWay": "Você não tem a chave nem ferramentas de ladrão.",
+      "Failed": "A fechadura resiste."
+    },
+    "Container": {
+      "Folder": "Saque — contêineres",
+      "ActorName": "Contêiner: {name}"
+    },
+    "ContainerBehavior": {
+      "Hoard": {
+        "None": "Nenhum",
+        "B0": "Tesouro acumulado ND 0–4",
+        "B5": "Tesouro acumulado ND 5–10",
+        "B11": "Tesouro acumulado ND 11–16",
+        "B17": "Tesouro acumulado ND 17+"
+      },
+      "FIELDS": {
+        "label": {
+          "label": "Nome",
+          "hint": "Exibido no título da janela de revista. Em branco: nome da região."
+        },
+        "actor": {
+          "label": "Conteúdo",
+          "hint": "Ator do tipo Grupo que armazena o conteúdo, criado automaticamente. Abra sua ficha para adicionar itens e moedas."
+        },
+        "table": {
+          "label": "Tabela de rolagem",
+          "hint": "Rolada uma vez quando o contêiner é aberto pela primeira vez. Aceita itens vinculados, links @UUID de itens no texto ou texto simples (convertido em item de saque)."
+        },
+        "draws": {
+          "label": "Rolagens",
+          "hint": "Quantas vezes a tabela será rolada."
+        },
+        "hoard": {
+          "label": "Tesouro acumulado",
+          "hint": "Tesouro acumulado aleatório (Livro do Mestre 2024) para essa faixa de ND: moedas e itens mágicos, sorteados uma vez na primeira abertura."
+        },
+        "theme": {
+          "label": "Tema do tesouro",
+          "hint": "Arcana: gemas; Relíquias: objetos de arte; itens mágicos das tabelas desse tema (Qualquer: 1d4 por item)."
+        },
+        "rolled": {
+          "label": "Já sorteado",
+          "hint": "Desmarque para rolar novamente a tabela e o tesouro na próxima abertura (acrescenta ao conteúdo)."
+        },
+        "locked": {
+          "label": "Trancado",
+          "hint": "Pode ser aberto com a chave, ferramentas de ladrão (teste de Destreza) ou pelo mestre."
+        },
+        "dc": {
+          "label": "CD da fechadura",
+          "hint": "CD do teste com ferramentas de ladrão para abrir a fechadura."
+        },
+        "key": {
+          "label": "Chave",
+          "hint": "Nome do item que abre a fechadura (sem diferenciar maiúsculas de minúsculas)."
+        },
+        "owner": {
+          "label": "Dono",
+          "hint": "Proprietário do conteúdo. Se definido, qualquer item retirado será marcado como roubado desse proprietário."
+        }
+      }
+    },
+    "Tables": {
+      "Folder": "Saque — tabelas",
+      "Nothing": "(nada)",
+      "chest": "Baú",
+      "barrel": "Barril",
+      "crate": "Caixote",
+      "bookshelf": "Estante de livros",
+      "desk": "Escrivaninha",
+      "altar": "Altar",
+      "camp": "Bolsa de acampamento",
+      "MenuName": "Tabelas genéricas de contêineres",
+      "MenuLabel": "Criar as tabelas",
+      "MenuHint": "Cria neste mundo tabelas genéricas de saque (baú, barril, caixote, estante, escrivaninha, altar e bolsa de acampamento) com itens do Livro do Jogador, na pasta \"Saque — tabelas\". Tabelas já existentes não são modificadas.",
+      "Created": "{count} tabela(s) criada(s) em \"Saque — tabelas\".",
+      "NeedPHB": "O módulo do Livro do Jogador deve estar ativo."
+    },
+    "Steal": {
+      "Title": "Bater carteira: {name}",
+      "Someone": "Alguém",
+      "By": "Ladrão: {name}",
+      "Purse": "Bolsa",
+      "Worn": "Equipado — não pode ser roubado",
+      "Tried": "Tentativa já realizada",
+      "Difficulty": {
+        "easy": "Fácil",
+        "medium": "Médio",
+        "hard": "Difícil",
+        "veryHard": "Muito difícil"
+      },
+      "Hint": "Uma tentativa por item. Uma falha será percebida.",
+      "Alert": "Em alerta: observando atentamente.",
+      "InCombat": "Não é possível durante o combate.",
+      "AlreadyTried": "Você já tentou pegar esse item.",
+      "Impossible": "Este item não pode ser roubado.",
+      "Success": "Conseguiu sem ser percebido.",
+      "Caught": "{name} percebeu o furto!",
+      "StolenFrom": "Roubado de {name}",
+      "Menu": "Bater carteira"
+    },
+    "Necro": {
+      "Hud": "Reanimar morto",
+      "DialogTitle": "Reanimar {name}",
+      "DialogCaster": "Sob o controle de {name} (token selecionado).",
+      "DialogNoCaster": "Nenhum conjurador selecionado: o morto-vivo não pertencerá a nenhum jogador.",
+      "Skeleton": "Esqueleto",
+      "Zombie": "Zumbi",
+      "Name": "{undead} ({name})",
+      "Remains": "Pertences de {name}",
+      "Folder": "Mortos-vivos reanimados",
+      "Chat": "{caster} reanima {corpse}: {undead} se ergue.",
+      "Someone": "Alguém",
+      "NotRaisable": "Somente o cadáver de um humanoide Pequeno ou Médio pode ser reanimado.",
+      "NeedMM": "O módulo do Manual dos Monstros deve estar ativo."
+    },
+    "Drop": {
+      "QuantityTitle": "Largar: {name}",
+      "Quantity": "Quantos?",
+      "Confirm": "Largar",
+      "PileName": "Itens no chão",
+      "NotOnScene": "Seu personagem não está nesta cena.",
+      "NotGear": "{item}: é um ataque de criatura, não um objeto — nada foi largado"
+    },
+    "Trade": {
+      "Title": "Troca: {a} ⇄ {b}",
+      "YouGive": "{name} oferece",
+      "YouGet": "{name} oferece",
+      "Accepted": "aceitou",
+      "Waiting": "ainda não aceitou",
+      "DropHint": "Arraste itens da sua ficha para cá.",
+      "Nothing": "Nada por enquanto.",
+      "Remove": "Remover",
+      "Accept": "Aceitar",
+      "Unaccept": "Retirar aceitação",
+      "Cancel": "Cancelar a troca",
+      "Cancelled": "Troca cancelada por {name}.",
+      "Done": "Troca concluída.",
+      "Over": "Esta troca foi encerrada.",
+      "NotYours": "Você só pode oferecer itens do seu próprio personagem.",
+      "NobodyThere": "Ninguém controla {name} no momento.",
+      "Chat": "Troca entre {a} e {b} — {a} oferece: {gaveA}; {b} oferece: {gaveB}.",
+      "Menu": "Trocar",
+      "Impossible": "Você só pode trocar com outro personagem de jogador.",
+      "WindowFailed": "Não foi possível abrir a janela de troca: {reason}"
+    },
+    "Shop": {
+      "Title": "Shop: {name}",
+      "Menu": "Trade",
+      "HudOpen": "Open the shop",
+      "HudMake": "Make a merchant",
+      "Stall": "Stall",
+      "EmptyStall": "Nothing for sale.",
+      "NoBuyer": "No character",
+      "NothingToSell": "Nothing to offer.",
+      "YouGive": "You give",
+      "YouGet": "You get",
+      "YouPay": "To pay: {price}",
+      "YouEarn": "The merchant owes you: {price}",
+      "Even": "Even trade.",
+      "Deal": "Deal",
+      "Clear": "Clear",
+      "Done": "Deal done.",
+      "Hint": "Click an item to put one on the tray (Shift: the whole stack). Click it on the tray to take it back.",
+      "GMHint": "Right-click an item to cycle it: on display but not for sale → hidden → for sale.",
+      "Configure": "Settings",
+      "Restock": "Restock",
+      "Sheet": "Sheet",
+      "Closed": "The shop is closed.",
+      "ClosedTag": "(closed)",
+      "TooFar": "Too far: get closer to the merchant.",
+      "NoFunds": "You don't have enough money.",
+      "MerchantNoFunds": "The merchant doesn't have enough money: take something else in exchange.",
+      "Refused": "The merchant refuses this stolen item.",
+      "Fenced": "Stolen item: bought at a discount.",
+      "NotForSale": "On display, not for sale.",
+      "Hidden": "Hidden from players.",
+      "EndlessCoins": "Bottomless till",
+      "Gone": "Merchant or character not found.",
+      "Changed": "The stock or your inventory changed: check the trade.",
+      "Nothing": "Nothing to trade.",
+      "Restocked": "{name}: restocked ({count} item(s) drawn).",
+      "Chat": "{buyer} trades with {merchant}.",
+      "ChatBought": "Buys: {what} ({price})",
+      "ChatSold": "Sells: {what} ({price})",
+      "ChatPaid": "Pays {price}.",
+      "ChatEarned": "Receives {price}.",
+      "Show": "Show to players",
+      "Shown": "{name}: shop shown to {count} player(s)."
+    },
+    "Merchant": {
+      "Title": "Merchant: {name}",
+      "Shop": "Shop",
+      "Enabled": "Runs a shop",
+      "EnabledHint": "Players open the shop by clicking its token, out of combat.",
+      "ClosedField": "Closed",
+      "Owner": "Owner",
+      "OwnerHint": "The shop refuses anything stolen from this name.",
+      "Description": "Description",
+      "Prices": "Prices",
+      "Buy": "Buy",
+      "BuyHint": "What the player pays: item price × this factor.",
+      "Sell": "Sell",
+      "SellHint": "What the merchant gives: item price × this factor (0.5: half price).",
+      "AttitudeField": "Attitude",
+      "AttitudeHint": "Friendly: 10% in the player's favor. Hostile: 20% against them.",
+      "Attitude": {
+        "friendly": "Friendly",
+        "indifferent": "Indifferent",
+        "hostile": "Hostile"
+      },
+      "SameAttitude": "Same as everyone",
+      "Stolen": "Stolen items",
+      "StolenPolicy": {
+        "own": "Refuses what was stolen from them",
+        "refuse": "Refuses any stolen item",
+        "fence": "Fence: buys at a discount"
+      },
+      "FenceRate": "Fence discount",
+      "FenceRateHint": "Share of the selling price given for a stolen item.",
+      "Stock": "Stock and till",
+      "InfiniteStock": "Endless stock",
+      "InfiniteCoins": "Bottomless till",
+      "TablesHint": "Tables drawn at each restock (what had been drawn goes first).",
+      "DropTable": "Drop a table here",
+      "TableMissing": "Table not found",
+      "Rolls": "Number of draws (formula)",
+      "RemoveTable": "Remove",
+      "Memorize": "Save current stock as reference",
+      "MemorizeHint": "Restocking will bring the fixed stock and the till back to their present state.",
+      "Memorized": "Reference set ({count} item(s)).",
+      "Types": "By item type",
+      "TypesHint": "Multiplied by the merchant's factors (1: no effect).",
+      "Characters": "By character",
+      "CharactersHint": "Attitude toward them, and a discount in % (positive: in their favor).",
+      "Discount": "Discount %",
+      "NoCharacters": "No player character.",
+      "Save": "Save",
+      "ItemPiles": "This actor is an Item Piles merchant.",
+      "Convert": "Import its settings",
+      "Converted": "{name}: Item Piles settings imported.",
+      "Menu": "Merchant settings"
+    },
+    "Zone": {
+      "FIELDS": {
+        "label": {
+          "label": "Name",
+          "hint": "Zone name. Empty: the target document's name, else the region's."
+        },
+        "reach": {
+          "label": "Require reach",
+          "hint": "The character must be within reach (\"Search reach\" setting); out of reach, they walk there first. Uncheck for a zone usable from afar."
+        }
+      },
+      "NoMacro": "This zone has no macro.",
+      "NoScene": "This zone leads to no scene.",
+      "NoDocument": "This zone opens no journal or page.",
+      "NoPermission": "You may not read this document.",
+      "GrantFailed": "The document could not be shared with you."
+    },
+    "MacroZone": {
+      "Hint": "Clicking the region runs a macro for whoever clicks, even without permission on it.",
+      "FIELDS": {
+        "macro": {
+          "label": "Macro",
+          "hint": "Runs for the clicking player, with their rights. Arguments: speaker, actor, token, character, scope (behavior, region, looter)."
+        }
+      }
+    },
+    "SceneZone": {
+      "Hint": "Clicking the region shows another scene to whoever clicks.",
+      "FIELDS": {
+        "targetScene": {
+          "label": "Scene",
+          "hint": "The scene shown to whoever clicks."
+        },
+        "activateForAll": {
+          "label": "Activate for everyone (GM)",
+          "hint": "When the GM clicks, the scene is activated for the whole table instead of only viewed."
+        }
+      }
+    },
+    "DocumentZone": {
+      "Hint": "Clicking the region opens a journal or a page.",
+      "FIELDS": {
+        "document": {
+          "label": "Journal or page",
+          "hint": "UUID of a journal or one of its pages."
+        },
+        "grant": {
+          "label": "Grant read permission",
+          "hint": "If the player cannot read the document, the connected GM grants them Observer (permanent)."
+        }
+      }
+    },
+    "TileZone": {
+      "HudTooltip": "Create a DAS zone shaped like this tile",
+      "Title": "Tile → DAS zone",
+      "Type": "Zone type",
+      "Name": "Name",
+      "Macro": "Macro",
+      "Scene": "Scene",
+      "Document": "Journal",
+      "DocumentUuid": "…or UUID (page)",
+      "Grant": "Grant read permission",
+      "None": "— none —",
+      "Create": "Create",
+      "Hint": "The region follows the image's visible outline (its rectangle if the image cannot be read). The other settings open next.",
+      "NotOnCanvas": "This tile is not on the viewed scene.",
+      "DefaultName": "Zone",
+      "Traced": "Zone \"{name}\" ({type}) created from the image outline.",
+      "Rectangle": "Zone \"{name}\" ({type}) created on the tile rectangle: the image cannot be read.",
+      "Hidden": "Hidden",
+      "Skill": "Skill",
+      "Dc": "Detection DC",
+      "Actor": "Trap actor",
+      "Activity": "Activity",
+      "FirstActivity": "By the targets' level"
+    },
+    "Hidden": {
+      "FIELDS": {
+        "hidden": {
+          "enabled": {
+            "label": "Hidden",
+            "hint": "Invisible and unusable for players until a character finds it (passive Perception when passing by, or \"Search the surroundings\"). Its tiles are hidden and its core behaviors disabled until then."
+          },
+          "skill": {
+            "label": "Skill",
+            "hint": "The skill that finds it: Perception (Search action) or Investigation (Study action)."
+          },
+          "dc": {
+            "label": "Detection DC",
+            "hint": "Passive score or search roll to reach."
+          },
+          "passive": {
+            "label": "Passive distance",
+            "hint": "In feet (converted on metric scenes: 5 ft = 1.5 m): a character who comes within this distance, in line of sight, finds it if their passive score reaches the DC. 0: no passive detection."
+          },
+          "radius": {
+            "label": "Search radius",
+            "hint": "Maximum distance of an active search, in feet (the world setting, or less: a needle is only seen within 5 ft)."
+          },
+          "found": {
+            "label": "Found",
+            "hint": "Uncheck to hide it again: tiles and behaviors go back to hidden, attempts are cleared."
+          },
+          "text": {
+            "label": "Discovery text",
+            "hint": "What the finding player reads. Empty: a generic text (\"You notice a hidden cache.\")."
+          }
+        }
+      },
+      "Search": "Search the surroundings",
+      "Searching": "{name} searches the surroundings.",
+      "SearchingBar": "{name} is searching the surroundings…",
+      "Interrupted": "{name} moved: search interrupted.",
+      "Nothing": "You notice nothing special.",
+      "Found": {
+        "Cache": "You notice a hidden cache.",
+        "Mechanism": "You notice a mechanism.",
+        "Passage": "You notice a passage.",
+        "Inscription": "You notice an inscription.",
+        "SecretDoor": "You notice a secret door.",
+        "Trap": "You notice a trap.",
+        "Something": "You notice something."
+      },
+      "Wall": {
+        "Legend": "DAS · Hidden",
+        "Hint": "Secret door or ethereal wall: found by passive Perception or by \"Search the surroundings\", it becomes a regular door or stops blocking sight.",
+        "Enabled": "Hidden",
+        "Skill": "Skill",
+        "Dc": "Detection DC",
+        "Passive": "Passive distance",
+        "Radius": "Search radius",
+        "Found": "Found",
+        "Text": "Discovery text"
+      },
+      "Cooldown": "{name} has just searched: wait {minutes} more minute(s) of game time before searching again.",
+      "Budget": {
+        "notYourTurn": "it is not {name}'s turn",
+        "noAction": "{name} has no action left this turn",
+        "noBonus": "{name} has no Bonus Action left",
+        "noReaction": "{name} has no Reaction left"
+      }
+    },
+    "TrapZone": {
+      "Hint": "A token entering the region triggers the trap: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Hidden by default; once spotted it shows in red, the combat engine's pathfinding avoids it, and it can be disarmed with a click (thieves' tools).",
+      "FIELDS": {
+        "actor": {
+          "label": "Trap actor",
+          "hint": "The actor that \"casts\" the trap (a trap from the DMG 2024, or a homemade NPC), with no token on the map."
+        },
+        "activity": {
+          "label": "Activity",
+          "hint": "Id of the activity used. Empty: the one whose level range (\"Levels 5–10\") contains the targets' level (highest character, else highest CR), otherwise the first."
+        },
+        "effectRegion": {
+          "label": "Effect area",
+          "hint": "UUID of another region of the scene (the corridor swept by the jet of fire). Empty: this region. It stays hidden from players."
+        },
+        "height": {
+          "label": "Height",
+          "hint": "Above the area's floor (scene units), a token does not trigger: a flying creature passes. 0: only what touches the floor."
+        },
+        "armed": {
+          "label": "Armed",
+          "hint": "Check again to re-arm the trap manually."
+        },
+        "rearm": {
+          "label": "Re-arming"
+        },
+        "delay": {
+          "label": "Re-arm delay",
+          "hint": "In minutes of world time (calendar), for \"After a delay\"."
+        },
+        "triggeredAt": {
+          "label": "Triggered at",
+          "hint": "World time of the last trigger (filled automatically)."
+        },
+        "disarmDc": {
+          "label": "Disarm DC",
+          "hint": "Thieves' tools check."
+        },
+        "failure": {
+          "label": "Failed disarm"
+        },
+        "disarmed": {
+          "label": "Disarmed",
+          "hint": "Uncheck to restore it (also check \"Armed\")."
+        }
+      },
+      "Rearm": {
+        "Never": "Never",
+        "Gm": "By hand (GM)",
+        "Time": "After a delay"
+      },
+      "Failure": {
+        "Nothing": "Nothing",
+        "Trigger": "The trap goes off"
+      },
+      "Disarmed": "Trap disarmed.",
+      "DisarmFailed": "The disarm attempt fails.",
+      "DisarmFired": "Failed: the trap goes off!",
+      "ConfirmTitle": "Disarm the trap",
+      "ConfirmText": "Try to disarm {trap}? {name} will make a thieves' tools check.",
+      "ConfirmYes": "Try",
+      "ConfirmNo": "Give up",
+      "ThisTrap": "this trap"
+    },
+    "Pack": {
+      "Outils": "DAS · Loot & Trade · GM tools"
+    },
+    "Macro": {
+      "ConvertItemPiles": {
+        "NeedModule": "DAS · Loot & Trade (darsh-loot) 0.13.0 or later is required (is the module active?).",
+        "GMOnly": "GM only.",
+        "Title": "Import Item Piles merchants",
+        "Intro": "“Report” changes nothing: it lists the merchants that would be imported.",
+        "Report": "Report",
+        "Convert": "Import",
+        "NoneFound": "<strong>Item Piles merchants</strong>: none in this world, nothing to do.",
+        "SummaryDry": "Item Piles merchants — report, nothing was changed: {count} of {total} to import",
+        "Summary": "Item Piles merchants imported: {count} of {total}",
+        "StatusDone": "imported",
+        "StatusTodo": "to import",
+        "StatusAlready": "already done",
+        "ColumnMerchant": "Merchant",
+        "ColumnGoods": "Goods",
+        "ColumnHidden": "Hidden",
+        "ColumnNotForSale": "On display",
+        "ColumnTables": "Tables",
+        "ColumnTill": "Till",
+        "NotifyDry": "{count} merchant(s) to import — summary in the chat.",
+        "Notify": "{count} merchant(s) imported — summary in the chat."
+      }
+    }
+  },
+  "TYPES": {
+    "RegionBehavior": {
+      "darsh-loot.container": "DAS · Container",
+      "darsh-loot.macro": "DAS · Click macro",
+      "darsh-loot.scene": "DAS · To scene",
+      "darsh-loot.document": "DAS · Open document",
+      "darsh-loot.trap": "DAS · Trap"
+    }
+  }
+}
