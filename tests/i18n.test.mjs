@@ -27,7 +27,8 @@ function flatten(obj, prefix="", out={}) {
 
 const EN = flatten(lang("en"));
 const FR = flatten(lang("fr"));
-const LANGS = { en: EN, fr: FR };
+const PT = flatten(lang("pt-BR"));
+const LANGS = { en: EN, fr: FR, "pt-BR": PT };
 
 /** Une clé est une branche (pour LOCALIZATION_PREFIXES) si une feuille commence par elle. */
 const isBranch = (flat, key) => Object.keys(flat).some(k => k.startsWith(`${key}.`));
@@ -91,12 +92,14 @@ function usage() {
 }
 
 describe("traductions", () => {
-  it("en et fr ont exactement les mêmes clés", () => {
-    expect(Object.keys(FR).filter(k => !(k in EN)), "clés absentes de en.json").toEqual([]);
-    expect(Object.keys(EN).filter(k => !(k in FR)), "clés absentes de fr.json").toEqual([]);
+  it("en, fr et pt-BR ont exatamente as mesmas chaves", () => {
+    for ( const [l, translation] of Object.entries({ fr: FR, "pt-BR": PT }) ) {
+      expect(Object.keys(translation).filter(k => !(k in EN)), `chaves extras em ${l}`).toEqual([]);
+      expect(Object.keys(EN).filter(k => !(k in translation)), `chaves ausentes em ${l}`).toEqual([]);
+    }
   });
 
-  it("chaque valeur est un texte non vide, avec les mêmes {jokers} dans les deux langues", () => {
+  it("chaque valeur est un texte non vide, avec les mêmes {jokers} dans toutes les langues", () => {
     const jokers = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
     for ( const [l, flat] of Object.entries(LANGS) ) {
       for ( const [k, v] of Object.entries(flat) ) {
@@ -104,7 +107,11 @@ describe("traductions", () => {
         expect(v.trim(), `${l} ${k}`).not.toBe("");
       }
     }
-    for ( const k of Object.keys(EN) ) if ( k in FR ) expect(jokers(FR[k]), k).toEqual(jokers(EN[k]));
+    for ( const [l, translation] of Object.entries({ fr: FR, "pt-BR": PT }) ) {
+      for ( const k of Object.keys(EN) ) if ( k in translation ) {
+        expect(jokers(translation[k]), `${l} ${k}`).toEqual(jokers(EN[k]));
+      }
+    }
   });
 
   it("aucune clé n'est le préfixe d'une autre", () => {
@@ -114,7 +121,7 @@ describe("traductions", () => {
     }
   });
 
-  it("toute clé littérale du code et des macros existe dans les deux langues", () => {
+  it("toute clé littérale du code et des macros existe dans toutes les langues", () => {
     const { keys } = usage();
     expect(keys.size).toBeGreaterThan(100);
     for ( const [key, path] of keys ) {
@@ -133,7 +140,7 @@ describe("traductions", () => {
     }
   });
 
-  it("les préfixes de champs (LOCALIZATION_PREFIXES) sont des branches des deux fichiers", () => {
+  it("les préfixes de champs (LOCALIZATION_PREFIXES) sont des branches de tous les fichiers", () => {
     const { branches } = usage();
     expect(branches.size).toBeGreaterThan(0);
     for ( const b of branches ) for ( const [l, flat] of Object.entries(LANGS) ) expect(isBranch(flat, b), `${b} (${l})`).toBe(true);
@@ -145,7 +152,7 @@ describe("traductions", () => {
     }
   });
 
-  it("module.json déclare les deux langues", () => {
-    expect((manifest.languages ?? []).map(l => l.lang).sort()).toEqual(["en", "fr"]);
+  it("module.json déclare les trois langues", () => {
+    expect((manifest.languages ?? []).map(l => l.lang).sort()).toEqual(["en", "fr", "pt-BR"]);
   });
 });
