@@ -412,167 +412,167 @@
       "FIELDS": {
         "hidden": {
           "enabled": {
-            "label": "Hidden",
-            "hint": "Invisible and unusable for players until a character finds it (passive Perception when passing by, or \"Search the surroundings\"). Its tiles are hidden and its core behaviors disabled until then."
+            "label": "Oculto",
+            "hint": "Invisível e indisponível para jogadores até ser encontrado por um personagem (Percepção passiva ao passar perto ou \"Vasculhar os arredores\"). Seus tiles ficam ocultos e os comportamentos do Foundry são desativados até a descoberta."
           },
           "skill": {
-            "label": "Skill",
-            "hint": "The skill that finds it: Perception (Search action) or Investigation (Study action)."
+            "label": "Perícia",
+            "hint": "Perícia usada para encontrá-lo: Percepção (ação Procurar) ou Investigação (ação Estudar)."
           },
           "dc": {
-            "label": "Detection DC",
-            "hint": "Passive score or search roll to reach."
+            "label": "CD de detecção",
+            "hint": "Valor que a Percepção passiva ou a rolagem de busca deve alcançar."
           },
           "passive": {
-            "label": "Passive distance",
-            "hint": "In feet (converted on metric scenes: 5 ft = 1.5 m): a character who comes within this distance, in line of sight, finds it if their passive score reaches the DC. 0: no passive detection."
+            "label": "Distância para detecção passiva",
+            "hint": "Em pés (convertidos em cenas métricas: 5 ft = 1,5 m): um personagem dentro dessa distância, com linha de visão, encontra o objeto se seu valor passivo atingir a CD. 0: sem detecção passiva."
           },
           "radius": {
-            "label": "Search radius",
-            "hint": "Maximum distance of an active search, in feet (the world setting, or less: a needle is only seen within 5 ft)."
+            "label": "Raio de busca",
+            "hint": "Distância máxima de uma busca ativa, em pés (configuração do mundo ou menos: uma agulha só é percebida a até 5 ft)."
           },
           "found": {
-            "label": "Found",
-            "hint": "Uncheck to hide it again: tiles and behaviors go back to hidden, attempts are cleared."
+            "label": "Descoberto",
+            "hint": "Desmarque para ocultá-lo novamente: tiles e comportamentos voltam a ficar ocultos e as tentativas são reiniciadas."
           },
           "text": {
-            "label": "Discovery text",
-            "hint": "What the finding player reads. Empty: a generic text (\"You notice a hidden cache.\")."
+            "label": "Texto de descoberta",
+            "hint": "Texto exibido ao jogador que descobrir o objeto. Em branco: mensagem genérica (\"Você percebe um esconderijo oculto.\")."
           }
         }
       },
-      "Search": "Search the surroundings",
-      "Searching": "{name} searches the surroundings.",
-      "SearchingBar": "{name} is searching the surroundings…",
-      "Interrupted": "{name} moved: search interrupted.",
-      "Nothing": "You notice nothing special.",
+      "Search": "Vasculhar os arredores",
+      "Searching": "{name} vasculha os arredores.",
+      "SearchingBar": "{name} está vasculhando os arredores…",
+      "Interrupted": "{name} se moveu: busca interrompida.",
+      "Nothing": "Você não percebe nada de especial.",
       "Found": {
-        "Cache": "You notice a hidden cache.",
-        "Mechanism": "You notice a mechanism.",
-        "Passage": "You notice a passage.",
-        "Inscription": "You notice an inscription.",
-        "SecretDoor": "You notice a secret door.",
-        "Trap": "You notice a trap.",
-        "Something": "You notice something."
+        "Cache": "Você percebe um esconderijo oculto.",
+        "Mechanism": "Você percebe um mecanismo.",
+        "Passage": "Você percebe uma passagem.",
+        "Inscription": "Você percebe uma inscrição.",
+        "SecretDoor": "Você percebe uma porta secreta.",
+        "Trap": "Você percebe uma armadilha.",
+        "Something": "Você percebe algo."
       },
       "Wall": {
-        "Legend": "DAS · Hidden",
-        "Hint": "Secret door or ethereal wall: found by passive Perception or by \"Search the surroundings\", it becomes a regular door or stops blocking sight.",
-        "Enabled": "Hidden",
-        "Skill": "Skill",
-        "Dc": "Detection DC",
-        "Passive": "Passive distance",
-        "Radius": "Search radius",
-        "Found": "Found",
-        "Text": "Discovery text"
+        "Legend": "DAS · Oculto",
+        "Hint": "Porta secreta ou parede etérea: quando encontrada por Percepção passiva ou por \"Vasculhar os arredores\", passa a ser uma porta normal ou deixa de bloquear a visão.",
+        "Enabled": "Oculta",
+        "Skill": "Perícia",
+        "Dc": "CD de detecção",
+        "Passive": "Distância para detecção passiva",
+        "Radius": "Raio de busca",
+        "Found": "Descoberta",
+        "Text": "Texto de descoberta"
       },
-      "Cooldown": "{name} has just searched: wait {minutes} more minute(s) of game time before searching again.",
+      "Cooldown": "{name} acabou de vasculhar: aguarde mais {minutes} minuto(s) de tempo do jogo antes de procurar novamente.",
       "Budget": {
-        "notYourTurn": "it is not {name}'s turn",
-        "noAction": "{name} has no action left this turn",
-        "noBonus": "{name} has no Bonus Action left",
-        "noReaction": "{name} has no Reaction left"
+        "notYourTurn": "não é o turno de {name}",
+        "noAction": "{name} não tem ações disponíveis neste turno",
+        "noBonus": "{name} não tem Ação Bônus disponível",
+        "noReaction": "{name} não tem Reação disponível"
       }
     },
     "TrapZone": {
-      "Hint": "A token entering the region triggers the trap: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Hidden by default; once spotted it shows in red, the combat engine's pathfinding avoids it, and it can be disarmed with a click (thieves' tools).",
+      "Hint": "Um token que entra na região aciona a armadilha: o ator da armadilha usa sua atividade nos tokens da área de efeito (resolvida pelo sistema de combate). Oculta por padrão; ao ser descoberta, aparece em vermelho, o cálculo de caminhos do sistema de combate passa a evitá-la e ela pode ser desarmada com um clique (ferramentas de ladrão).",
       "FIELDS": {
         "actor": {
-          "label": "Trap actor",
-          "hint": "The actor that \"casts\" the trap (a trap from the DMG 2024, or a homemade NPC), with no token on the map."
+          "label": "Ator da armadilha",
+          "hint": "Ator que \"conjura\" a armadilha (uma armadilha do Livro do Mestre 2024 ou um NPC personalizado), sem token no mapa."
         },
         "activity": {
-          "label": "Activity",
-          "hint": "Id of the activity used. Empty: the one whose level range (\"Levels 5–10\") contains the targets' level (highest character, else highest CR), otherwise the first."
+          "label": "Atividade",
+          "hint": "ID da atividade utilizada. Em branco: a atividade cuja faixa de níveis (\"Níveis 5–10\") inclua o nível dos alvos (nível do personagem mais alto ou, se não houver, maior ND); caso contrário, a primeira."
         },
         "effectRegion": {
-          "label": "Effect area",
-          "hint": "UUID of another region of the scene (the corridor swept by the jet of fire). Empty: this region. It stays hidden from players."
+          "label": "Área de efeito",
+          "hint": "UUID de outra região da cena (o corredor atingido pelo jato de fogo). Em branco: esta região. Permanece oculta para jogadores."
         },
         "height": {
-          "label": "Height",
-          "hint": "Above the area's floor (scene units), a token does not trigger: a flying creature passes. 0: only what touches the floor."
+          "label": "Altura",
+          "hint": "Acima do piso da área (unidades da cena), um token não aciona a armadilha: criaturas voadoras podem passar. 0: somente o que toca o chão."
         },
         "armed": {
-          "label": "Armed",
-          "hint": "Check again to re-arm the trap manually."
+          "label": "Armada",
+          "hint": "Marque novamente para rearmar manualmente a armadilha."
         },
         "rearm": {
-          "label": "Re-arming"
+          "label": "Rearmamento"
         },
         "delay": {
-          "label": "Re-arm delay",
-          "hint": "In minutes of world time (calendar), for \"After a delay\"."
+          "label": "Intervalo para rearmar",
+          "hint": "Em minutos do tempo do mundo (calendário), para \"Após um intervalo\"."
         },
         "triggeredAt": {
-          "label": "Triggered at",
-          "hint": "World time of the last trigger (filled automatically)."
+          "label": "Último acionamento",
+          "hint": "Hora do mundo em que foi acionada pela última vez (preenchida automaticamente)."
         },
         "disarmDc": {
-          "label": "Disarm DC",
-          "hint": "Thieves' tools check."
+          "label": "CD para desarmar",
+          "hint": "Teste com ferramentas de ladrão."
         },
         "failure": {
-          "label": "Failed disarm"
+          "label": "Falha ao desarmar"
         },
         "disarmed": {
-          "label": "Disarmed",
-          "hint": "Uncheck to restore it (also check \"Armed\")."
+          "label": "Desarmada",
+          "hint": "Desmarque para restaurá-la (marque também \"Armada\")."
         }
       },
       "Rearm": {
-        "Never": "Never",
-        "Gm": "By hand (GM)",
-        "Time": "After a delay"
+        "Never": "Nunca",
+        "Gm": "Manualmente (mestre)",
+        "Time": "Após um intervalo"
       },
       "Failure": {
-        "Nothing": "Nothing",
-        "Trigger": "The trap goes off"
+        "Nothing": "Nada",
+        "Trigger": "A armadilha é acionada"
       },
-      "Disarmed": "Trap disarmed.",
-      "DisarmFailed": "The disarm attempt fails.",
-      "DisarmFired": "Failed: the trap goes off!",
-      "ConfirmTitle": "Disarm the trap",
-      "ConfirmText": "Try to disarm {trap}? {name} will make a thieves' tools check.",
-      "ConfirmYes": "Try",
-      "ConfirmNo": "Give up",
-      "ThisTrap": "this trap"
+      "Disarmed": "Armadilha desarmada.",
+      "DisarmFailed": "A tentativa de desarmar falhou.",
+      "DisarmFired": "Falha: a armadilha foi acionada!",
+      "ConfirmTitle": "Desarmar a armadilha",
+      "ConfirmText": "Tentar desarmar {trap}? {name} fará um teste com ferramentas de ladrão.",
+      "ConfirmYes": "Tentar",
+      "ConfirmNo": "Desistir",
+      "ThisTrap": "esta armadilha"
     },
     "Pack": {
-      "Outils": "DAS · Loot & Trade · GM tools"
+      "Outils": "DAS · Loot & Trade · Ferramentas do mestre"
     },
     "Macro": {
       "ConvertItemPiles": {
-        "NeedModule": "DAS · Loot & Trade (darsh-loot) 0.13.0 or later is required (is the module active?).",
-        "GMOnly": "GM only.",
-        "Title": "Import Item Piles merchants",
-        "Intro": "“Report” changes nothing: it lists the merchants that would be imported.",
-        "Report": "Report",
-        "Convert": "Import",
-        "NoneFound": "<strong>Item Piles merchants</strong>: none in this world, nothing to do.",
-        "SummaryDry": "Item Piles merchants — report, nothing was changed: {count} of {total} to import",
-        "Summary": "Item Piles merchants imported: {count} of {total}",
-        "StatusDone": "imported",
-        "StatusTodo": "to import",
-        "StatusAlready": "already done",
-        "ColumnMerchant": "Merchant",
-        "ColumnGoods": "Goods",
-        "ColumnHidden": "Hidden",
-        "ColumnNotForSale": "On display",
-        "ColumnTables": "Tables",
-        "ColumnTill": "Till",
-        "NotifyDry": "{count} merchant(s) to import — summary in the chat.",
-        "Notify": "{count} merchant(s) imported — summary in the chat."
+        "NeedModule": "É necessário o DAS · Loot & Trade (darsh-loot) 0.13.0 ou superior (o módulo está ativo?).",
+        "GMOnly": "Somente o mestre.",
+        "Title": "Importar comerciantes do Item Piles",
+        "Intro": "\"Relatório\" não modifica nada: apenas lista os comerciantes que seriam importados.",
+        "Report": "Relatório",
+        "Convert": "Importar",
+        "NoneFound": "<strong>Comerciantes do Item Piles</strong>: nenhum encontrado neste mundo; nada a fazer.",
+        "SummaryDry": "Comerciantes do Item Piles — relatório, nada foi alterado: {count} de {total} para importar",
+        "Summary": "Comerciantes do Item Piles importados: {count} de {total}",
+        "StatusDone": "importado",
+        "StatusTodo": "a importar",
+        "StatusAlready": "já importado",
+        "ColumnMerchant": "Comerciante",
+        "ColumnGoods": "Mercadorias",
+        "ColumnHidden": "Ocultos",
+        "ColumnNotForSale": "Expostos",
+        "ColumnTables": "Tabelas",
+        "ColumnTill": "Caixa",
+        "NotifyDry": "{count} comerciante(s) a importar — resumo no chat.",
+        "Notify": "{count} comerciante(s) importado(s) — resumo no chat."
       }
     }
   },
   "TYPES": {
     "RegionBehavior": {
-      "darsh-loot.container": "DAS · Container",
-      "darsh-loot.macro": "DAS · Click macro",
-      "darsh-loot.scene": "DAS · To scene",
-      "darsh-loot.document": "DAS · Open document",
-      "darsh-loot.trap": "DAS · Trap"
+      "darsh-loot.container": "DAS · Contêiner",
+      "darsh-loot.macro": "DAS · Macro por clique",
+      "darsh-loot.scene": "DAS · Ir para cena",
+      "darsh-loot.document": "DAS · Abrir documento",
+      "darsh-loot.trap": "DAS · Armadilha"
     }
   }
 }
