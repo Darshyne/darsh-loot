@@ -1,0 +1,583 @@
+{
+  "DLO": {
+    "Window": {
+      "Title": "Revistar: {name}",
+      "Corpse": "Cadáver",
+      "To": "Recolhido por {name}",
+      "Empty": "Nada para pegar.",
+      "TakeAll": "Pegar tudo",
+      "TakeCoins": "Pegar as moedas",
+      "NoLooter": "Selecione seu personagem primeiro.",
+      "Container": "Contêiner",
+      "SearchCorpse": "Revistar o cadáver",
+      "OpenStore": "Ficha do conteúdo",
+      "SearchContainer": "Revistar"
+    },
+    "Hud": {
+      "Search": "Revistar o cadáver"
+    },
+    "Refus": {
+      "Introuvable": "Cadáver ou personagem não encontrado.",
+      "PasCadavre": "Esta criatura não está morta.",
+      "PasAToi": "Você não controla este personagem.",
+      "MJSeul": "Somente o mestre pode revistar cadáveres.",
+      "Loin": "Muito longe: aproxime-se para revistar."
+    },
+    "Notice": {
+      "NoGM": "Nenhum mestre conectado: é necessário um mestre ativo para revistar.",
+      "Refused": "Não é possível: {reason}"
+    },
+    "Chat": {
+      "Took": "{looter} pega de {corpse}: {what}.",
+      "Stole": "{looter} rouba de {corpse}: {what}.",
+      "Caught": "{thief} tentou furtar {victim} e foi descoberto (Prestidigitação {total} contra CD {dc})."
+    },
+    "Settings": {
+      "Reach": {
+        "Name": "Alcance para revistar",
+        "Hint": "Distância máxima entre o personagem e o cadáver para revistá-lo, em pés (de borda a borda). Convertida em cenas métricas: 5 ft = 1,5 m."
+      },
+      "WhoLoots": {
+        "Name": "Quem pode revistar cadáveres",
+        "Hint": "Os próprios jogadores ou somente o mestre.",
+        "All": "Todos",
+        "GM": "Somente o mestre"
+      },
+      "Announce": {
+        "Name": "Anunciar os itens recolhidos",
+        "Hint": "Envia ao chat uma mensagem com os itens recolhidos do cadáver.",
+        "GM": "Mensagem privada ao mestre",
+        "All": "Público",
+        "None": "Nenhuma mensagem"
+      },
+      "AutoTreasure": {
+        "Name": "Sortear tesouros nos cadáveres",
+        "Hint": "Na primeira vez que um cadáver é revistado, sorteia seu tesouro individual por ND (Livro do Mestre 2024): moedas ou gemas (Arcana) e objetos de arte (Relíquias) quando o módulo do Livro do Mestre está ativo. Criaturas sem preferência de tesouro não recebem nada."
+      },
+      "Pockets": {
+        "Name": "Bolsos de humanoides",
+        "Hint": "Humanoides também podem carregar alguns itens comuns (rações, velas, tocha, bugiganga…) do Livro do Jogador."
+      },
+      "TheftHostile": {
+        "Name": "Ladrões descobertos criam inimigos",
+        "Hint": "Quando uma tentativa de bater carteira falha, o token da vítima se torna Hostil. Caso contrário, ela apenas fica desconfiada e o mestre é informado."
+      },
+      "DropMode": {
+        "Name": "Largar itens no chão",
+        "Hint": "Arraste um item da ficha do personagem para o mapa para largá-lo no chão (uma pilha de meia casa que pode ser recolhida como um contêiner).",
+        "On": "Sim",
+        "Off": "Não"
+      },
+      "ThrownWeapons": {
+        "Name": "Armas arremessadas saem da mão",
+        "Hint": "Uma arma arremessada pelo sistema de combate sai do inventário de quem a arremessou: ao acertar, há 50% de chance de ficar cravada no alvo (em seu inventário, recuperável quando morrer); caso contrário, cai aos pés dele. Ao errar, cai de 1 a 3 casas além do alvo, sendo bloqueada por paredes."
+      },
+      "SearchRadius": {
+        "Name": "Raio de busca",
+        "Hint": "Distância, em pés, coberta por \"Vasculhar os arredores\", limitada por paredes (convertida em cenas métricas: 5 ft = 1,5 m). Um objeto oculto pode exigir maior proximidade."
+      },
+      "SearchCooldown": {
+        "Name": "Intervalo entre buscas",
+        "Hint": "Fora de combate, minutos de tempo do mundo necessários para o mesmo personagem usar \"Vasculhar os arredores\" novamente (0: sem intervalo). Em combate, vasculhar consome uma ação."
+      },
+      "SearchDuration": {
+        "Name": "Duração da busca",
+        "Hint": "Fora de combate, quantos segundos reais dura \"Vasculhar os arredores\": mostra uma barra de progresso ao jogador e um sinal ao redor do token; mover-se interrompe a busca (0: instantâneo)."
+      },
+      "DeleteStores": {
+        "Name": "Excluir o ator junto com o contêiner",
+        "Hint": "Ao excluir um contêiner ou uma pilha da cena (a região ou o tile correspondente), também exclui o ator associado na pasta de contêineres. Desativado: o ator permanece e precisa ser removido manualmente."
+      }
+    },
+    "Lock": {
+      "Locked": "Trancado.",
+      "UseKey": "Abrir com {name}",
+      "Pick": "Abrir a fechadura (CD {dc})",
+      "GMOpen": "Destrancar (mestre)",
+      "NoWay": "Você não tem a chave nem ferramentas de ladrão.",
+      "Failed": "A fechadura resiste."
+    },
+    "Container": {
+      "Folder": "Saque — contêineres",
+      "ActorName": "Contêiner: {name}"
+    },
+    "ContainerBehavior": {
+      "Hoard": {
+        "None": "Nenhum",
+        "B0": "Tesouro acumulado ND 0–4",
+        "B5": "Tesouro acumulado ND 5–10",
+        "B11": "Tesouro acumulado ND 11–16",
+        "B17": "Tesouro acumulado ND 17+"
+      },
+      "FIELDS": {
+        "label": {
+          "label": "Nome",
+          "hint": "Exibido no título da janela de revista. Em branco: nome da região."
+        },
+        "actor": {
+          "label": "Conteúdo",
+          "hint": "Ator do tipo Grupo que armazena o conteúdo, criado automaticamente. Abra sua ficha para adicionar itens e moedas."
+        },
+        "table": {
+          "label": "Tabela de rolagem",
+          "hint": "Rolada uma vez quando o contêiner é aberto pela primeira vez. Aceita itens vinculados, links @UUID de itens no texto ou texto simples (convertido em item de saque)."
+        },
+        "draws": {
+          "label": "Rolagens",
+          "hint": "Quantas vezes a tabela será rolada."
+        },
+        "hoard": {
+          "label": "Tesouro acumulado",
+          "hint": "Tesouro acumulado aleatório (Livro do Mestre 2024) para essa faixa de ND: moedas e itens mágicos, sorteados uma vez na primeira abertura."
+        },
+        "theme": {
+          "label": "Tema do tesouro",
+          "hint": "Arcana: gemas; Relíquias: objetos de arte; itens mágicos das tabelas desse tema (Qualquer: 1d4 por item)."
+        },
+        "rolled": {
+          "label": "Já sorteado",
+          "hint": "Desmarque para rolar novamente a tabela e o tesouro na próxima abertura (acrescenta ao conteúdo)."
+        },
+        "locked": {
+          "label": "Trancado",
+          "hint": "Pode ser aberto com a chave, ferramentas de ladrão (teste de Destreza) ou pelo mestre."
+        },
+        "dc": {
+          "label": "CD da fechadura",
+          "hint": "CD do teste com ferramentas de ladrão para abrir a fechadura."
+        },
+        "key": {
+          "label": "Chave",
+          "hint": "Nome do item que abre a fechadura (sem diferenciar maiúsculas de minúsculas)."
+        },
+        "owner": {
+          "label": "Dono",
+          "hint": "Proprietário do conteúdo. Se definido, qualquer item retirado será marcado como roubado desse proprietário."
+        }
+      }
+    },
+    "Tables": {
+      "Folder": "Saque — tabelas",
+      "Nothing": "(nada)",
+      "chest": "Baú",
+      "barrel": "Barril",
+      "crate": "Caixote",
+      "bookshelf": "Estante de livros",
+      "desk": "Escrivaninha",
+      "altar": "Altar",
+      "camp": "Bolsa de acampamento",
+      "MenuName": "Tabelas genéricas de contêineres",
+      "MenuLabel": "Criar as tabelas",
+      "MenuHint": "Cria neste mundo tabelas genéricas de saque (baú, barril, caixote, estante, escrivaninha, altar e bolsa de acampamento) com itens do Livro do Jogador, na pasta \"Saque — tabelas\". Tabelas já existentes não são modificadas.",
+      "Created": "{count} tabela(s) criada(s) em \"Saque — tabelas\".",
+      "NeedPHB": "O módulo do Livro do Jogador deve estar ativo."
+    },
+    "Steal": {
+      "Title": "Bater carteira: {name}",
+      "Someone": "Alguém",
+      "By": "Ladrão: {name}",
+      "Purse": "Bolsa",
+      "Worn": "Equipado — não pode ser roubado",
+      "Tried": "Tentativa já realizada",
+      "Difficulty": {
+        "easy": "Fácil",
+        "medium": "Médio",
+        "hard": "Difícil",
+        "veryHard": "Muito difícil"
+      },
+      "Hint": "Uma tentativa por item. Uma falha será percebida.",
+      "Alert": "Em alerta: observando atentamente.",
+      "InCombat": "Não é possível durante o combate.",
+      "AlreadyTried": "Você já tentou pegar esse item.",
+      "Impossible": "Este item não pode ser roubado.",
+      "Success": "Conseguiu sem ser percebido.",
+      "Caught": "{name} percebeu o furto!",
+      "StolenFrom": "Roubado de {name}",
+      "Menu": "Bater carteira"
+    },
+    "Necro": {
+      "Hud": "Reanimar morto",
+      "DialogTitle": "Reanimar {name}",
+      "DialogCaster": "Sob o controle de {name} (token selecionado).",
+      "DialogNoCaster": "Nenhum conjurador selecionado: o morto-vivo não pertencerá a nenhum jogador.",
+      "Skeleton": "Esqueleto",
+      "Zombie": "Zumbi",
+      "Name": "{undead} ({name})",
+      "Remains": "Pertences de {name}",
+      "Folder": "Mortos-vivos reanimados",
+      "Chat": "{caster} reanima {corpse}: {undead} se ergue.",
+      "Someone": "Alguém",
+      "NotRaisable": "Somente o cadáver de um humanoide Pequeno ou Médio pode ser reanimado.",
+      "NeedMM": "O módulo do Manual dos Monstros deve estar ativo."
+    },
+    "Drop": {
+      "QuantityTitle": "Largar: {name}",
+      "Quantity": "Quantos?",
+      "Confirm": "Largar",
+      "PileName": "Itens no chão",
+      "NotOnScene": "Seu personagem não está nesta cena.",
+      "NotGear": "{item}: é um ataque de criatura, não um objeto — nada foi largado"
+    },
+    "Trade": {
+      "Title": "Troca: {a} ⇄ {b}",
+      "YouGive": "{name} oferece",
+      "YouGet": "{name} oferece",
+      "Accepted": "aceitou",
+      "Waiting": "ainda não aceitou",
+      "DropHint": "Arraste itens da sua ficha para cá.",
+      "Nothing": "Nada por enquanto.",
+      "Remove": "Remover",
+      "Accept": "Aceitar",
+      "Unaccept": "Retirar aceitação",
+      "Cancel": "Cancelar a troca",
+      "Cancelled": "Troca cancelada por {name}.",
+      "Done": "Troca concluída.",
+      "Over": "Esta troca foi encerrada.",
+      "NotYours": "Você só pode oferecer itens do seu próprio personagem.",
+      "NobodyThere": "Ninguém controla {name} no momento.",
+      "Chat": "Troca entre {a} e {b} — {a} oferece: {gaveA}; {b} oferece: {gaveB}.",
+      "Menu": "Trocar",
+      "Impossible": "Você só pode trocar com outro personagem de jogador.",
+      "WindowFailed": "Não foi possível abrir a janela de troca: {reason}"
+    },
+    "Shop": {
+      "Title": "Loja: {name}",
+      "Menu": "Negociar",
+      "HudOpen": "Abrir a loja",
+      "HudMake": "Transformar em comerciante",
+      "Stall": "Banca",
+      "EmptyStall": "Nada à venda.",
+      "NoBuyer": "Nenhum personagem",
+      "NothingToSell": "Nada para oferecer.",
+      "YouGive": "Você oferece",
+      "YouGet": "Você recebe",
+      "YouPay": "A pagar: {price}",
+      "YouEarn": "O comerciante deve pagar: {price}",
+      "Even": "Troca equivalente.",
+      "Deal": "Fechar negócio",
+      "Clear": "Limpar",
+      "Done": "Negócio concluído.",
+      "Hint": "Clique em um item para colocar uma unidade na bandeja (Shift: toda a pilha). Clique nele na bandeja para retirá-lo.",
+      "GMHint": "Clique com o botão direito em um item para alternar entre: exposto, mas fora de venda → oculto → à venda.",
+      "Configure": "Configurações",
+      "Restock": "Reabastecer",
+      "Sheet": "Ficha",
+      "Closed": "A loja está fechada.",
+      "ClosedTag": "(fechada)",
+      "TooFar": "Muito longe: aproxime-se do comerciante.",
+      "NoFunds": "Você não tem dinheiro suficiente.",
+      "MerchantNoFunds": "O comerciante não tem dinheiro suficiente: escolha outra coisa em troca.",
+      "Refused": "O comerciante recusa este item roubado.",
+      "Fenced": "Item roubado: comprado com desconto.",
+      "NotForSale": "Exposto, mas fora de venda.",
+      "Hidden": "Oculto dos jogadores.",
+      "EndlessCoins": "Caixa ilimitado",
+      "Gone": "Comerciante ou personagem não encontrado.",
+      "Changed": "O estoque ou seu inventário mudou: confira a negociação.",
+      "Nothing": "Nada para negociar.",
+      "Restocked": "{name}: estoque reabastecido ({count} item(ns) sorteado(s)).",
+      "Chat": "{buyer} negocia com {merchant}.",
+      "ChatBought": "Compra: {what} ({price})",
+      "ChatSold": "Vende: {what} ({price})",
+      "ChatPaid": "Paga {price}.",
+      "ChatEarned": "Recebe {price}.",
+      "Show": "Mostrar aos jogadores",
+      "Shown": "{name}: loja exibida para {count} jogador(es)."
+    },
+    "Merchant": {
+      "Title": "Comerciante: {name}",
+      "Shop": "Loja",
+      "Enabled": "Atua como comerciante",
+      "EnabledHint": "Os jogadores abrem a loja clicando no token do comerciante fora de combate.",
+      "ClosedField": "Fechada",
+      "Owner": "Dono",
+      "OwnerHint": "A loja recusa qualquer item roubado dessa pessoa.",
+      "Description": "Descrição",
+      "Prices": "Preços",
+      "Buy": "Compra",
+      "BuyHint": "O que o jogador paga: preço do item × este multiplicador.",
+      "Sell": "Venda",
+      "SellHint": "O que o comerciante paga: preço do item × este multiplicador (0,5: metade do preço).",
+      "AttitudeField": "Atitude",
+      "AttitudeHint": "Amigável: 10% a favor do jogador. Hostil: 20% contra ele.",
+      "Attitude": {
+        "friendly": "Amigável",
+        "indifferent": "Indiferente",
+        "hostile": "Hostil"
+      },
+      "SameAttitude": "Igual à de todos",
+      "Stolen": "Itens roubados",
+      "StolenPolicy": {
+        "own": "Recusa itens roubados dele mesmo",
+        "refuse": "Recusa qualquer item roubado",
+        "fence": "Receptador: compra com desconto"
+      },
+      "FenceRate": "Desconto de receptação",
+      "FenceRateHint": "Fração do preço de venda paga por um item roubado.",
+      "Stock": "Estoque e caixa",
+      "InfiniteStock": "Estoque ilimitado",
+      "InfiniteCoins": "Caixa ilimitado",
+      "TablesHint": "Tabelas roladas a cada reabastecimento (os itens sorteados anteriormente saem primeiro).",
+      "DropTable": "Arraste uma tabela para cá",
+      "TableMissing": "Tabela não encontrada",
+      "Rolls": "Número de sorteios (fórmula)",
+      "RemoveTable": "Remover",
+      "Memorize": "Salvar estoque atual como referência",
+      "MemorizeHint": "Ao reabastecer, o estoque fixo e o caixa serão restaurados ao estado atual.",
+      "Memorized": "Referência definida ({count} item(ns)).",
+      "Types": "Por tipo de item",
+      "TypesHint": "Multiplicado pelos fatores do comerciante (1: sem alteração).",
+      "Characters": "Por personagem",
+      "CharactersHint": "Atitude em relação a cada um e desconto em % (positivo: favorece o personagem).",
+      "Discount": "Desconto %",
+      "NoCharacters": "Nenhum personagem de jogador.",
+      "Save": "Salvar",
+      "ItemPiles": "Este ator é um comerciante do Item Piles.",
+      "Convert": "Importar suas configurações",
+      "Converted": "{name}: configurações do Item Piles importadas.",
+      "Menu": "Configurações do comerciante"
+    },
+    "Zone": {
+      "FIELDS": {
+        "label": {
+          "label": "Nome",
+          "hint": "Nome da zona. Em branco: nome do documento-alvo ou, caso não exista, o nome da região."
+        },
+        "reach": {
+          "label": "Exigir proximidade",
+          "hint": "O personagem deve estar ao alcance (configuração \"Alcance para revistar\"); caso contrário, caminha até lá primeiro. Desmarque para permitir uso a distância."
+        }
+      },
+      "NoMacro": "Esta zona não tem macro.",
+      "NoScene": "Esta zona não leva a nenhuma cena.",
+      "NoDocument": "Esta zona não abre nenhum diário ou página.",
+      "NoPermission": "Você não tem permissão para ler este documento.",
+      "GrantFailed": "Não foi possível compartilhar o documento com você."
+    },
+    "MacroZone": {
+      "Hint": "Clicar na região executa uma macro para quem clicou, mesmo sem permissão para acessá-la.",
+      "FIELDS": {
+        "macro": {
+          "label": "Macro",
+          "hint": "É executada para o jogador que clicou, com suas permissões. Argumentos: speaker, actor, token, character e scope (behavior, region, looter)."
+        }
+      }
+    },
+    "SceneZone": {
+      "Hint": "Clicar na região mostra outra cena para quem clicou.",
+      "FIELDS": {
+        "targetScene": {
+          "label": "Cena",
+          "hint": "Cena exibida para quem clicar."
+        },
+        "activateForAll": {
+          "label": "Ativar para todos (mestre)",
+          "hint": "Quando o mestre clica, a cena é ativada para todo o grupo, em vez de ser apenas visualizada."
+        }
+      }
+    },
+    "DocumentZone": {
+      "Hint": "Clicar na região abre um diário ou uma página.",
+      "FIELDS": {
+        "document": {
+          "label": "Diário ou página",
+          "hint": "UUID de um diário ou de uma de suas páginas."
+        },
+        "grant": {
+          "label": "Conceder permissão de leitura",
+          "hint": "Se o jogador não puder ler o documento, o mestre conectado concederá permissão de Observador (permanente)."
+        }
+      }
+    },
+    "TileZone": {
+      "HudTooltip": "Criar uma zona DAS no formato deste tile",
+      "Title": "Tile → zona DAS",
+      "Type": "Tipo de zona",
+      "Name": "Nome",
+      "Macro": "Macro",
+      "Scene": "Cena",
+      "Document": "Diário",
+      "DocumentUuid": "…ou UUID (página)",
+      "Grant": "Conceder permissão de leitura",
+      "None": "— nenhum —",
+      "Create": "Criar",
+      "Hint": "A região acompanha o contorno visível da imagem (ou seu retângulo, caso não seja possível ler a imagem). As demais configurações serão abertas em seguida.",
+      "NotOnCanvas": "Este tile não está na cena exibida.",
+      "DefaultName": "Zona",
+      "Traced": "Zona \"{name}\" ({type}) criada a partir do contorno da imagem.",
+      "Rectangle": "Zona \"{name}\" ({type}) criada no retângulo do tile: não foi possível ler a imagem.",
+      "Hidden": "Oculta",
+      "Skill": "Perícia",
+      "Dc": "CD de detecção",
+      "Actor": "Ator da armadilha",
+      "Activity": "Atividade",
+      "FirstActivity": "Conforme o nível dos alvos"
+    },
+    "Hidden": {
+      "FIELDS": {
+        "hidden": {
+          "enabled": {
+            "label": "Oculto",
+            "hint": "Invisível e indisponível para jogadores até ser encontrado por um personagem (Percepção passiva ao passar perto ou \"Vasculhar os arredores\"). Seus tiles ficam ocultos e os comportamentos do Foundry são desativados até a descoberta."
+          },
+          "skill": {
+            "label": "Perícia",
+            "hint": "Perícia usada para encontrá-lo: Percepção (ação Procurar) ou Investigação (ação Estudar)."
+          },
+          "dc": {
+            "label": "CD de detecção",
+            "hint": "Valor que a Percepção passiva ou a rolagem de busca deve alcançar."
+          },
+          "passive": {
+            "label": "Distância para detecção passiva",
+            "hint": "Em pés (convertidos em cenas métricas: 5 ft = 1,5 m): um personagem dentro dessa distância, com linha de visão, encontra o objeto se seu valor passivo atingir a CD. 0: sem detecção passiva."
+          },
+          "radius": {
+            "label": "Raio de busca",
+            "hint": "Distância máxima de uma busca ativa, em pés (configuração do mundo ou menos: uma agulha só é percebida a até 5 ft)."
+          },
+          "found": {
+            "label": "Descoberto",
+            "hint": "Desmarque para ocultá-lo novamente: tiles e comportamentos voltam a ficar ocultos e as tentativas são reiniciadas."
+          },
+          "text": {
+            "label": "Texto de descoberta",
+            "hint": "Texto exibido ao jogador que descobrir o objeto. Em branco: mensagem genérica (\"Você percebe um esconderijo oculto.\")."
+          }
+        }
+      },
+      "Search": "Vasculhar os arredores",
+      "Searching": "{name} vasculha os arredores.",
+      "SearchingBar": "{name} está vasculhando os arredores…",
+      "Interrupted": "{name} se moveu: busca interrompida.",
+      "Nothing": "Você não percebe nada de especial.",
+      "Found": {
+        "Cache": "Você percebe um esconderijo oculto.",
+        "Mechanism": "Você percebe um mecanismo.",
+        "Passage": "Você percebe uma passagem.",
+        "Inscription": "Você percebe uma inscrição.",
+        "SecretDoor": "Você percebe uma porta secreta.",
+        "Trap": "Você percebe uma armadilha.",
+        "Something": "Você percebe algo."
+      },
+      "Wall": {
+        "Legend": "DAS · Oculto",
+        "Hint": "Porta secreta ou parede etérea: quando encontrada por Percepção passiva ou por \"Vasculhar os arredores\", passa a ser uma porta normal ou deixa de bloquear a visão.",
+        "Enabled": "Oculta",
+        "Skill": "Perícia",
+        "Dc": "CD de detecção",
+        "Passive": "Distância para detecção passiva",
+        "Radius": "Raio de busca",
+        "Found": "Descoberta",
+        "Text": "Texto de descoberta"
+      },
+      "Cooldown": "{name} acabou de vasculhar: aguarde mais {minutes} minuto(s) de tempo do jogo antes de procurar novamente.",
+      "Budget": {
+        "notYourTurn": "não é o turno de {name}",
+        "noAction": "{name} não tem ações disponíveis neste turno",
+        "noBonus": "{name} não tem Ação Bônus disponível",
+        "noReaction": "{name} não tem Reação disponível"
+      }
+    },
+    "TrapZone": {
+      "Hint": "Um token que entra na região aciona a armadilha: o ator da armadilha usa sua atividade nos tokens da área de efeito (resolvida pelo sistema de combate). Oculta por padrão; ao ser descoberta, aparece em vermelho, o cálculo de caminhos do sistema de combate passa a evitá-la e ela pode ser desarmada com um clique (ferramentas de ladrão).",
+      "FIELDS": {
+        "actor": {
+          "label": "Ator da armadilha",
+          "hint": "Ator que \"conjura\" a armadilha (uma armadilha do Livro do Mestre 2024 ou um NPC personalizado), sem token no mapa."
+        },
+        "activity": {
+          "label": "Atividade",
+          "hint": "ID da atividade utilizada. Em branco: a atividade cuja faixa de níveis (\"Níveis 5–10\") inclua o nível dos alvos (nível do personagem mais alto ou, se não houver, maior ND); caso contrário, a primeira."
+        },
+        "effectRegion": {
+          "label": "Área de efeito",
+          "hint": "UUID de outra região da cena (o corredor atingido pelo jato de fogo). Em branco: esta região. Permanece oculta para jogadores."
+        },
+        "height": {
+          "label": "Altura",
+          "hint": "Acima do piso da área (unidades da cena), um token não aciona a armadilha: criaturas voadoras podem passar. 0: somente o que toca o chão."
+        },
+        "armed": {
+          "label": "Armada",
+          "hint": "Marque novamente para rearmar manualmente a armadilha."
+        },
+        "rearm": {
+          "label": "Rearmamento"
+        },
+        "delay": {
+          "label": "Intervalo para rearmar",
+          "hint": "Em minutos do tempo do mundo (calendário), para \"Após um intervalo\"."
+        },
+        "triggeredAt": {
+          "label": "Último acionamento",
+          "hint": "Hora do mundo em que foi acionada pela última vez (preenchida automaticamente)."
+        },
+        "disarmDc": {
+          "label": "CD para desarmar",
+          "hint": "Teste com ferramentas de ladrão."
+        },
+        "failure": {
+          "label": "Falha ao desarmar"
+        },
+        "disarmed": {
+          "label": "Desarmada",
+          "hint": "Desmarque para restaurá-la (marque também \"Armada\")."
+        }
+      },
+      "Rearm": {
+        "Never": "Nunca",
+        "Gm": "Manualmente (mestre)",
+        "Time": "Após um intervalo"
+      },
+      "Failure": {
+        "Nothing": "Nada",
+        "Trigger": "A armadilha é acionada"
+      },
+      "Disarmed": "Armadilha desarmada.",
+      "DisarmFailed": "A tentativa de desarmar falhou.",
+      "DisarmFired": "Falha: a armadilha foi acionada!",
+      "ConfirmTitle": "Desarmar a armadilha",
+      "ConfirmText": "Tentar desarmar {trap}? {name} fará um teste com ferramentas de ladrão.",
+      "ConfirmYes": "Tentar",
+      "ConfirmNo": "Desistir",
+      "ThisTrap": "esta armadilha"
+    },
+    "Pack": {
+      "Outils": "DAS · Loot & Trade · Ferramentas do mestre"
+    },
+    "Macro": {
+      "ConvertItemPiles": {
+        "NeedModule": "É necessário o DAS · Loot & Trade (darsh-loot) 0.13.0 ou superior (o módulo está ativo?).",
+        "GMOnly": "Somente o mestre.",
+        "Title": "Importar comerciantes do Item Piles",
+        "Intro": "\"Relatório\" não modifica nada: apenas lista os comerciantes que seriam importados.",
+        "Report": "Relatório",
+        "Convert": "Importar",
+        "NoneFound": "<strong>Comerciantes do Item Piles</strong>: nenhum encontrado neste mundo; nada a fazer.",
+        "SummaryDry": "Comerciantes do Item Piles — relatório, nada foi alterado: {count} de {total} para importar",
+        "Summary": "Comerciantes do Item Piles importados: {count} de {total}",
+        "StatusDone": "importado",
+        "StatusTodo": "a importar",
+        "StatusAlready": "já importado",
+        "ColumnMerchant": "Comerciante",
+        "ColumnGoods": "Mercadorias",
+        "ColumnHidden": "Ocultos",
+        "ColumnNotForSale": "Expostos",
+        "ColumnTables": "Tabelas",
+        "ColumnTill": "Caixa",
+        "NotifyDry": "{count} comerciante(s) a importar — resumo no chat.",
+        "Notify": "{count} comerciante(s) importado(s) — resumo no chat."
+      }
+    }
+  },
+  "TYPES": {
+    "RegionBehavior": {
+      "darsh-loot.container": "DAS · Contêiner",
+      "darsh-loot.macro": "DAS · Macro por clique",
+      "darsh-loot.scene": "DAS · Ir para cena",
+      "darsh-loot.document": "DAS · Abrir documento",
+      "darsh-loot.trap": "DAS · Armadilha"
+    }
+  }
+}
