@@ -573,6 +573,119 @@
         "NotifyDry": "{count} merchant(s) to import — summary in the chat.",
         "Notify": "{count} merchant(s) imported — summary in the chat."
       }
+    },
+    "TrappedTrap": {
+      "FIELDS": {
+        "trap": {
+          "label": "Trapped container",
+          "hint": "A trap that goes off when the container is opened, or when picking its lock fails.",
+          "enabled": {
+            "label": "Trapped",
+            "hint": "The container carries a trap."
+          },
+          "actor": {
+            "label": "Trap actor",
+            "hint": "The actor that \"casts\" the trap (a DMG 2024 trap, or a hand-made NPC), with no token on the map."
+          },
+          "activity": {
+            "label": "Activity",
+            "hint": "Id of the activity used. Empty: the one whose level tier matches the targets, else the first."
+          },
+          "effectRegion": {
+            "label": "Effect area",
+            "hint": "UUID of a region of the scene, even elsewhere (the dart wall across the room, the corridor the gas fills). Empty: only whoever opens it."
+          },
+          "trigger": {
+            "label": "Goes off",
+            "hint": "On opening (the lid lifted, the lock giving way), on a failed lock pick, or both."
+          },
+          "armed": {
+            "label": "Armed",
+            "hint": "Tick again to rearm the trap by hand."
+          },
+          "rearm": {
+            "label": "Rearm"
+          },
+          "delay": {
+            "label": "Rearm delay",
+            "hint": "In minutes of world time (calendar), for \"after a delay\"."
+          },
+          "triggeredAt": {
+            "label": "Triggered at",
+            "hint": "World time of the last trigger (filled in automatically)."
+          },
+          "disarmDc": {
+            "label": "Disarm DC",
+            "hint": "Thieves' tools check."
+          },
+          "failure": {
+            "label": "Failed disarm"
+          },
+          "disarmed": {
+            "label": "Disarmed",
+            "hint": "Untick to restore it (tick \"Armed\" too)."
+          },
+          "hidden": {
+            "label": "Hidden trap",
+            "enabled": {
+              "label": "Hidden",
+              "hint": "The trap can't be seen until a character finds it (passive Perception, or \"Search the surroundings\"). Once found, the container glows red and opening it first asks: disarm, open anyway or give up."
+            },
+            "skill": {
+              "label": "Skill",
+              "hint": "The one that finds it: Perception or Investigation."
+            },
+            "dc": {
+              "label": "Detection DC",
+              "hint": "Passive score or search roll to reach."
+            },
+            "passive": {
+              "label": "Passive distance",
+              "hint": "In feet (converted on a scene in metres). 0: no passive detection."
+            },
+            "radius": {
+              "label": "Search radius",
+              "hint": "Maximum distance of an active search, in feet (a needle is only seen within 5 ft)."
+            },
+            "found": {
+              "label": "Found",
+              "hint": "Untick to hide it again; attempts are cleared."
+            },
+            "text": {
+              "label": "Discovery text",
+              "hint": "What the player who finds it reads. Empty: \"You notice a trap.\""
+            }
+          }
+        }
+      },
+      "Trigger": {
+        "Open": "On opening",
+        "Pick": "On a failed lock pick",
+        "Both": "Both"
+      },
+      "ThisDoor": "this door",
+      "ThisContainer": "this container",
+      "GateTitle": "Trap spotted",
+      "GateText": "{name} is trapped. What do you do?",
+      "GateDisarm": "Disarm",
+      "GateOpen": "Open anyway",
+      "Disarm": "Disarm the trap",
+      "Door": {
+        "Legend": "DAS · Trapped door",
+        "Hint": "For a door: a trap that goes off when it opens (click on the door or the engine's menu), and / or when picking its lock fails. Without an effect area, it only hits whoever opens it.",
+        "Enabled": "Trapped",
+        "Actor": "Trap actor (UUID, or drop an actor)",
+        "Activity": "Activity (empty: by the targets' level)",
+        "EffectRegion": "Effect area (region UUID, empty: whoever opens it)",
+        "Trigger": "Goes off",
+        "Armed": "Armed",
+        "Rearm": "Rearm",
+        "Delay": "Rearm delay (minutes)",
+        "DisarmDc": "Disarm DC (thieves' tools)",
+        "Failure": "Failed disarm",
+        "Disarmed": "Disarmed",
+        "HiddenEnabled": "Hidden trap"
+      }
     }
   },
   "TYPES": {

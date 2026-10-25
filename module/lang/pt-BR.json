@@ -569,6 +569,119 @@
         "NotifyDry": "{count} comerciante(s) a importar — resumo no chat.",
         "Notify": "{count} comerciante(s) importado(s) — resumo no chat."
       }
+    },
+    "TrappedTrap": {
+      "FIELDS": {
+        "trap": {
+          "label": "Contêiner com armadilha",
+          "hint": "Uma armadilha que dispara quando o contêiner é aberto, ou quando a tentativa de abrir a fechadura falha.",
+          "enabled": {
+            "label": "Com armadilha",
+            "hint": "O contêiner tem uma armadilha."
+          },
+          "actor": {
+            "label": "Ator da armadilha",
+            "hint": "O ator que \"conjura\" a armadilha (uma armadilha do DMG 2024, ou um PNJ feito à mão), sem token no mapa."
+          },
+          "activity": {
+            "label": "Atividade",
+            "hint": "Id da atividade usada. Vazio: a da faixa de nível dos alvos, senão a primeira."
+          },
+          "effectRegion": {
+            "label": "Área de efeito",
+            "hint": "UUID de uma região da cena, mesmo em outro lugar (a parede de dardos do outro lado da sala, o corredor que o gás enche). Vazio: só quem abre."
+          },
+          "trigger": {
+            "label": "Dispara",
+            "hint": "Ao abrir (a tampa erguida, a fechadura cedendo), ao falhar em abrir a fechadura, ou ambos."
+          },
+          "armed": {
+            "label": "Armada",
+            "hint": "Marque de novo para rearmar a armadilha manualmente."
+          },
+          "rearm": {
+            "label": "Rearmar"
+          },
+          "delay": {
+            "label": "Atraso para rearmar",
+            "hint": "Em minutos do tempo do mundo (calendário), para \"após um atraso\"."
+          },
+          "triggeredAt": {
+            "label": "Disparada em",
+            "hint": "Tempo do mundo do último disparo (preenchido automaticamente)."
+          },
+          "disarmDc": {
+            "label": "CD para desarmar",
+            "hint": "Teste com ferramentas de ladrão."
+          },
+          "failure": {
+            "label": "Falha ao desarmar"
+          },
+          "disarmed": {
+            "label": "Desarmada",
+            "hint": "Desmarque para restaurá-la (marque também \"Armada\")."
+          },
+          "hidden": {
+            "label": "Armadilha oculta",
+            "enabled": {
+              "label": "Oculta",
+              "hint": "A armadilha não pode ser vista até que um personagem a encontre (Percepção passiva, ou \"Vasculhar os arredores\"). Encontrada, o contêiner brilha em vermelho e abri-lo primeiro pergunta: desarmar, abrir mesmo assim ou desistir."
+            },
+            "skill": {
+              "label": "Perícia",
+              "hint": "A que a encontra: Percepção ou Investigação."
+            },
+            "dc": {
+              "label": "CD de detecção",
+              "hint": "Valor passivo ou rolagem de busca a atingir."
+            },
+            "passive": {
+              "label": "Distância passiva",
+              "hint": "Em pés (convertida numa cena em metros). 0: sem detecção passiva."
+            },
+            "radius": {
+              "label": "Raio de busca",
+              "hint": "Distância máxima de uma busca ativa, em pés (uma agulha só é vista a 5 ft)."
+            },
+            "found": {
+              "label": "Encontrada",
+              "hint": "Desmarque para ocultá-la de novo; as tentativas são apagadas."
+            },
+            "text": {
+              "label": "Texto de descoberta",
+              "hint": "O que lê o jogador que a encontra. Vazio: \"Você nota uma armadilha.\""
+            }
+          }
+        }
+      },
+      "Trigger": {
+        "Open": "Ao abrir",
+        "Pick": "Ao falhar em abrir a fechadura",
+        "Both": "Ambos"
+      },
+      "ThisDoor": "esta porta",
+      "ThisContainer": "este contêiner",
+      "GateTitle": "Armadilha encontrada",
+      "GateText": "{name} tem uma armadilha. O que você faz?",
+      "GateDisarm": "Desarmar",
+      "GateOpen": "Abrir mesmo assim",
+      "Disarm": "Desarmar a armadilha",
+      "Door": {
+        "Legend": "DAS · Porta com armadilha",
+        "Hint": "Para uma porta: uma armadilha que dispara quando ela se abre (clique na porta ou menu do motor), e / ou quando a tentativa de abrir a fechadura falha. Sem área de efeito, atinge só quem abre.",
+        "Enabled": "Com armadilha",
+        "Actor": "Ator da armadilha (UUID, ou solte um ator)",
+        "Activity": "Atividade (vazio: pelo nível dos alvos)",
+        "EffectRegion": "Área de efeito (UUID de região, vazio: quem abre)",
+        "Trigger": "Dispara",
+        "Armed": "Armada",
+        "Rearm": "Rearmar",
+        "Delay": "Atraso para rearmar (minutos)",
+        "DisarmDc": "CD para desarmar (ferramentas de ladrão)",
+        "Failure": "Falha ao desarmar",
+        "Disarmed": "Desarmada",
+        "HiddenEnabled": "Armadilha oculta"
+      }
     }
   },
   "TYPES": {

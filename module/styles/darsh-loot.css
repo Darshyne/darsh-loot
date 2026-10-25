@@ -182,3 +182,12 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-merchant-config button { width: auto; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
 .dlo-merchant-config button:hover { color: var(--dlo-bg); background: var(--dlo-gold); }
 .dlo-merchant-config .dlo-merchant-piles { color: var(--dlo-gold); display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+
+/* Fenêtre d'un mur (0.16.0) : avec les sections DAS (serrure du moteur, mur caché, porte piégée), le formulaire dépasse l'écran.
+   La fenêtre reste dans la hauteur de l'écran et son contenu défile. */
+.application.wall-config {
+  max-height: calc(100vh - 20px);
+}
+.application.wall-config .window-content {
+  overflow-y: auto;
+}

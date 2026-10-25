@@ -5,6 +5,7 @@ import { route } from "./router.mjs";
 import { requestTake } from "./take.mjs";
 import { ensureRolled } from "./treasure.mjs";
 import { ensureContainer, requestUnlock } from "./containers.mjs";
+import { trapGate, requestSpring } from "./traps.mjs";
 import { requestSteal, preparePocket } from "./theft.mjs";
 import { actingToken } from "../adapter/dnd5e.mjs";
 import { LootWindow } from "../apps/loot-window.mjs";
@@ -28,7 +29,15 @@ export async function openSource(source, looter=actingToken()) {
   }
   if ( source.kind === "merchant" ) return ShopWindow.show(source, looter, SHOP_ACTIONS);
   if ( source.kind === "corpse" ) await ensureRolled(source.doc);
-  else await ensureContainer(source.doc);
+  else {
+    // 0.16.0 : un coffre piégé part quand on l'ouvre (s'il n'est pas verrouillé : sinon, quand la serrure cède). Repéré, le joueur
+    // choisit d'abord : désamorcer, ouvrir quand même, renoncer.
+    if ( looter && !source.locked() ) {
+      if ( !game.user.isGM && !(await trapGate(source.doc, looter, ["open"])) ) return null;
+      await requestSpring(source.doc, looter, "open");
+    }
+    await ensureContainer(source.doc);
+  }
   return LootWindow.show(source, looter, HANDLERS);
 }
 

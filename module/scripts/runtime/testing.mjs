@@ -14,7 +14,8 @@ import { runZone } from "./zones.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { requestSearch, passiveCheck } from "./hidden.mjs";
 import { highlightState } from "./highlight.mjs";
-import { fireTrap, requestDisarm, applyTrapChecks } from "./traps.mjs";
+import { fireTrap, requestDisarm, applyTrapChecks, springTrap } from "./traps.mjs";
+import { trapHandle, concealedTraps } from "../adapter/trapped.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
@@ -145,7 +146,7 @@ async function zoneUse({ regionId, tokenId=null }) {
 /** Ce qui est caché sur la scène affichée, et, pour un token, s'il l'atteint (distance) et sa valeur passive. */
 function hiddenState({ tokenId=null }={}) {
   const token = tokenId ? tokenOf(tokenId) : null;
-  return concealedThings(canvas.scene).map(t => ({ kind: t.kind, key: t.key, hidden: t.hidden, tried: t.tried,
+  return [...concealedThings(canvas.scene), ...concealedTraps(canvas.scene)].map(t => ({ kind: t.kind, key: t.key, hidden: t.hidden, tried: t.tried,
     distance: token ? t.distance(token) : null, passive: token ? passiveScore(token.actor, t.hidden.skill) : null }));
 }
 
@@ -249,6 +250,52 @@ async function removeTestActors() {
   return { actors: names, tokens, tables: tableNames };
 }
 
-export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
+/* ---- coffres et portes piégés (0.16.0) ---- */
+
+/** Un document piégé de la scène affichée : un mur (`wallId`) ou le premier conteneur d'une région (`regionId`). */
+function trappedDoc({ wallId=null, regionId=null }) {
+  if ( wallId ) {
+    const wall = canvas.scene?.walls.get(wallId);
+    if ( !wall ) throw new Error(`wall ${wallId} is not on the viewed scene`);
+    return wall;
+  }
+  return regionOf(regionId).behaviors.find(b => b.type === `${MODULE_ID}.container`);
+}
+
+/** Le piège d'un coffre ou d'une porte, tel que le lit la poignée (null : pas piégé), et l'état de la porte. */
+function trappedState(ref) {
+  const doc = trappedDoc(ref);
+  const h = trapHandle(doc);
+  return { trap: h?.trap ?? null, hidden: h?.hidden ?? null, kind: h?.kind ?? null, ds: doc.ds ?? null,
+    tried: doc.getFlag(MODULE_ID, "trapTried") ?? null, checksFrom: doc.getFlag(MODULE_ID, "trapChecksFrom") ?? null };
+}
+
+/** Régler le piège d'un coffre (`system.trap`) ou d'une porte (`flags.darsh-loot.trap`) : `changes` comme `{ enabled: true, actor }`. */
+async function trappedSet({ changes, ...ref }) {
+  const doc = trappedDoc(ref);
+  if ( doc.documentName === "Wall" ) await doc.update({ [`flags.${MODULE_ID}.trap`]: changes });
+  else await doc.update({ system: { trap: changes } });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  return trappedState(ref);
+}
+
+/** Ce token ouvre le coffre ou la porte (`moment` open), ou rate sa serrure (`pick`) : le piège part s'il le doit (chez le MJ). */
+async function trappedSpring({ tokenId, moment="open", ...ref }) {
+  const fired = await springTrap(trappedDoc(ref), tokenOf(tokenId), moment);
+  return { fired, ...trappedState(ref) };
+}
+
+/** Désamorcer le piège d'un coffre ou d'une porte au nom d'un token (jet réel, sans confirmation). */
+const trappedDisarm = ({ tokenId, ...ref }) => requestDisarm(trappedDoc(ref), tokenOf(tokenId), { confirm: false });
+
+/** Ouvrir (ou fermer) une porte comme le clic du cœur, en tant que MJ : `ds` 1 = ouverte, 0 = fermée, 2 = verrouillée. */
+async function doorSet({ wallId, ds }) {
+  const wall = trappedDoc({ wallId });
+  await wall.update({ ds });
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return trappedState({ wallId });
+}
+
+export const testApi = Object.freeze({ trappedState, trappedSet, trappedSpring, trappedDisarm, doorSet, status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
   zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
   trapState, trapFire, trapDisarm, trapSet, trapRecheck, groundDrop });

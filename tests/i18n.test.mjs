@@ -58,7 +58,7 @@ const DYNAMIC = {
   "TYPES.RegionBehavior": Object.keys(manifest.documentTypes?.RegionBehavior ?? {}).map(t => `${manifest.id}.${t}`)
 };
 // Préfixes d'aide locale (`const L = key => … \`DLO.TileZone.${key}\``) : leurs appels L("X") sont des clés littérales.
-const HELPERS = new Set(["DLO.TileZone", "DLO.Hidden.Wall"]);
+const HELPERS = new Set(["DLO.TileZone", "DLO.Hidden.Wall", "DLO.TrappedTrap.Door"]);
 
 /** Ce que le code demande : clés littérales, préfixes construits, LOCALIZATION_PREFIXES. */
 function usage() {

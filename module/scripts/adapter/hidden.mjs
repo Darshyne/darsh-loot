@@ -59,7 +59,9 @@ function zoneThing(behavior) {
       const center = { x: b.x + (b.width / 2), y: b.y + (b.height / 2) };
       return region.polygonTree.testPoint(c) ? c : center;
     },
-    level: region
+    level: region,
+    triedFlag: "tried",
+    markFound: () => behavior.update({ "system.hidden.found": true })
   };
 }
 
@@ -83,7 +85,9 @@ function wallThing(wall) {
       const c = tokenCenter(token);
       return stepToward(closestOnSegment(c, a, b), c, 4);
     },
-    level: wall
+    level: wall,
+    triedFlag: "tried",
+    markFound: () => wall.setFlag(MODULE_ID, "hidden", { ...wallHidden(wall), found: true })
   };
 }
 

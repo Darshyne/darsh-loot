@@ -9,6 +9,7 @@ import { CONTAINER_TYPE, registerContainerBehavior } from "../adapter/container-
 import { keyItem } from "../adapter/dnd5e.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { rollContainer } from "../adapter/treasure.mjs";
+import { trapGate, springTrap } from "./traps.mjs";
 
 const ROLL_QUERY = `${MODULE_ID}.containerRoll`;
 const UNLOCK_QUERY = `${MODULE_ID}.unlock`;
@@ -105,6 +106,8 @@ export async function ensureContainer(behavior) {
  */
 export async function requestUnlock(source, looter, method) {
   const payload = { source: sourceRef(source), looter: looter?.uuid ?? null, method };
+  // 0.16.0 : un coffre au piège repéré, réglé pour partir au crochetage raté ou à l'ouverture : on demande d'abord.
+  if ( (method !== "gm") && !game.user.isGM && !(await trapGate(source.doc, looter, (method === "pick") ? ["pick", "open"] : ["open"])) ) return null;
   if ( method === "pick" ) {
     const rolls = await looter.actor.rollToolCheck({ tool: "thief", target: source.doc.system.dc }, { configure: false });
     const total = rolls?.[0]?.total;
@@ -128,8 +131,14 @@ async function handleUnlock(payload, { user }) {
   if ( payload.method === "gm" ) ok = user.isGM;
   else if ( payload.method === "key" ) ok = !!keyItem(looter.actor, behavior.system.key);
   else if ( payload.method === "pick" ) ok = Number(payload.total) >= behavior.system.dc;
-  if ( !ok ) return { ok: false };
+  // 0.16.0 : coffre piégé — la serrure qui résiste (crochetage raté) ou le couvercle qui s'ouvre font partir le piège, s'il est
+  // réglé pour ce moment.
+  if ( !ok ) {
+    if ( (payload.method === "pick") && looter ) await springTrap(behavior, looter, "pick");
+    return { ok: false };
+  }
   await behavior.update({ "system.locked": false });
+  if ( looter ) await springTrap(behavior, looter, "open");
   await prepare(behavior);
   return { ok: true };
 }

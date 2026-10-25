@@ -21,6 +21,8 @@ import { tileShape } from "../adapter/tile-outline.mjs";
 import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
+import { trappedThings, handleKnown, wallEnds } from "../adapter/trapped.mjs";
+import { concealed } from "../core/hidden.mjs";
 
 /** Couleurs : neutre pour une zone ou un cadavre, or pour une cachette trouvée, mauve (MJ seulement) pour ce qui est encore caché. */
 const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6, trap: 0xe0312b };
@@ -53,9 +55,32 @@ function zonesToDraw(scene) {
   return out;
 }
 
-/** Les zones de déclenchement des pièges repérés et pas désamorcés, sur le niveau affiché. */
+/**
+ * Les zones de déclenchement des pièges repérés et pas désamorcés, sur le niveau affiché, et (0.16.0) les coffres au piège repéré.
+ * Les portes au piège repéré sont dessinées à part (`doorsToDraw`).
+ */
 function trapsToDraw() {
-  return sceneTraps(canvas.scene).filter(b => trapKnown(b) && b.region?.viewed).map(b => b.region);
+  const zones = sceneTraps(canvas.scene).filter(b => trapKnown(b) && b.region?.viewed).map(b => b.region);
+  const chests = trappedThings(canvas.scene).filter(h => h.region && handleKnown(h) && h.region.viewed).map(h => h.region);
+  return [...zones, ...chests];
+}
+
+/** Une porte est-elle sur le niveau affiché ? */
+const wallViewed = wall => !canvas.level || (typeof wall.includedInLevel !== "function") || wall.includedInLevel(canvas.level.id);
+
+/** Les portes au piège repéré (rouge permanent) ; avec `concealedToo`, le MJ voit aussi celles au piège encore caché. */
+function doorsToDraw(concealedToo=false) {
+  return trappedThings(canvas.scene).filter(h => h.wall && !h.trap.disarmed && wallViewed(h.wall)
+    && (handleKnown(h) || (concealedToo && concealed(h.hidden))));
+}
+
+/** Une porte piégée : un trait épais le long du mur. */
+function drawDoor(g, wall, color) {
+  const [a, b] = wallEnds(wall);
+  g.lineStyle({ width: 14, color, alpha: 0.25, cap: PIXI.LINE_CAP.ROUND });
+  g.moveTo(a.x, a.y).lineTo(b.x, b.y);
+  g.lineStyle({ width: 5, color, alpha: 0.95, cap: PIXI.LINE_CAP.ROUND });
+  g.moveTo(a.x, a.y).lineTo(b.x, b.y);
 }
 
 /** Les cadavres qu'on peut fouiller, visibles pour ce client. */
@@ -121,6 +146,7 @@ export function redraw() {
   for ( const region of trapsToDraw() ) {
     for ( const points of regionPolygons(region) ) drawOutline(g, points, COLORS.trap);
   }
+  for ( const h of doorsToDraw() ) drawDoor(g, h.wall, COLORS.trap);
   if ( active && !inCombat() ) {
     for ( const { region, color } of zonesToDraw(canvas.scene) ) {
       for ( const points of regionPolygons(region) ) drawOutline(g, points, color);
@@ -129,6 +155,14 @@ export function redraw() {
       if ( game.user.isGM && !trapKnown(behavior) && !behavior.system.disarmed && behavior.region?.viewed ) {
         for ( const points of regionPolygons(behavior.region) ) drawOutline(g, points, COLORS.concealed);
       }
+    }
+    if ( game.user.isGM ) {
+      for ( const h of trappedThings(canvas.scene) ) {
+        if ( h.region && concealed(h.hidden) && !h.trap.disarmed && h.region.viewed ) {
+          for ( const points of regionPolygons(h.region) ) drawOutline(g, points, COLORS.concealed);
+        }
+      }
+      for ( const h of doorsToDraw(true) ) if ( !handleKnown(h) ) drawDoor(g, h.wall, COLORS.concealed);
     }
     for ( const token of corpsesToDraw() ) drawCorpse(g, token);
   }
@@ -142,7 +176,7 @@ function onHighlight(on) {
 
 /** Ce qui est dessiné, pour les tests : nombre de zones et de cadavres. */
 export function highlightState() {
-  return { active, combat: inCombat(), traps: trapsToDraw().length, zones: active ? zonesToDraw(canvas.scene).length : 0,
+  return { active, combat: inCombat(), traps: trapsToDraw().length, doors: doorsToDraw().length, zones: active ? zonesToDraw(canvas.scene).length : 0,
     corpses: active ? corpsesToDraw().length : 0, drawn: layer?.children?.[0]?.geometry?.graphicsData?.length ?? 0 };
 }
 
@@ -152,6 +186,7 @@ export function registerHighlight() {
   route("canvasTearDown", "highlight", () => { layer = null; active = false; });
   // Tant que la touche est tenue : ce qui change sous les yeux (coffre vidé, cachette trouvée, mort, combat).
   for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "deleteRegion", "updateRegion", "updateTile", "updateToken",
+    "updateWall", "deleteWall",
     "updateActor", "createActiveEffect", "deleteActiveEffect", "updateCombat", "deleteCombat", "createCombat"] ) {
     // Les pièges repérés sont dessinés en permanence : on redessine toujours (ce n'est qu'un trait par zone).
     route(hook, "highlight", () => redraw());

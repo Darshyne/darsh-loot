@@ -18,6 +18,10 @@ import { askGM } from "./take.mjs";
 import { passiveFinds, searchReach, searchWait, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
 import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playerToken, wallHidden } from "../adapter/hidden.mjs";
 import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend } from "../adapter/engine.mjs";
+import { concealedTraps } from "../adapter/trapped.mjs";
+
+/** Tout ce qui est encore caché sur une scène : zones et murs cachés, et pièges de coffre ou de porte (0.16.0). */
+const hiddenThings = scene => [...concealedThings(scene), ...concealedTraps(scene)];
 
 const SEARCH_QUERY = `${MODULE_ID}.search`;
 const HALT_QUERY = `${MODULE_ID}.halt`;
@@ -67,6 +71,11 @@ async function syncRegion(region) {
 /** Une zone DAS change : recachée par le MJ (« trouvée » décoché), ses essais s'effacent ; puis la région suit. */
 function onUpdateBehavior(behavior, changes) {
   if ( !isActiveGM() || !isDasZone(behavior) ) return;
+  // Le piège d'un coffre recaché : ses essais s'effacent (ceux du coffre lui-même restent).
+  const trapHidden = foundry.utils.getProperty(changes, "system.trap.hidden");
+  if ( trapHidden && ((trapHidden.found === false) || (trapHidden.enabled === false)) && behavior.getFlag(MODULE_ID, "trapTried") ) {
+    behavior.unsetFlag(MODULE_ID, "trapTried");
+  }
   const hidden = foundry.utils.getProperty(changes, "system.hidden");
   if ( hidden === undefined ) return;
   if ( (hidden.found === false) || (hidden.enabled === false) ) {
@@ -96,7 +105,13 @@ async function syncWall(wall) {
 }
 
 function onUpdateWall(wall, changes) {
-  if ( !isActiveGM() || (foundry.utils.getProperty(changes, `flags.${MODULE_ID}.hidden`) === undefined) ) return;
+  if ( !isActiveGM() ) return;
+  // Le piège d'une porte recaché : ses essais s'effacent.
+  const trapHidden = foundry.utils.getProperty(changes, `flags.${MODULE_ID}.trap.hidden`);
+  if ( trapHidden && ((trapHidden.found === false) || (trapHidden.enabled === false)) && wall.getFlag(MODULE_ID, "trapTried") ) {
+    wall.unsetFlag(MODULE_ID, "trapTried");
+  }
+  if ( foundry.utils.getProperty(changes, `flags.${MODULE_ID}.hidden`) === undefined ) return;
   syncWall(wall);
 }
 
@@ -111,8 +126,7 @@ function readersOf(actor) {
 
 /** Chez le MJ : l'objet est trouvé par ce personnage — révélé, message, et tous les déplacements de la scène s'arrêtent. */
 async function reveal(thing, finder) {
-  if ( thing.doc.documentName === "Wall" ) await thing.doc.setFlag(MODULE_ID, "hidden", { ...thing.hidden, found: true });
-  else await thing.doc.update({ "system.hidden.found": true });
+  await thing.markFound();
   const text = thing.hidden.text || loc(`Hidden.Found.${discoveryKey(thing.kind)}`);
   const ChatMessage = foundry.documents.ChatMessage.implementation;
   await ChatMessage.create({
@@ -138,7 +152,7 @@ function inSceneUnits(hidden, scene) {
 async function onMoveToken(token, changes) {
   if ( !isActiveGM() || !playerToken(token) ) return;
   if ( !["x", "y", "elevation", "level"].some(k => k in changes) ) return;
-  for ( const thing of concealedThings(token.parent) ) {
+  for ( const thing of hiddenThings(token.parent) ) {
     // Distances de l'objet écrites en pieds, comparées dans l'unité de la scène (darsh-loot#1).
     const h = inSceneUnits(thing.hidden, token.parent);
     if ( !passiveFinds(h, thing.distance(token), passiveScore(token.actor, h.skill)) ) continue;
@@ -245,7 +259,7 @@ async function handleSearch({ token: uuid }, { user }) {
   if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", game.time.worldTime);
   const worldRadius = sceneSetting("searchRadius", token.parent);
   let found = 0;
-  for ( const thing of concealedThings(token.parent) ) {
+  for ( const thing of hiddenThings(token.parent) ) {
     const h = thing.hidden;
     if ( !reaches(token, thing, searchReach(inSceneUnits(h, token.parent), worldRadius)) ) continue;
     if ( alreadyTried(thing.tried, actor.id) ) continue;
@@ -255,7 +269,7 @@ async function handleSearch({ token: uuid }, { user }) {
     const rolls = await actor.rollSkill({ skill: h.skill }, { configure: false }, { rollMode: "gm" });
     const total = rolls?.[0]?.total ?? -Infinity;
     if ( total >= h.dc ) { await reveal(thing, token); found++; }
-    else await thing.doc.setFlag(MODULE_ID, "tried", withTry(thing.tried, actor.id));
+    else await thing.doc.setFlag(MODULE_ID, thing.triedFlag, withTry(thing.tried, actor.id));
   }
   return { found };
 }

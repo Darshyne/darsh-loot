@@ -13,6 +13,12 @@ Baldur's Gate 3-style interface:
   and treasure theme;
 - **containers**: a "Container" region behavior, contents rolled from a table or from a treasure hoard by CR
   band, locks (key, thieves' tools or GM), hover cursor;
+- **traps**: a "DAS · Trap" region behavior (a pressure plate whose effect can hit another region), and **trapped
+  containers and doors** (set in the container's behavior or the door's wall configuration) that go off when opened
+  and / or when picking the lock fails, on whoever opens them or on a remote effect area (a dart wall across the room);
+  the trap actor's activity (DMG 2024 traps work as they are) is resolved by the engine. Traps are hidden until found
+  (passive Perception or "Search the surroundings"), then drawn in red and disarmed with thieves' tools; they rearm
+  never, by hand or after a delay in world time;
 - **items dropped on the ground** (drag an item from a sheet onto the map), with a throw animation and sounds;
 - **pickpocketing** (Sleight of Hand against passive Perception), stolen items are flagged;
 - **necromancy**: a dead humanoid becomes a controlled skeleton or zombie;

@@ -86,3 +86,55 @@ export function targetsLevel(targets) {
   if ( !pool.length ) return null;
   return Math.max(...pool.map(t => (t.character ? t.level : Math.max(1, Math.floor(t.level)))));
 }
+
+/* ---- coffres et portes piégés (0.16.0) ---- */
+
+/**
+ * Réglages d'un piège posé sur un coffre (`system.trap` du conteneur) ou une porte (`flags.darsh-loot.trap` du mur), par défaut.
+ * Mêmes champs que le comportement « DAS · Piège », plus `enabled` (le coffre ou la porte est-il piégé ?) et `trigger` (quand il
+ * part : à l'ouverture, au crochetage raté, ou les deux). Sans zone d'effet, il ne touche que celui qui ouvre.
+ */
+export const TRAP_DEFAULTS = Object.freeze({
+  enabled: false, actor: null, activity: "", effectRegion: null, trigger: "open", armed: true, rearm: "never", delay: 60,
+  triggeredAt: null, disarmDc: 15, failure: "trigger", disarmed: false
+});
+
+const TRIGGERS = ["open", "pick", "both"];
+const REARMS = ["never", "gm", "time"];
+
+/** Les réglages complets d'un piège de coffre ou de porte ; `hidden` passe par `normalizeHiddenTrap` (fourni par l'appelant). */
+export function normalizeTrap(raw={}) {
+  const d = TRAP_DEFAULTS;
+  const num = (v, def, min) => (Number.isFinite(Number(v)) && (v !== null) && (v !== "") && (Number(v) >= min)) ? Number(v) : def;
+  const uuid = v => ((typeof v === "string") && v.trim()) ? v.trim() : null;
+  return {
+    enabled: raw.enabled === true,
+    actor: uuid(raw.actor),
+    activity: (typeof raw.activity === "string") ? raw.activity.trim() : "",
+    effectRegion: uuid(raw.effectRegion),
+    trigger: TRIGGERS.includes(raw.trigger) ? raw.trigger : d.trigger,
+    armed: raw.armed !== false,
+    rearm: REARMS.includes(raw.rearm) ? raw.rearm : d.rearm,
+    delay: num(raw.delay, d.delay, 0),
+    triggeredAt: (Number.isFinite(Number(raw.triggeredAt)) && (raw.triggeredAt !== null) && (raw.triggeredAt !== "")) ? Number(raw.triggeredAt) : null,
+    disarmDc: Math.min(40, Math.round(num(raw.disarmDc, d.disarmDc, 1))),
+    failure: (raw.failure === "nothing") ? "nothing" : "trigger",
+    disarmed: raw.disarmed === true
+  };
+}
+
+/** Le piège part-il à ce moment (« open » : on ouvre ; « pick » : un crochetage raté) ? Un piège de zone n'a pas de `trigger`. */
+export function triggersOn(trap, moment) {
+  const trigger = trap?.trigger ?? "open";
+  return (trigger === "both") || (trigger === moment);
+}
+
+/**
+ * Le piège est-il armé à cet instant (temps du monde, secondes) ? Désamorcé : non ; armé : oui ; sinon, réarmé par délai si le délai
+ * (minutes) est écoulé depuis son dernier déclenchement.
+ */
+export function armedAt(trap, now) {
+  if ( !trap || trap.disarmed ) return false;
+  if ( trap.armed ) return true;
+  return (trap.rearm === "time") && Number.isFinite(trap.triggeredAt) && (now >= trap.triggeredAt + (trap.delay * 60));
+}

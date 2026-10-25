@@ -10,6 +10,7 @@
  */
 import { MODULE_ID } from "../shared.mjs";
 import { hiddenField } from "./hidden.mjs";
+import { TRAP_DEFAULTS } from "../core/traps.mjs";
 
 export const TRAP_ZONE = `${MODULE_ID}.trap`;
 
@@ -59,6 +60,35 @@ export class TrapZoneType extends foundry.data.regionBehaviors.RegionBehaviorTyp
   get displayName() {
     return this.label || this.region?.name || "";
   }
+}
+
+/**
+ * Le groupe de champs `trap` d'un conteneur piégé (0.16.0) : les réglages d'un « DAS · Piège », plus `enabled` et `trigger`. Sans
+ * zone d'effet, le piège ne touche que celui qui ouvre ; la zone d'effet peut être ailleurs (le mur aux fléchettes en face).
+ * Son option « cachée » est la sienne : un coffre bien visible peut cacher son aiguille.
+ */
+export function trapField() {
+  const d = TRAP_DEFAULTS;
+  const hidden = hiddenField();
+  hidden.fields.enabled.initial = true;
+  return new fields.SchemaField({
+    enabled: new fields.BooleanField({ initial: d.enabled }),
+    actor: new fields.DocumentUUIDField({ type: "Actor", nullable: true, initial: null }),
+    activity: new fields.StringField({ required: true, blank: true, initial: d.activity }),
+    effectRegion: new fields.DocumentUUIDField({ type: "Region", nullable: true, initial: null }),
+    trigger: new fields.StringField({ required: true, blank: false, initial: d.trigger,
+      choices: { open: "DLO.TrappedTrap.Trigger.Open", pick: "DLO.TrappedTrap.Trigger.Pick", both: "DLO.TrappedTrap.Trigger.Both" } }),
+    armed: new fields.BooleanField({ initial: d.armed }),
+    rearm: new fields.StringField({ required: true, blank: false, initial: d.rearm,
+      choices: { never: "DLO.TrapZone.Rearm.Never", gm: "DLO.TrapZone.Rearm.Gm", time: "DLO.TrapZone.Rearm.Time" } }),
+    delay: new fields.NumberField({ required: true, min: 0, initial: d.delay }),
+    triggeredAt: new fields.NumberField({ required: false, nullable: true, initial: null }),
+    disarmDc: new fields.NumberField({ required: true, integer: true, min: 1, max: 40, initial: d.disarmDc }),
+    failure: new fields.StringField({ required: true, blank: false, initial: d.failure,
+      choices: { nothing: "DLO.TrapZone.Failure.Nothing", trigger: "DLO.TrapZone.Failure.Trigger" } }),
+    disarmed: new fields.BooleanField({ initial: d.disarmed }),
+    hidden
+  });
 }
 
 export function registerTrapBehavior() {

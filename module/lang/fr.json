@@ -573,6 +573,119 @@
         "NotifyDry": "{count} marchand(s) à reprendre — bilan dans le chat.",
         "Notify": "{count} marchand(s) repris — bilan dans le chat."
       }
+    },
+    "TrappedTrap": {
+      "FIELDS": {
+        "trap": {
+          "label": "Coffre piégé",
+          "hint": "Un piège qui part quand on ouvre le coffre, ou quand on rate son crochetage.",
+          "enabled": {
+            "label": "Piégé",
+            "hint": "Le coffre porte un piège."
+          },
+          "actor": {
+            "label": "Acteur piège",
+            "hint": "L'acteur qui « lance » le piège (un piège du DMG 2024, ou un PNJ fait main), sans token sur la carte."
+          },
+          "activity": {
+            "label": "Activité",
+            "hint": "Identifiant de l'activité utilisée. Vide : celle de la tranche de niveaux des cibles, à défaut la première."
+          },
+          "effectRegion": {
+            "label": "Zone d'effet",
+            "hint": "UUID d'une région de la scène, même ailleurs (le mur aux fléchettes en face, le couloir où se répand le gaz). Vide : seulement celui qui ouvre."
+          },
+          "trigger": {
+            "label": "Se déclenche",
+            "hint": "À l'ouverture (le couvercle qu'on soulève, la serrure qui cède), au crochetage raté, ou les deux."
+          },
+          "armed": {
+            "label": "Armé",
+            "hint": "Recocher pour réarmer le piège à la main."
+          },
+          "rearm": {
+            "label": "Réarmement"
+          },
+          "delay": {
+            "label": "Délai de réarmement",
+            "hint": "En minutes de temps du monde (calendrier), pour « après un délai »."
+          },
+          "triggeredAt": {
+            "label": "Déclenché à",
+            "hint": "Temps du monde du dernier déclenchement (rempli tout seul)."
+          },
+          "disarmDc": {
+            "label": "DD de désamorçage",
+            "hint": "Test d'outils de voleur."
+          },
+          "failure": {
+            "label": "Échec du désamorçage"
+          },
+          "disarmed": {
+            "label": "Désamorcé",
+            "hint": "Décocher pour le remettre en état (cocher aussi « Armé »)."
+          },
+          "hidden": {
+            "label": "Piège caché",
+            "enabled": {
+              "label": "Caché",
+              "hint": "Le piège ne se voit pas tant qu'un personnage ne l'a pas trouvé (Perception passive, ou « Fouiller les environs »). Repéré, le coffre brille en rouge et l'ouvrir demande d'abord : désamorcer, ouvrir quand même ou renoncer."
+            },
+            "skill": {
+              "label": "Compétence",
+              "hint": "Celle qui le trouve : Perception ou Investigation."
+            },
+            "dc": {
+              "label": "DD de détection",
+              "hint": "Valeur passive ou jet de fouille à atteindre."
+            },
+            "passive": {
+              "label": "Distance passive",
+              "hint": "En pieds (convertie sur une scène en mètres). 0 : pas de détection passive."
+            },
+            "radius": {
+              "label": "Rayon de fouille",
+              "hint": "Distance maximale d'une fouille active, en pieds (une aiguille ne se voit qu'à 5 ft)."
+            },
+            "found": {
+              "label": "Trouvé",
+              "hint": "Décocher pour le recacher ; les essais s'effacent."
+            },
+            "text": {
+              "label": "Texte de découverte",
+              "hint": "Ce que lit le joueur qui le trouve. Vide : « Vous remarquez un piège. »"
+            }
+          }
+        }
+      },
+      "Trigger": {
+        "Open": "À l'ouverture",
+        "Pick": "Au crochetage raté",
+        "Both": "Les deux"
+      },
+      "ThisDoor": "cette porte",
+      "ThisContainer": "ce coffre",
+      "GateTitle": "Piège repéré",
+      "GateText": "{name} est piégé. Que faire ?",
+      "GateDisarm": "Désamorcer",
+      "GateOpen": "Ouvrir quand même",
+      "Disarm": "Désamorcer le piège",
+      "Door": {
+        "Legend": "DAS · Porte piégée",
+        "Hint": "Pour une porte : un piège qui part quand elle s'ouvre (clic sur la porte ou menu du moteur), et / ou quand on rate son crochetage. Sans zone d'effet, il ne touche que celui qui ouvre.",
+        "Enabled": "Piégée",
+        "Actor": "Acteur piège (UUID, ou glisser un acteur)",
+        "Activity": "Activité (vide : selon le niveau des cibles)",
+        "EffectRegion": "Zone d'effet (UUID d'une région, vide : celui qui ouvre)",
+        "Trigger": "Se déclenche",
+        "Armed": "Armée",
+        "Rearm": "Réarmement",
+        "Delay": "Délai de réarmement (minutes)",
+        "DisarmDc": "DD de désamorçage (outils de voleur)",
+        "Failure": "Échec du désamorçage",
+        "Disarmed": "Désamorcée",
+        "HiddenEnabled": "Piège caché"
+      }
     }
   },
   "TYPES": {

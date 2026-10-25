@@ -52,6 +52,19 @@ export const TARGETING_HOOK = `${ENGINE_ID}.targeting`;
  */
 export const SUMMON_ON_TARGETS_HOOK = `${ENGINE_ID}.summonOnTargets`;
 
+/**
+ * Le hook par lequel le moteur annonce, chez le MJ actif, un essai jugé sur la serrure d'une porte : `({ door, token, method,
+ * outcome, total })`, `method` pick / force / key, `outcome` success / failure / gm. Sert aux portes piégées (crochetage raté).
+ * Un moteur plus ancien ne l'appelle pas : le piège ne part qu'à l'ouverture.
+ */
+export const LOCK_ATTEMPT_HOOK = `${ENGINE_ID}.lockAttempt`;
+
+/**
+ * Le hook par lequel le moteur laisse les modules ajouter des entrées au menu d'une porte : `(entries, { token, wall })`, pousser
+ * `{ icon, label, run(event) }`. Un moteur plus ancien ne l'appelle pas : on désamorce alors en tentant d'ouvrir la porte.
+ */
+export const DOOR_MENU_HOOK = `${ENGINE_ID}.doorMenu`;
+
 /** La visée que le moteur attend sur ce client (`api.ui.targeting()`, son §118), ou null — sans le moteur, ou plus ancien : null. */
 export function engineTargeting() {
   const fn = engineApi()?.ui?.targeting;

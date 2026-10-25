@@ -10,13 +10,14 @@
  */
 import { MODULE_ID } from "../shared.mjs";
 import { hiddenField, behaviorConcealed } from "./hidden.mjs";
+import { trapField } from "./trap-behavior.mjs";
 
 export const CONTAINER_TYPE = `${MODULE_ID}.container`;
 
 const fields = foundry.data.fields;
 
 export class ContainerBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
-  static LOCALIZATION_PREFIXES = ["DLO.ContainerBehavior", "DLO.Hidden"];
+  static LOCALIZATION_PREFIXES = ["DLO.ContainerBehavior", "DLO.Hidden", "DLO.TrappedTrap"];
 
   static defineSchema() {
     return {
@@ -38,7 +39,9 @@ export class ContainerBehaviorType extends foundry.data.regionBehaviors.RegionBe
       // Propriétaire du contenu (une personne, une maison) : ce qu'on y prend est marqué volé (SPEC §3.3).
       owner: new fields.StringField({ required: true, blank: true, initial: "" }),
       // Option « cachée » (SPEC §3.12) : une cachette.
-      hidden: hiddenField()
+      hidden: hiddenField(),
+      // Coffre piégé (0.16.0) : à l'ouverture et / ou au crochetage raté.
+      trap: trapField()
     };
   }
 

@@ -13,6 +13,7 @@ import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
 import { knownTraps, requestDisarm } from "./traps.mjs";
+import { trapHandle, handleKnown } from "../adapter/trapped.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, GROUND_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
@@ -246,7 +247,17 @@ function onTokenMenu(entries, { token, target }) {
 function onGroundMenu(entries, { token, point }) {
   if ( !token?.actor || !point || inCombat() ) return;
   const behavior = containerAt(point);
-  if ( behavior ) entries.push({ icon: "fa-solid fa-box-open", label: loc("Window.SearchContainer"),
+  if ( !behavior ) return;
+  // 0.16.0 : un coffre au piège repéré se désamorce d'ici (on y va d'abord).
+  const trap = trapHandle(behavior);
+  if ( trap && handleKnown(trap) ) entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"),
+    run: async () => {
+      const source = containerSource(behavior);
+      const looter = token.document ?? token;
+      if ( canApproach() && (source.distance(looter) > sceneSetting("reach", looter.parent)) ) await approachSource(source, looter);
+      await requestDisarm(trap, looter);
+    } });
+  entries.push({ icon: "fa-solid fa-box-open", label: loc("Window.SearchContainer"),
     run: () => visitSource(containerSource(behavior), token) });
 }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { checksIn, trapChecks, tierRange, pickTier, targetsLevel } from "../module/scripts/core/traps.mjs";
+import { checksIn, trapChecks, tierRange, pickTier, targetsLevel, normalizeTrap, triggersOn, armedAt, TRAP_DEFAULTS }
+  from "../module/scripts/core/traps.mjs";
 
 describe("tests d'un texte", () => {
   it("les trois formes du lien de jet", () => {
@@ -59,5 +60,62 @@ describe("tranche d'un piège selon le niveau des cibles", () => {
     expect(targetsLevel([{ character: false, level: 0.25 }, { character: false, level: 6 }])).toBe(6);
     expect(targetsLevel([{ character: false, level: 0.5 }])).toBe(1);
     expect(targetsLevel([])).toBeNull();
+  });
+});
+
+describe("coffres et portes piégés : réglages", () => {
+  it("vide : les défauts, pas piégé", () => {
+    expect(normalizeTrap({})).toEqual({ ...TRAP_DEFAULTS });
+    expect(normalizeTrap(undefined).enabled).toBe(false);
+  });
+  it("valeurs d'un formulaire de mur : textes vides, nombres en chaînes", () => {
+    const t = normalizeTrap({ enabled: true, actor: " Actor.abc ", activity: "", effectRegion: "", trigger: "both", armed: false,
+      rearm: "time", delay: "10", disarmDc: "18", failure: "nothing", triggeredAt: "" });
+    expect(t).toMatchObject({ enabled: true, actor: "Actor.abc", effectRegion: null, trigger: "both", armed: false, rearm: "time",
+      delay: 10, disarmDc: 18, failure: "nothing", triggeredAt: null });
+  });
+  it("valeurs invalides remplacées", () => {
+    const t = normalizeTrap({ trigger: "kick", rearm: "soon", delay: -3, disarmDc: 99 });
+    expect(t).toMatchObject({ trigger: "open", rearm: "never", delay: 60, disarmDc: 40 });
+  });
+  it("armé par défaut ; seul `false` le désarme", () => {
+    expect(normalizeTrap({ armed: undefined }).armed).toBe(true);
+    expect(normalizeTrap({ armed: false }).armed).toBe(false);
+  });
+});
+
+describe("coffres et portes piégés : quand ça part", () => {
+  it("à l'ouverture, au crochetage raté, ou les deux", () => {
+    expect(triggersOn({ trigger: "open" }, "open")).toBe(true);
+    expect(triggersOn({ trigger: "open" }, "pick")).toBe(false);
+    expect(triggersOn({ trigger: "pick" }, "pick")).toBe(true);
+    expect(triggersOn({ trigger: "pick" }, "open")).toBe(false);
+    expect(triggersOn({ trigger: "both" }, "pick")).toBe(true);
+    expect(triggersOn({ trigger: "both" }, "open")).toBe(true);
+  });
+  it("sans réglage : à l'ouverture", () => {
+    expect(triggersOn({}, "open")).toBe(true);
+    expect(triggersOn(null, "pick")).toBe(false);
+  });
+});
+
+describe("armé maintenant", () => {
+  const base = normalizeTrap({ enabled: true });
+  it("armé, désamorcé", () => {
+    expect(armedAt(base, 0)).toBe(true);
+    expect(armedAt({ ...base, disarmed: true }, 0)).toBe(false);
+    expect(armedAt(null, 0)).toBe(false);
+  });
+  it("réarmement par délai (minutes de temps du monde)", () => {
+    const t = { ...base, armed: false, rearm: "time", delay: 10, triggeredAt: 1000 };
+    expect(armedAt(t, 1000 + 599)).toBe(false);
+    expect(armedAt(t, 1000 + 600)).toBe(true);
+  });
+  it("jamais, ou à la main : reste désarmé", () => {
+    expect(armedAt({ ...base, armed: false, rearm: "never", triggeredAt: 0 }, 1e9)).toBe(false);
+    expect(armedAt({ ...base, armed: false, rearm: "gm", triggeredAt: 0 }, 1e9)).toBe(false);
+  });
+  it("les réglages d'une zone « DAS · Piège » (sans `trigger`) se lisent pareil", () => {
+    expect(armedAt({ armed: false, disarmed: false, rearm: "time", delay: 1, triggeredAt: 0 }, 60)).toBe(true);
   });
 });
