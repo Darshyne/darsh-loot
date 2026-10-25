@@ -127,7 +127,11 @@ export async function putOnGround({ scene, point, level=null, elevation=0, from,
   const store = await ensureStore(region.behaviors.contents[0]);
   // `alreadySpent` : l'unité a déjà quitté la fiche (un lancer : dnd5e la décompte lui-même) — on la crée sans en retirer une autre.
   if ( owner ) await moveItem(owner, store, item.id, quantity, { copy: alreadySpent });
-  else await store.createEmbeddedDocuments("Item", [game.items.fromCompendium(item)]);
+  else {
+    // 0.15.5 : un sac du monde ou d'un compendium part avec son contenu (des objets à part, qui le citent par `system.container`).
+    const Item5e = CONFIG.Item.documentClass;
+    await Item5e.createDocuments(await Item5e.createWithContents([item]), { keepId: true, parent: store });
+  }
 
   // L'icône du tas : celle de l'objet s'il est seul, un sac sinon.
   const img = (store.items.size === 1) ? store.items.contents[0].img : MIXED_PILE_IMG;

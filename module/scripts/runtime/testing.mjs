@@ -18,6 +18,7 @@ import { fireTrap, requestDisarm, applyTrapChecks } from "./traps.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
+import { putOnGround } from "./drop.mjs";
 
 function tokenOf(tokenId) {
   if ( !game.user.isGM ) throw new Error("GM only");
@@ -193,11 +194,30 @@ const trapFire = async ({ regionId }) => { await fireTrap(regionOf(regionId).beh
 /** Désamorcer le piège d'une région au nom d'un token (le MJ joue le joueur, jet réel). */
 const trapDisarm = async ({ regionId, tokenId }) => requestDisarm(regionOf(regionId).behaviors.find(b => b.type === TRAP_ZONE), tokenOf(tokenId));
 
+/**
+ * Le MJ pose un objet du monde ou d'un compendium au sol, sur la scène affichée (le geste « glisser sur la carte »), sans vol. Le tas
+ * est marqué `test` (retiré par `removeTestZones`). Rend ce que son coffre contient, avec le contenant de chaque objet.
+ */
+async function groundDrop({ itemUuid, x, y }) {
+  if ( !game.user.isGM ) throw new Error("GM only");
+  const item = await fromUuid(itemUuid);
+  if ( !item ) throw new Error(`no item ${itemUuid}`);
+  const region = await putOnGround({ scene: canvas.scene, point: { x, y }, level: canvas.level?.id ?? null, item, flight: false });
+  await region.setFlag(MODULE_ID, "test", true);
+  const store = fromUuidSync(region.behaviors.contents[0].system.actor);
+  return { region: region.id, items: store.items.map(i => ({ name: i.name, type: i.type,
+    container: store.items.get(i.system.container)?.name ?? null })) };
+}
+
 /** Retire les régions d'essai (et, par les hooks, les coffres de leurs conteneurs) sur toutes les scènes. */
 async function removeTestZones() {
   let regions = 0;
   for ( const scene of game.scenes ) {
-    const ids = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true).map(r => r.id);
+    const test = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true);
+    // La tuile d'un tas d'essai part avec lui.
+    const tiles = test.map(r => r.getFlag(MODULE_ID, "pile")?.tile).filter(id => id && scene.tiles.has(id));
+    if ( tiles.length ) await scene.deleteEmbeddedDocuments("Tile", tiles);
+    const ids = test.map(r => r.id);
     if ( ids.length ) { await scene.deleteEmbeddedDocuments("Region", ids); regions += ids.length; }
   }
   return { regions };
@@ -225,4 +245,4 @@ async function removeTestActors() {
 
 export const testApi = Object.freeze({ status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
   zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
-  trapState, trapFire, trapDisarm, trapSet, trapRecheck });
+  trapState, trapFire, trapDisarm, trapSet, trapRecheck, groundDrop });
