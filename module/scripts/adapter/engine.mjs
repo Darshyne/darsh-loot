@@ -26,6 +26,13 @@ export const CLAIM_CLICK_HOOK = `${ENGINE_ID}.claimClick`;
 export const TOKEN_MENU_HOOK = `${ENGINE_ID}.tokenMenu`;
 
 /**
+ * Le hook par lequel le moteur laisse les modules ajouter des entrées au menu contextuel d'une case (son SPEC §243) :
+ * `(entries, { token, point })`, pousser `{ icon, label, run(event) }` dans `entries` ; elles passent avant les siennes.
+ * Un moteur plus ancien ne l'appelle pas : l'entrée manque, rien d'autre.
+ */
+export const GROUND_MENU_HOOK = `${ENGINE_ID}.groundMenu`;
+
+/**
  * Le hook par lequel le moteur propose de poser au sol ce qu'une créature lâche (Injonction « Lâche », son SPEC §40.3,
  * 0.146.0) : `(takers, { token, items })`, chez le MJ actif ; pousser dans `takers` une fonction `async () => boolean`
  * (vrai : les objets ont quitté la fiche et sont au sol).

@@ -15,7 +15,7 @@ import { corpseSource, containerSource, merchantSource, zoneSource, trapSource }
 import { knownTraps, requestDisarm } from "./traps.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
-import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
+import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, GROUND_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
 import { sceneContainers } from "../adapter/container-behavior.mjs";
 import { sceneZones } from "../adapter/zone-behaviors.mjs";
 import { runZone } from "./zones.mjs";
@@ -242,9 +242,18 @@ function onTokenMenu(entries, { token, target }) {
   entries.push({ icon: "fa-solid fa-sack", label: loc("Window.SearchCorpse"), run: () => visitSource(corpseSource(target), token) });
 }
 
+/** 0.15.5 : « Fouiller » au menu contextuel d'une case où est un conteneur ou un tas (menu du moteur, hook `groundMenu`), hors combat. */
+function onGroundMenu(entries, { token, point }) {
+  if ( !token?.actor || !point || inCombat() ) return;
+  const behavior = containerAt(point);
+  if ( behavior ) entries.push({ icon: "fa-solid fa-box-open", label: loc("Window.SearchContainer"),
+    run: () => visitSource(containerSource(behavior), token) });
+}
+
 export function registerPointer() {
   routeClaim(CLAIM_CLICK_HOOK, "search click", onClaimClick);
   route(TOKEN_MENU_HOOK, "menu: Search the body", onTokenMenu);
+  route(GROUND_MENU_HOOK, "menu: Search a container", onGroundMenu);
   route("hoverToken", "search cursor", onHoverToken);
   route("canvasTearDown", "search cursor", () => setCursor(null));
   // La visée du moteur qui s'ouvre ou se ferme sous la souris : le curseur de fouille s'efface ou revient.

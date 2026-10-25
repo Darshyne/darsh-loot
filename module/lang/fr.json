@@ -10,6 +10,7 @@
       "NoLooter": "Sélectionnez d'abord votre personnage.",
       "Container": "Conteneur",
       "OpenStore": "Fiche du contenu",
+      "SearchContainer": "Fouiller",
       "SearchCorpse": "Fouiller le corps"
     },
     "Hud": {

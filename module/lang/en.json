@@ -10,6 +10,7 @@
       "NoLooter": "Select your character first.",
       "Container": "Container",
       "SearchCorpse": "Search the body",
+      "SearchContainer": "Search",
       "OpenStore": "Contents sheet"
     },
     "Hud": {
