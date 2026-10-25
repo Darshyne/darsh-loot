@@ -191,3 +191,7 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .application.wall-config .window-content {
   overflow-y: auto;
 }
+/* Le contenu est une colonne flex : sans cela, le formulaire du cœur se tassait à rien au lieu de faire défiler le tout. */
+.application.wall-config .window-content > * {
+  flex-shrink: 0;
+}
