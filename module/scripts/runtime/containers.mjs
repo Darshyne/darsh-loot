@@ -53,7 +53,9 @@ async function createStore(behavior) {
     type: "group",
     img: "icons/containers/chest/chest-reinforced-steel-oak-tan.webp",
     folder: folder.id,
-    ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED },
+    // Aucun droit : le coffre ne s'affiche pas dans la barre des acteurs des joueurs. La fenêtre de butin lit son
+    // contenu (les acteurs sont tous envoyés aux clients) et toute prise passe par le MJ.
+    ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
     flags: { [MODULE_ID]: { containerOf: behavior.uuid } }
   });
   await behavior.update({ "system.actor": actor.uuid });
@@ -155,7 +157,16 @@ export function registerContainersInit() {
   CONFIG.queries[UNLOCK_QUERY] = handleUnlock;
 }
 
+/** Chez le MJ : les coffres créés en « Limité » avant la 0.15.5 ne s'affichent plus chez les joueurs. */
+async function hideOldStores() {
+  const { LIMITED, NONE } = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+  const updates = game.actors.filter(a => a.getFlag(MODULE_ID, "containerOf") && (a.ownership.default === LIMITED))
+    .map(a => ({ _id: a.id, "ownership.default": NONE }));
+  if ( updates.length ) await Actor.implementation.updateDocuments(updates);
+}
+
 export function registerContainers() {
+  if ( isActiveGM() ) hideOldStores().catch(err => log.warn("could not hide the container actors:", err.message));
   route("createRegionBehavior", "container store", behavior => onCreateBehavior(behavior));
   route("deleteRegionBehavior", "container store", behavior => onDeleteBehavior(behavior));
   // Des comportements créés avec leur région (ou supprimés avec elle) ne tirent que les hooks de la région.
