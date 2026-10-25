@@ -92,11 +92,12 @@ function usage() {
 }
 
 describe("traductions", () => {
-  it("en, fr et pt-BR ont exactement les mêmes clés", () => {
+  it("fr a les mêmes clés que en ; pt-BR aucune en trop", () => {
     for ( const [l, translation] of Object.entries({ fr: FR, "pt-BR": PT }) ) {
-      expect(Object.keys(translation).filter(k => !(k in EN)), `chaves extras em ${l}`).toEqual([]);
-      expect(Object.keys(EN).filter(k => !(k in translation)), `chaves ausentes em ${l}`).toEqual([]);
+      expect(Object.keys(translation).filter(k => !(k in EN)), `clés en trop dans ${l}.json`).toEqual([]);
     }
+    // Le portugais peut avoir du retard sur une clé neuve (Foundry montre alors l'anglais) ; le français, jamais.
+    expect(Object.keys(EN).filter(k => !(k in FR)), "clés absentes de fr.json").toEqual([]);
   });
 
   it("chaque valeur est un texte non vide, avec les mêmes {jokers} dans toutes les langues", () => {
@@ -121,11 +122,11 @@ describe("traductions", () => {
     }
   });
 
-  it("toute clé littérale du code et des macros existe dans toutes les langues", () => {
+  it("toute clé littérale du code et des macros existe en anglais et en français", () => {
     const { keys } = usage();
     expect(keys.size).toBeGreaterThan(100);
     for ( const [key, path] of keys ) {
-      for ( const [l, flat] of Object.entries(LANGS) ) expect(key in flat, `${path} : ${key} absente de ${l}.json`).toBe(true);
+      for ( const [l, flat] of Object.entries({ en: EN, fr: FR }) ) expect(key in flat, `${path} : ${key} absente de ${l}.json`).toBe(true);
     }
   });
 
@@ -135,7 +136,7 @@ describe("traductions", () => {
     for ( const [prefix, values] of Object.entries(DYNAMIC) ) {
       expect(values.length, prefix).toBeGreaterThan(0);
       for ( const v of values ) {
-        for ( const [l, flat] of Object.entries(LANGS) ) expect(`${prefix}.${v}` in flat, `${prefix}.${v} absente de ${l}.json`).toBe(true);
+        for ( const [l, flat] of Object.entries({ en: EN, fr: FR }) ) expect(`${prefix}.${v}` in flat, `${prefix}.${v} absente de ${l}.json`).toBe(true);
       }
     }
   });
