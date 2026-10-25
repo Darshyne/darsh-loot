@@ -10,7 +10,8 @@
       "NoLooter": "Selecione seu personagem primeiro.",
       "Container": "Contêiner",
       "SearchCorpse": "Revistar o cadáver",
-      "OpenStore": "Ficha do conteúdo"
+      "OpenStore": "Ficha do conteúdo",
+      "SearchContainer": "Revistar"
     },
     "Hud": {
       "Search": "Revistar o cadáver"
@@ -82,6 +83,10 @@
       "SearchDuration": {
         "Name": "Duração da busca",
         "Hint": "Fora de combate, quantos segundos reais dura \"Vasculhar os arredores\": mostra uma barra de progresso ao jogador e um sinal ao redor do token; mover-se interrompe a busca (0: instantâneo)."
+      },
+      "DeleteStores": {
+        "Name": "Excluir o ator junto com o contêiner",
+        "Hint": "Ao excluir um contêiner ou uma pilha da cena (a região ou o tile correspondente), também exclui o ator associado na pasta de contêineres. Desativado: o ator permanece e precisa ser removido manualmente."
       }
     },
     "Lock": {
