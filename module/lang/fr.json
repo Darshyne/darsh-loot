@@ -80,6 +80,10 @@
         "Name": "Rayon de fouille",
         "Hint": "Distance en pieds jusqu'où « Fouiller les environs » cherche, murs compris (convertie sur une scène en mètres : 5 ft = 1,5 m). Un objet caché peut demander moins."
       },
+      "SearchMenu": {
+        "Name": "Proposer « Fouiller les environs »",
+        "Hint": "Ajoute l’action « Fouiller les environs » au menu contextuel de son propre token. Décoché : l’action disparaît du menu, mais les objets cachés se trouvent toujours par Perception passive. Utile surtout pour le dungeon crawl."
+      },
       "SearchCooldown": {
         "Name": "Délai entre deux fouilles",
         "Hint": "Hors combat, minutes de temps du monde avant qu'un même personnage puisse refaire « Fouiller les environs » (0 : aucun délai). En combat, la fouille coûte l'action."

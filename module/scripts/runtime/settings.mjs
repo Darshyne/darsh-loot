@@ -37,6 +37,11 @@ export function registerSettings() {
     scope: "world", config: true, type: Number, default: 15,
     range: { min: 5, max: 60, step: 5 }
   });
+  // 0.15.7 : « Fouiller les environs » proposé dans le menu du token (la Perception passive et l'API restent actives).
+  game.settings.register(MODULE_ID, "searchMenu", {
+    name: "DLO.Settings.SearchMenu.Name", hint: "DLO.Settings.SearchMenu.Hint",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   // 0.14.4 : délai entre deux fouilles d'un même personnage hors combat, en minutes de temps du monde (0 : aucun).
   game.settings.register(MODULE_ID, "searchCooldown", {
     name: "DLO.Settings.SearchCooldown.Name", hint: "DLO.Settings.SearchCooldown.Hint",

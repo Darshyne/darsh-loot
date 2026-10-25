@@ -316,6 +316,7 @@ function onRenderTokenHUD(hud, html) {
 /** Entrée « Fouiller les environs » du menu contextuel du moteur, sur son propre token. */
 function onTokenMenu(entries, { token, target }) {
   if ( !token || (target?.document ?? target) !== (token?.document ?? token) ) return;
+  if ( setting("searchMenu") === false ) return;
   const doc = token.document ?? token;
   entries.push({ icon: "fa-solid fa-magnifying-glass", label: loc("Hidden.Search"), run: () => requestSearch(doc) });
 }

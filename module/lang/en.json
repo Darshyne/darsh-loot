@@ -80,6 +80,10 @@
         "Name": "Search radius",
         "Hint": "Distance in feet covered by \"Search the surroundings\", stopped by walls (converted on metric scenes: 5 ft = 1.5 m). A hidden object may require the searcher to be closer."
       },
+      "SearchMenu": {
+        "Name": "Offer \"Search the surroundings\"",
+        "Hint": "Adds the \"Search the surroundings\" action to the context menu of one’s own token. Unchecked: the action leaves the menu, but hidden objects are still found by passive Perception. Mostly useful for dungeon crawls."
+      },
       "SearchCooldown": {
         "Name": "Delay between searches",
         "Hint": "Out of combat, minutes of world time before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching takes an action."
