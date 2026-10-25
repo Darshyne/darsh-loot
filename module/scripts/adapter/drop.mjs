@@ -89,6 +89,44 @@ export async function createPile(scene, center, { level=null, elevation=0, img, 
 }
 
 /**
+ * 0.15.5 : un objet « conteneur » du monde ou d'un compendium posé sur la carte par le MJ devient un **conteneur posé** (pas un
+ * tas) : une tuile d'une case à son image, centrée sur la case, et une région « Conteneur » de même emprise liée à elle
+ * (`flags.darsh-loot.tile`), à son nom. Il reste vide une fois fouillé. Son coffre reçoit le **contenu** du sac (objets et
+ * argent), pas le sac. À appeler chez le MJ.
+ * @returns {Promise<RegionDocument>}
+ */
+export async function createPlacedContainer(scene, center, item, { level=null, elevation=0 }={}) {
+  const size = scene.grid.size;
+  const levels = level ? [level] : [];
+  const [tile] = await scene.createEmbeddedDocuments("Tile", [{
+    texture: { src: item.img, anchorX: 0.5, anchorY: 0.5 }, x: Math.round(center.x), y: Math.round(center.y),
+    width: size, height: size, elevation, levels, sort: 1000
+  }]);
+  const [region] = await scene.createEmbeddedDocuments("Region", [{
+    name: item.name, color: "#b58a45", levels, visibility: CONST.REGION_VISIBILITY.LAYER,
+    shapes: [{ type: "rectangle", x: Math.round(center.x - (size / 2)), y: Math.round(center.y - (size / 2)), width: size, height: size }],
+    flags: { [MODULE_ID]: { tile: tile.id } },
+    behaviors: [{ name: item.name, type: CONTAINER_TYPE, system: { label: item.name, rolled: true } }]
+  }]);
+  return region;
+}
+
+/** Le contenu d'un sac (objets, sous-sacs compris, et argent), prêt à créer dans `store` : le sac lui-même n'y est pas. */
+export async function fillWithContents(store, bag) {
+  const Item5e = CONFIG.Item.documentClass;
+  const [first, ...inside] = await Item5e.createWithContents([bag]);
+  // Ce qui était au premier niveau du sac est au premier niveau du coffre.
+  for ( const d of inside ) if ( d.system?.container === first._id ) d.system.container = null;
+  if ( inside.length ) await Item5e.createDocuments(inside, { keepId: true, parent: store });
+  const coins = bag.system.currency ?? {};
+  const update = {};
+  for ( const [k, v] of Object.entries(coins) ) {
+    if ( Number(v) > 0 ) update[`system.currency.${k}`] = (Number(store.system.currency?.[k]) || 0) + Number(v);
+  }
+  if ( Object.keys(update).length ) await store.update(update);
+}
+
+/**
  * Après une prise dans un tas, chez le MJ : un tas vidé disparaît (tuile et région — le coffre part avec la région) ;
  * sinon son icône suit ce qui reste (l'objet s'il est seul, un sac sinon).
  */
@@ -103,7 +141,7 @@ export async function clearIfEmpty(region) {
     if ( tile && (tile.texture.src !== img) ) await tile.update({ "texture.src": img });
     return;
   }
-  if ( tile ) await tile.delete();
+  // La tuile part avec la région (lien zone ↔ tuile, runtime/tile-zone.mjs) ; supprimer les deux ici ferait un doublon.
   await region.delete();
 }
 

@@ -11,7 +11,7 @@ import { askGM } from "./take.mjs";
 import { ensureStore } from "./containers.mjs";
 import { PHYSICAL_TYPES, canLeaveOwner } from "../core/loot.mjs";
 import { FLIGHT_MS, clampDrop, outsideRect, soundKind, pileSpot } from "../core/drop.mjs";
-import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, MIXED_PILE_IMG } from "../adapter/drop.mjs";
+import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, createPlacedContainer, fillWithContents, MIXED_PILE_IMG } from "../adapter/drop.mjs";
 import { DROP_ITEMS_HOOK } from "../adapter/engine.mjs";
 
 export { clearIfEmpty } from "../adapter/drop.mjs";
@@ -93,6 +93,13 @@ async function handleDrop(payload, { user }) {
     from = center;
   } else if ( !user.isGM ) throw new Error(loc("Refus.PasAToi"));
 
+  // 0.15.5 : un sac du monde ou d'un compendium devient un conteneur posé, au centre de la case, qui porte son contenu.
+  if ( !owner && (item.type === "container") ) {
+    const center = scene.grid.getCenterPoint(point);
+    const region = await createPlacedContainer(scene, center, item, { level });
+    await fillWithContents(await ensureStore(region.behaviors.contents[0]), item);
+    return { region: region.uuid, quantity: 1 };
+  }
   const quantity = owner ? payload.quantity : (item.system.quantity ?? 1);
   const region = await putOnGround({ scene, point, level, elevation, from, item, owner, quantity });
   if ( !region ) throw new Error(loc("Drop.NotGear", { item: item.name }));
@@ -128,7 +135,7 @@ export async function putOnGround({ scene, point, level=null, elevation=0, from,
   // `alreadySpent` : l'unité a déjà quitté la fiche (un lancer : dnd5e la décompte lui-même) — on la crée sans en retirer une autre.
   if ( owner ) await moveItem(owner, store, item.id, quantity, { copy: alreadySpent });
   else {
-    // 0.15.5 : un sac du monde ou d'un compendium part avec son contenu (des objets à part, qui le citent par `system.container`).
+    // Un sac (lancé, lâché) part avec son contenu : des objets à part, qui le citent par `system.container`.
     const Item5e = CONFIG.Item.documentClass;
     await Item5e.createDocuments(await Item5e.createWithContents([item]), { keepId: true, parent: store });
   }
@@ -152,6 +159,11 @@ export function requestDrop(item, point, quantity) {
   if ( !dropper ) return ui.notifications.warn(loc("Drop.NotOnScene"));
   return askGM(DROP_QUERY, handleDrop, { item: item.uuid, x: point.x, y: point.y, scene: canvas.scene.id,
     level: canvas.level?.id ?? null, dropper: dropper.uuid, quantity: quantity ?? item.system.quantity ?? 1 });
+}
+
+/** Tests (`api.mcp.groundDrop`), chez le MJ : le geste du MJ qui lâche un objet du monde ou d'un compendium sur la scène affichée. */
+export function requestGroundDrop(itemUuid, point) {
+  return handleDrop({ item: itemUuid, x: point.x, y: point.y, scene: canvas.scene.id, level: canvas.level?.id ?? null }, { user: game.user });
 }
 
 /**

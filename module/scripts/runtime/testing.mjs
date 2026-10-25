@@ -18,7 +18,7 @@ import { fireTrap, requestDisarm, applyTrapChecks } from "./traps.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
-import { putOnGround } from "./drop.mjs";
+import { requestGroundDrop } from "./drop.mjs";
 
 function tokenOf(tokenId) {
   if ( !game.user.isGM ) throw new Error("GM only");
@@ -200,24 +200,22 @@ const trapDisarm = async ({ regionId, tokenId }) => requestDisarm(regionOf(regio
  */
 async function groundDrop({ itemUuid, x, y }) {
   if ( !game.user.isGM ) throw new Error("GM only");
-  const item = await fromUuid(itemUuid);
-  if ( !item ) throw new Error(`no item ${itemUuid}`);
-  const region = await putOnGround({ scene: canvas.scene, point: { x, y }, level: canvas.level?.id ?? null, item, flight: false });
+  const { region: uuid } = await requestGroundDrop(itemUuid, { x, y });
+  const region = fromUuidSync(uuid);
   await region.setFlag(MODULE_ID, "test", true);
   const store = fromUuidSync(region.behaviors.contents[0].system.actor);
-  return { region: region.id, items: store.items.map(i => ({ name: i.name, type: i.type,
-    container: store.items.get(i.system.container)?.name ?? null })) };
+  const tile = region.parent.tiles.get(region.getFlag(MODULE_ID, "pile")?.tile ?? region.getFlag(MODULE_ID, "tile"));
+  return { region: region.id, name: region.name, tile: tile ? { id: tile.id, img: tile.texture.src } : null,
+    currency: store.system.currency, items: store.items.map(i => ({ name: i.name, type: i.type,
+      container: store.items.get(i.system.container)?.name ?? null })) };
 }
 
 /** Retire les régions d'essai (et, par les hooks, les coffres de leurs conteneurs) sur toutes les scènes. */
 async function removeTestZones() {
   let regions = 0;
   for ( const scene of game.scenes ) {
-    const test = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true);
-    // La tuile d'un tas d'essai part avec lui.
-    const tiles = test.map(r => r.getFlag(MODULE_ID, "pile")?.tile).filter(id => id && scene.tiles.has(id));
-    if ( tiles.length ) await scene.deleteEmbeddedDocuments("Tile", tiles);
-    const ids = test.map(r => r.id);
+    // La tuile d'un tas d'essai part avec lui (lien zone ↔ tuile).
+    const ids = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true).map(r => r.id);
     if ( ids.length ) { await scene.deleteEmbeddedDocuments("Region", ids); regions += ids.length; }
   }
   return { regions };
