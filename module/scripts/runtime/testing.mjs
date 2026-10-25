@@ -210,15 +210,23 @@ async function groundDrop({ itemUuid, x, y }) {
       container: store.items.get(i.system.container)?.name ?? null })) };
 }
 
-/** Retire les régions d'essai (et, par les hooks, les coffres de leurs conteneurs) sur toutes les scènes. */
+/**
+ * Retire les régions d'essai sur toutes les scènes (leur tuile part avec elles, lien zone ↔ tuile) et les coffres créés pour elles :
+ * le jeu ne supprime plus un coffre avec sa région (0.15.6), le nettoyage d'un essai le fait, pour ces coffres-là seulement.
+ */
 async function removeTestZones() {
   let regions = 0;
+  const stores = [];
   for ( const scene of game.scenes ) {
-    // La tuile d'un tas d'essai part avec lui (lien zone ↔ tuile).
-    const ids = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true).map(r => r.id);
-    if ( ids.length ) { await scene.deleteEmbeddedDocuments("Region", ids); regions += ids.length; }
+    const test = scene.regions.filter(r => r.getFlag(MODULE_ID, "test") === true);
+    for ( const b of test.flatMap(r => r.behaviors.contents) ) {
+      const actor = b.system?.actor ? fromUuidSync(b.system.actor, { strict: false }) : null;
+      if ( actor?.getFlag(MODULE_ID, "containerOf") === b.uuid ) stores.push(actor.id);
+    }
+    if ( test.length ) { await scene.deleteEmbeddedDocuments("Region", test.map(r => r.id)); regions += test.length; }
   }
-  return { regions };
+  if ( stores.length ) await Actor.implementation.deleteDocuments(stores);
+  return { regions, stores: stores.length };
 }
 
 /**

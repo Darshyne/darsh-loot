@@ -2,7 +2,7 @@
  * Conteneurs (SPEC §3.2) : le coffre (acteur Groupe) de chaque comportement « Conteneur », son tirage à la première
  * ouverture, et le déverrouillage (clé, crochetage aux outils de voleur, ou le MJ). Toute écriture se fait chez le MJ.
  */
-import { MODULE_ID, loc, log } from "../shared.mjs";
+import { MODULE_ID, loc, log, setting } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM, checkAccess, sourceRef } from "./take.mjs";
 import { CONTAINER_TYPE, registerContainerBehavior } from "../adapter/container-behavior.mjs";
@@ -138,9 +138,13 @@ async function handleUnlock(payload, { user }) {
 /*  Cycle de vie                                */
 /* -------------------------------------------- */
 
-/** Un conteneur supprimé emporte son coffre (seulement l'acteur créé pour lui). */
+/**
+ * Un conteneur supprimé emporte son coffre (seulement l'acteur créé pour lui) — 0.15.6 : seulement si le réglage de monde
+ * `deleteStores` le demande (désactivé par défaut, décision de l'utilisateur : supprimer un acteur en cascade est risqué ; le coffre
+ * reste alors dans « Butin — conteneurs », au MJ de le retirer).
+ */
 async function onDeleteBehavior(behavior) {
-  if ( (behavior.type !== CONTAINER_TYPE) || !isActiveGM() || !behavior.system.actor ) return;
+  if ( (behavior.type !== CONTAINER_TYPE) || !isActiveGM() || !behavior.system.actor || !setting("deleteStores") ) return;
   const actor = fromUuidSync(behavior.system.actor, { strict: false });
   if ( actor?.getFlag(MODULE_ID, "containerOf") === behavior.uuid ) await actor.delete();
 }

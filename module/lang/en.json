@@ -68,6 +68,10 @@
         "On": "Yes",
         "Off": "No"
       },
+      "DeleteStores": {
+        "Name": "Delete the store with its container",
+        "Hint": "Deleting a container or a pile from the scene (its region or its tile) also deletes the actor created for it in the containers folder. Off: the actor stays, to be removed by hand."
+      },
       "ThrownWeapons": {
         "Name": "Thrown weapons leave the hand",
         "Hint": "A weapon thrown with the combat engine leaves the thrower: on a hit it stays lodged in the target half the time (in its inventory, recoverable when it dies), otherwise it drops at the target's feet; on a miss it lands 1–3 squares beyond, stopped by walls."

@@ -71,6 +71,10 @@ export function registerSettings() {
     scope: "world", config: true, type: String, default: "on",
     choices: { on: "DLO.Settings.DropMode.On", off: "DLO.Settings.DropMode.Off" }
   });
+  game.settings.register(MODULE_ID, "deleteStores", {
+    name: "DLO.Settings.DeleteStores.Name", hint: "DLO.Settings.DeleteStores.Hint",
+    scope: "world", config: true, type: Boolean, default: false
+  });
   game.settings.register(MODULE_ID, "thrownWeapons", {
     name: "DLO.Settings.ThrownWeapons.Name", hint: "DLO.Settings.ThrownWeapons.Hint",
     scope: "world", config: true, type: Boolean, default: true

@@ -68,6 +68,10 @@
         "On": "Oui",
         "Off": "Non"
       },
+      "DeleteStores": {
+        "Name": "Supprimer le coffre avec son conteneur",
+        "Hint": "Supprimer un conteneur ou un tas de la scène (sa région ou sa tuile) supprime aussi l'acteur créé pour lui dans « Butin — conteneurs ». Désactivé : l'acteur reste, à retirer à la main."
+      },
       "ThrownWeapons": {
         "Name": "Les armes de jet quittent la main",
         "Hint": "Une arme lancée avec le moteur de combat quitte le lanceur : si elle touche, une fois sur deux elle reste plantée dans la cible (dans son inventaire, récupérable à sa mort), sinon elle tombe à ses pieds ; si elle rate, elle tombe 1 à 3 cases plus loin, arrêtée par les murs."
