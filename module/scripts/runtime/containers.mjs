@@ -10,6 +10,8 @@ import { keyItem } from "../adapter/dnd5e.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { rollContainer } from "../adapter/treasure.mjs";
 import { trapGate, springTrap } from "./traps.mjs";
+import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
+import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
 
 const ROLL_QUERY = `${MODULE_ID}.containerRoll`;
 const UNLOCK_QUERY = `${MODULE_ID}.unlock`;
@@ -109,9 +111,12 @@ export async function requestUnlock(source, looter, method) {
   // 0.16.0 : un coffre au piège repéré, réglé pour partir au crochetage raté ou à l'ouverture : on demande d'abord.
   if ( (method !== "gm") && !game.user.isGM && !(await trapGate(source.doc, looter, (method === "pick") ? ["pick", "open"] : ["open"])) ) return null;
   if ( method === "pick" ) {
+    // 0.17.2 (règles DAS du 2026-10-27) : le verdict n'arrive qu'après la fin des dés 3D.
+    const known = new Set(game.messages.keys());
     const rolls = await looter.actor.rollToolCheck({ tool: "thief", target: source.doc.system.dc }, { configure: false });
     const total = rolls?.[0]?.total;
     if ( total === undefined ) return null;
+    await waitForDice(newRollMessage(known));
     payload.total = total;
   }
   const result = await askGM(UNLOCK_QUERY, handleUnlock, payload);
@@ -134,13 +139,33 @@ async function handleUnlock(payload, { user }) {
   // 0.16.0 : coffre piégé — la serrure qui résiste (crochetage raté) ou le couvercle qui s'ouvre font partir le piège, s'il est
   // réglé pour ce moment.
   if ( !ok ) {
+    await unlockFeedback(looter, source, payload.method, false);
     if ( (payload.method === "pick") && looter ) await springTrap(behavior, looter, "pick");
     return { ok: false };
   }
   await behavior.update({ "system.locked": false });
+  await unlockFeedback(looter, source, payload.method, true);
   if ( looter ) await springTrap(behavior, looter, "open");
   await prepare(behavior);
   return { ok: true };
+}
+
+/**
+ * 0.17.2 (règles DAS du 2026-10-27) : chez le MJ actif, l'issue d'une serrure se voit et s'entend chez tous — carte publique, texte
+ * flottant au-dessus du token, son de serrure (runtime/feedback.mjs). Le MJ qui ouvre lui-même : le son seul.
+ */
+async function unlockFeedback(looter, source, method, ok) {
+  if ( !looter ) { if ( ok ) playForAll(SOUNDS.success); return; }
+  const names = { name: looter.name, source: source.name };
+  if ( !ok ) {
+    await feedbackCard(looter, loc("Lock.PickFailCard", names), { kind: "refused", icon: "fa-solid fa-lock", sound: SOUNDS.failure,
+      float: loc("Lock.FloatFailed") });
+    return;
+  }
+  const text = (method === "key")
+    ? loc("Lock.KeyCard", { ...names, key: keyItem(looter.actor, source.doc.system.key)?.name ?? "" })
+    : loc("Lock.PickedCard", names);
+  await feedbackCard(looter, text, { kind: "gain", icon: "fa-solid fa-lock-open", sound: SOUNDS.success, float: loc("Lock.FloatUnlocked") });
 }
 
 /* -------------------------------------------- */

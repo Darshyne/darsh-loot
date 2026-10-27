@@ -204,3 +204,17 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 
 /* 0.17.0 : « Choisir sur la carte » à côté d'un champ qui désigne une région ou une tuile. */
 .dlo-pick { flex: 0 0 auto; width: 28px; }
+
+/* 0.17.2 : les réglages d'un piège en sections (apps/trap-config.mjs) — un liseré de couleur par partie, la légende en tête. */
+.dlo-trap-section { border-left: 4px solid var(--dlo-section, #888); border-radius: 4px; padding-left: 8px; margin-top: 8px; }
+.dlo-trap-section > legend { font-weight: bold; color: var(--dlo-section, inherit); }
+.dlo-trap-section > legend > i { margin-right: 4px; }
+.dlo-trap-section > .dlo-trap-hint { margin: 0 0 6px; }
+.dlo-trap-trap { --dlo-section: #c0504d; }
+.dlo-trap-area { --dlo-section: #e08a2c; }
+.dlo-trap-source { --dlo-section: #8e6fc8; }
+.dlo-trap-trigger { --dlo-section: #3f8fd2; }
+.dlo-trap-arming { --dlo-section: #4d9a5b; }
+.dlo-trap-contents, .dlo-trap-lock, .dlo-trap-cache { --dlo-section: #a08a5a; }
+/* La fenêtre d'un piège ou d'un conteneur devient longue : elle reste dans l'écran et son contenu défile. */
+.application.dlo-trap-config { max-height: calc(100vh - 20px); }

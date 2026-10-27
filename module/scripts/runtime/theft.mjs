@@ -13,6 +13,10 @@ import { ensureRolled } from "./treasure.mjs";
 import { transfer } from "../adapter/dnd5e.mjs";
 import { livingNPC, stealDC, triedBy } from "../adapter/theft.mjs";
 import { stolenFlag } from "../core/theft.mjs";
+import { feedbackCard, SOUNDS } from "./feedback.mjs";
+import { landingSound } from "./drop-fx.mjs";
+import { engineNotice } from "../adapter/engine.mjs";
+import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
 
 const STEAL_QUERY = `${MODULE_ID}.steal`;
 
@@ -22,11 +26,19 @@ const STEAL_QUERY = `${MODULE_ID}.steal`;
  */
 export async function requestSteal(source, thief, itemId) {
   if ( game.combat?.started ) return ui.notifications.warn(loc("Steal.InCombat"));
+  const known = new Set(game.messages.keys());
   const rolls = await thief.actor.rollSkill({ skill: "slt" }, { configure: false });
   const total = rolls?.[0]?.total;
   if ( total === undefined ) return null;
+  // 0.17.2 (règles DAS du 2026-10-27) : le verdict n'arrive qu'après la fin des dés 3D.
+  await waitForDice(newRollMessage(known));
   const result = await askGM(STEAL_QUERY, handleSteal, { source: sourceRef(source), looter: thief.uuid, itemId, total });
-  if ( result?.ok === true ) ui.notifications.info(loc("Steal.Success"));
+  // Réussi : discret par nature — le voleur seul voit et entend (le MJ a le message de `announce`). Raté : chez tous (`caught`).
+  if ( result?.ok === true ) {
+    ui.notifications.info(loc("Steal.Success"));
+    engineNotice(thief, loc("Steal.FloatStolen"), "gain");
+    landingSound("coins");
+  }
   else if ( result?.ok === false ) ui.notifications.warn(loc("Steal.Caught", { name: source.name }));
   return result;
 }
@@ -59,6 +71,9 @@ async function handleSteal(payload, { user }) {
 /** Raté : la victime s'en aperçoit — elle devient méfiante, le MJ est prévenu, et, selon le réglage, elle devient hostile. */
 async function caught(victim, thief, total, dc) {
   await victim.actor.setFlag(MODULE_ID, "alert", true);
+  // 0.17.2 (règles DAS du 2026-10-27) : le vol raté se voit et s'entend chez tous.
+  await feedbackCard(thief, loc("Steal.CaughtCard", { thief: thief.name, victim: victim.name }), { kind: "refused", icon: "fa-solid fa-hand",
+    sound: SOUNDS.failure, float: loc("Steal.FloatCaught") });
   if ( setting("theftHostile") ) await victim.update({ disposition: CONST.TOKEN_DISPOSITIONS.HOSTILE });
   ChatMessage.implementation.create({
     content: `<p>${loc("Chat.Caught", { thief: thief.name, victim: victim.name, total, dc })}</p>`,

@@ -33,6 +33,8 @@ import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap,
 import { normalizeHidden, concealed } from "../core/hidden.mjs";
 import { addPickButtons, DOOR_PICKS } from "./pick.mjs";
 import { askTrapResolution } from "../apps/trap-window.mjs";
+import { trapConfigClass, decorateSection, sectionText, bindActivityPicker, FIELDSET_SECTIONS } from "../apps/trap-config.mjs";
+import { CONTAINER_TYPE } from "../adapter/container-behavior.mjs";
 import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid, engineCombatEvents, engineObjectToken, engineObjectFlags,
   LOCK_ATTEMPT_HOOK,
   DOOR_MENU_HOOK, EVENT_TURN_HOOK } from "../adapter/engine.mjs";
@@ -747,6 +749,7 @@ function onRenderWallConfig(app, html) {
   if ( footer ) footer.before(fieldset);
   else root.append(fieldset);
   addPickButtons(fieldset, DOOR_PICKS, app);
+  bindActivityPicker(fieldset, { activity: `flags.${MODULE_ID}.trap.activity`, actor: `flags.${MODULE_ID}.trap.actor` });   // 0.17.2
   app.setPosition?.({ height: "auto" });
 }
 
@@ -770,7 +773,7 @@ function onRenderTokenConfig(app, html) {
   // Un PNJ qui n'est pas un piège : seule la case « Piège » se voit, le reste se déplie quand on la coche.
   const toggle = fieldset.querySelector(`[name="flags.${MODULE_ID}.trap.enabled"]`);
   const fold = () => {
-    for ( const group of fieldset.querySelectorAll(".form-group") ) {
+    for ( const group of fieldset.querySelectorAll(".form-group, .dlo-trap-section") ) {
       if ( !group.contains(toggle) ) group.hidden = !toggle.checked;
     }
   };
@@ -778,6 +781,7 @@ function onRenderTokenConfig(app, html) {
   fold();
   tab.append(fieldset);
   if ( !prototype ) addPickButtons(fieldset, TOKEN_PICKS, app);
+  bindActivityPicker(fieldset, { activity: `flags.${MODULE_ID}.trap.activity`, fixed: actor });   // 0.17.2 : ses activités, par leur nom
 }
 
 /** Les champs d'un token piège qui désignent un endroit (runtime/pick.mjs). */
@@ -809,40 +813,48 @@ function trapFieldset(raw, kind) {
   const text = (key, value, extra="") => `<input type="text" name="${name(key)}" value="${esc(value ?? "")}" ${extra}>`;
   const select = (key, value, options) => `<select name="${name(key)}">${Object.entries(options)
     .map(([v, label]) => `<option value="${v}" ${v === value ? "selected" : ""}>${esc(label.startsWith("DND5E.") ? game.i18n.localize(label) : loc(label))}</option>`).join("")}</select>`;
+  // 0.17.2 (demande de l'utilisateur) : une section par partie du piège — le piège, la zone d'effet, la source, le déclencheur,
+  // l'armement — avec pictogramme et aide (apps/trap-config.mjs, comme la fenêtre d'un « DAS · Piège »).
+  const detection = prefix => [
+    row(loc("Hidden.Wall.Skill"), select(`${prefix}.skill`, (prefix === "hidden" ? h : sh).skill, { prc: "DND5E.SkillPrc", inv: "DND5E.SkillInv" })),
+    row(loc("Hidden.Wall.Dc"), number(`${prefix}.dc`, (prefix === "hidden" ? h : sh).dc, 1)),
+    row(loc("Hidden.Wall.Passive"), number(`${prefix}.passive`, (prefix === "hidden" ? h : sh).passive, 0, 5)),
+    row(loc("Hidden.Wall.Radius"), number(`${prefix}.radius`, (prefix === "hidden" ? h : sh).radius, 0, 5)),
+    row(loc("Hidden.Wall.Found"), check(`${prefix}.found`, (prefix === "hidden" ? h : sh).found)),
+    row(loc("Hidden.Wall.Text"), text(`${prefix}.text`, (prefix === "hidden" ? h : sh).text))
+  ].join("");
+  const variant = door ? "Door" : "Token";
+  const sections = [
+    { ...FIELDSET_SECTIONS.Trap, rows: [
+      door ? row(L("Actor"), text("actor", t.actor, `placeholder="Actor.…" data-dlo-drop="Actor"`)) : "",
+      row(L("Activity"), text("activity", t.activity)),
+      row(L("Initiative"), number("initiative", t.initiative, 1))] },
+    { ...FIELDSET_SECTIONS.Area, hint: `Area${variant}`, rows: [
+      (door || placedToken) ? row(L("EffectRegion"), text("effectRegion", t.effectRegion, `placeholder="Scene.….Region.…"`)) : ""] },
+    { ...FIELDSET_SECTIONS.Source, rows: [
+      (door || placedToken) ? row(L("Source"), text("source.uuid", t.source.uuid, `placeholder="Scene.….Region.… / Tile.…"`)) : "",
+      row(L("SourceHidden"), check("source.hidden.enabled", sh.enabled)), detection("source.hidden")] },
+    { ...FIELDSET_SECTIONS.Trigger, hint: `Trigger${variant}`, rows: [
+      placedToken ? row(loc("TrappedTrap.Token.TriggerRegion"), text("triggerRegion", t.triggerRegion, `placeholder="Scene.….Region.…"`)) : "",
+      door ? row(L("Trigger"), select("trigger", t.trigger, { open: "TrappedTrap.Trigger.Open", pick: "TrappedTrap.Trigger.Pick", both: "TrappedTrap.Trigger.Both" })) : "",
+      door ? "" : row(loc("TrappedTrap.Token.Height"), number("height", Number(raw.height) || 0, 0, 1)),
+      row(L("MinSize"), `<select name="${name("minSize")}">${sizes}</select>`),
+      row(L("HiddenEnabled"), check("hidden.enabled", h.enabled)), detection("hidden")] },
+    { ...FIELDSET_SECTIONS.Arming, rows: [
+      row(L("Armed"), check("armed", t.armed)),
+      row(L("Rearm"), select("rearm", t.rearm, { never: "TrapZone.Rearm.Never", gm: "TrapZone.Rearm.Gm", time: "TrapZone.Rearm.Time" })),
+      row(L("Delay"), number("delay", t.delay, 0)),
+      row(L("DisarmDc"), number("disarmDc", t.disarmDc, 1)),
+      row(L("Failure"), select("failure", t.failure, { nothing: "TrapZone.Failure.Nothing", trigger: "TrapZone.Failure.Trigger" })),
+      row(L("Disarmed"), check("disarmed", t.disarmed))] }
+  ];
   const fieldset = document.createElement("fieldset");
   fieldset.innerHTML = `
     <legend>${esc(L("Legend"))}</legend>
     <p class="hint">${esc(L("Hint"))}</p>
     ${row(L("Enabled"), check("enabled", t.enabled))}
-    ${door ? row(L("Actor"), text("actor", t.actor, `placeholder="Actor.…" data-dlo-drop="Actor"`)) : ""}
-    ${row(L("Activity"), text("activity", t.activity))}
-    ${placedToken ? row(loc("TrappedTrap.Token.TriggerRegion"), text("triggerRegion", t.triggerRegion, `placeholder="Scene.….Region.…"`)) : ""}
-    ${(door || placedToken) ? row(L("EffectRegion"), text("effectRegion", t.effectRegion, `placeholder="Scene.….Region.…"`)) : ""}
-    ${door ? row(L("Trigger"), select("trigger", t.trigger, { open: "TrappedTrap.Trigger.Open", pick: "TrappedTrap.Trigger.Pick", both: "TrappedTrap.Trigger.Both" })) : ""}
-    ${door ? "" : row(loc("TrappedTrap.Token.Height"), number("height", Number(raw.height) || 0, 0, 1))}
-    ${row(L("MinSize"), `<select name="${name("minSize")}">${sizes}</select>`)}
-    ${row(L("Initiative"), number("initiative", t.initiative, 1))}
-    ${row(L("Armed"), check("armed", t.armed))}
-    ${row(L("Rearm"), select("rearm", t.rearm, { never: "TrapZone.Rearm.Never", gm: "TrapZone.Rearm.Gm", time: "TrapZone.Rearm.Time" }))}
-    ${row(L("Delay"), number("delay", t.delay, 0))}
-    ${row(L("DisarmDc"), number("disarmDc", t.disarmDc, 1))}
-    ${row(L("Failure"), select("failure", t.failure, { nothing: "TrapZone.Failure.Nothing", trigger: "TrapZone.Failure.Trigger" }))}
-    ${row(L("Disarmed"), check("disarmed", t.disarmed))}
-    ${row(L("HiddenEnabled"), check("hidden.enabled", h.enabled))}
-    ${row(loc("Hidden.Wall.Skill"), select("hidden.skill", h.skill, { prc: "DND5E.SkillPrc", inv: "DND5E.SkillInv" }))}
-    ${row(loc("Hidden.Wall.Dc"), number("hidden.dc", h.dc, 1))}
-    ${row(loc("Hidden.Wall.Passive"), number("hidden.passive", h.passive, 0, 5))}
-    ${row(loc("Hidden.Wall.Radius"), number("hidden.radius", h.radius, 0, 5))}
-    ${row(loc("Hidden.Wall.Found"), check("hidden.found", h.found))}
-    ${row(loc("Hidden.Wall.Text"), text("hidden.text", h.text))}
-    ${(door || placedToken) ? row(L("Source"), text("source.uuid", t.source.uuid, `placeholder="Scene.….Region.… / Tile.…"`)) : ""}
-    ${row(L("SourceHidden"), check("source.hidden.enabled", sh.enabled))}
-    ${row(loc("Hidden.Wall.Skill"), select("source.hidden.skill", sh.skill, { prc: "DND5E.SkillPrc", inv: "DND5E.SkillInv" }))}
-    ${row(loc("Hidden.Wall.Dc"), number("source.hidden.dc", sh.dc, 1))}
-    ${row(loc("Hidden.Wall.Passive"), number("source.hidden.passive", sh.passive, 0, 5))}
-    ${row(loc("Hidden.Wall.Radius"), number("source.hidden.radius", sh.radius, 0, 5))}
-    ${row(loc("Hidden.Wall.Found"), check("source.hidden.found", sh.found))}
-    ${row(loc("Hidden.Wall.Text"), text("source.hidden.text", sh.text))}`;
+    ${sections.map(sec => `<fieldset data-dlo-section="${sec.key}"><legend>${esc(sectionText(sec).legend)}</legend>${sec.rows.join("")}</fieldset>`).join("")}`;
+  for ( const sec of sections ) decorateSection(fieldset.querySelector(`[data-dlo-section="${sec.key}"]`), sec);
   // Glisser un acteur (barre latérale, compendium) sur son champ y écrit son UUID.
   fieldset.querySelector("[data-dlo-drop]")?.addEventListener("drop", event => {
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
@@ -851,6 +863,7 @@ function trapFieldset(raw, kind) {
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.value = data.uuid;
+    event.currentTarget.dispatchEvent(new Event("change", { bubbles: true }));   // la liste des activités suit
   });
   return fieldset;
 }
@@ -861,6 +874,12 @@ function trapFieldset(raw, kind) {
 
 export function registerTrapsInit() {
   registerTrapBehavior();
+  // 0.17.2 : la fenêtre d'un piège de zone et d'un conteneur, en sections (apps/trap-config.mjs).
+  const sheets = foundry.applications.apps.DocumentSheetConfig;
+  sheets.registerSheet(foundry.documents.RegionBehavior, MODULE_ID, trapConfigClass("trap"), { types: [TRAP_ZONE], makeDefault: true,
+    label: "DLO.TrapSections.SheetTrap" });
+  sheets.registerSheet(foundry.documents.RegionBehavior, MODULE_ID, trapConfigClass("container"), { types: [CONTAINER_TYPE], makeDefault: true,
+    label: "DLO.TrapSections.SheetContainer" });
   TrapZoneType.onEnter = onEnter;
   TrapRelayType.onEnter = onRelayEnter;
   game.settings.register(MODULE_ID, "trapsVersion", { scope: "world", config: false, type: Number, default: 1 });

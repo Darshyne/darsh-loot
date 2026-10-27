@@ -55,6 +55,9 @@ const DYNAMIC = {
   "DLO.Hidden.Found": [...new Set(["container", "macro", "scene", "document", "secret", "ethereal", "trap", "?"].map(discoveryKey))],
   // Les refus du budget du moteur de combat (son `api.budget.issues`, SPEC §102 du moteur).
   "DLO.Hidden.Budget": ["notYourTurn", "noAction", "noBonus", "noReaction"],
+  // 0.17.2 : les sections des réglages d'un piège (apps/trap-config.mjs `sectionText`) : légende par partie, aide par partie et par variante.
+  "DLO.TrapSections": [...["Trap", "Area", "Source", "Trigger", "Arming", "Contents", "Lock", "Cache"].flatMap(k => [`${k}.Legend`, `${k}.Hint`]),
+    ...["AreaChest", "AreaToken", "AreaDoor", "TriggerChest", "TriggerToken", "TriggerDoor"].map(k => `${k}.Hint`)],
   "TYPES.RegionBehavior": Object.keys(manifest.documentTypes?.RegionBehavior ?? {}).map(t => `${manifest.id}.${t}`)
 };
 // Préfixes d'aide locale (`const L = key => … \`DLO.TileZone.${key}\``) : leurs appels L("X") sont des clés littérales.

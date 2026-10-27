@@ -107,7 +107,12 @@
       "Pick": "Crocheter (DD {dc})",
       "GMOpen": "Déverrouiller (MJ)",
       "NoWay": "Vous n'avez ni la clé ni d'outils de voleur.",
-      "Failed": "La serrure résiste."
+      "Failed": "La serrure résiste.",
+      "PickedCard": "{name} crochète la serrure : {source}.",
+      "PickFailCard": "{name} n'arrive pas à crocheter la serrure : {source}.",
+      "KeyCard": "{name} ouvre {source} avec {key}.",
+      "FloatUnlocked": "Déverrouillé",
+      "FloatFailed": "Serrure : raté"
     },
     "Container": {
       "Folder": "Butin — conteneurs",
@@ -205,7 +210,10 @@
       "Success": "C'est dans la poche, personne n'a rien vu.",
       "Caught": "{name} vous a pris la main dans le sac !",
       "StolenFrom": "Volé à {name}",
-      "Menu": "Voler"
+      "Menu": "Voler",
+      "CaughtCard": "{victim} prend {thief} la main dans le sac !",
+      "FloatCaught": "Pris !",
+      "FloatStolen": "Volé"
     },
     "Necro": {
       "Hud": "Relever le mort",
@@ -490,7 +498,11 @@
         "noAction": "{name} n'a plus d'action ce tour-ci",
         "noBonus": "{name} n'a plus d'action Bonus",
         "noReaction": "{name} n'a plus de réaction"
-      }
+      },
+      "FoundCard": "{name} remarque quelque chose.",
+      "NothingCard": "{name} ne remarque rien de spécial.",
+      "FloatFound": "Trouvé !",
+      "FloatNothing": "Rien"
     },
     "TrapZone": {
       "Hint": "À poser sur la zone d'effet du piège (le couloir que balaie le feu, ou la dalle elle-même) : il porte tout le piège. Un token qui entre dans son déclencheur (cette région, ou une autre choisie sur la carte) le fait partir : l'acteur piège utilise son activité sur les tokens de la zone d'effet (résolution par le moteur de combat). Le déclencheur et la source se repèrent chacun ; un déclencheur repéré se montre en rouge et le chemin du moteur l'évite, une source repérée se montre en rouge avec la zone d'effet en orange ; l'un ou l'autre se désamorce d'un clic (outils de voleur).",
@@ -501,7 +513,7 @@
         },
         "activity": {
           "label": "Activité",
-          "hint": "Identifiant de l'activité utilisée. Vide : celle dont la tranche de niveaux (« niveaux 5 à 10 ») contient le niveau des cibles (le plus haut personnage, sinon le plus haut FP), à défaut la première."
+          "hint": "Celle que lance le piège. « Selon le niveau des cibles » : un piège du DMG 2024 a une activité par tranche de niveaux (1–4, 5–10…) ; celle qui contient le niveau des cibles (le plus haut personnage, sinon le plus haut FP) est prise au déclenchement, à défaut la première."
         },
         "triggerRegion": {
           "label": "Déclencheur",
@@ -684,7 +696,7 @@
           },
           "activity": {
             "label": "Activité",
-            "hint": "Identifiant de l'activité utilisée. Vide : celle de la tranche de niveaux des cibles, à défaut la première."
+            "hint": "Celle que lance le piège. « Selon le niveau des cibles » : la tranche de niveaux du DMG 2024 qui contient le niveau des cibles, à défaut la première."
           },
           "effectRegion": {
             "label": "Zone d'effet",
@@ -817,7 +829,7 @@
         "Hint": "Pour une porte : un piège qui part quand elle s'ouvre (clic sur la porte ou menu du moteur), et / ou quand on rate son crochetage. Sans zone d'effet, il ne touche que celui qui ouvre.",
         "Enabled": "Piégée",
         "Actor": "Acteur piège (UUID, ou glisser un acteur)",
-        "Activity": "Activité (vide : selon le niveau des cibles)",
+        "Activity": "Activité",
         "EffectRegion": "Zone d'effet (UUID d'une région, vide : celui qui ouvre)",
         "Trigger": "Se déclenche",
         "Armed": "Armée",
@@ -849,6 +861,62 @@
       "PromptRegion": "Cliquez une région sur la carte (clic droit ou Échap : renoncer).",
       "PromptTile": "Cliquez une région ou une tuile sur la carte (clic droit ou Échap : renoncer).",
       "Nothing": "Rien à choisir ici."
+    },
+    "TrapSections": {
+      "SheetTrap": "DAS · Piège (en sections)",
+      "SheetContainer": "DAS · Conteneur (en sections)",
+      "Trap": {
+        "Legend": "Piège",
+        "Hint": "Ce qui frappe : l'acteur piège (un piège du DMG 2024, ou un PNJ fait main), son activité, sa place dans l'initiative."
+      },
+      "Area": {
+        "Legend": "Zone d'effet",
+        "Hint": "Qui est touché : les créatures dans cette région quand le piège part."
+      },
+      "AreaChest": {
+        "Hint": "Qui est touché : celui qui ouvre ; ou, si une région est choisie, les créatures dedans (le mur aux fléchettes en face)."
+      },
+      "AreaToken": {
+        "Hint": "Qui est touché : les créatures dans les cases du token ; ou, si une région est choisie, celles dedans."
+      },
+      "AreaDoor": {
+        "Hint": "Qui est touché : celui qui ouvre ; ou, si une région est choisie, les créatures dedans."
+      },
+      "Source": {
+        "Legend": "Source",
+        "Hint": "D'où part l'effet (les orifices dans le mur, la statue) — une région ou une tuile — et comment on la trouve. Vide : le déclencheur."
+      },
+      "Trigger": {
+        "Legend": "Déclencheur",
+        "Hint": "Ce qui le fait partir : un token qui entre dans la région choisie (la dalle ; vide : cette région), sa taille, sa hauteur — et comment on trouve le déclencheur."
+      },
+      "TriggerChest": {
+        "Hint": "Ce qui le fait partir : ouvrir le coffre, rater le crochetage, ou les deux — et comment on trouve le piège."
+      },
+      "TriggerToken": {
+        "Hint": "Ce qui le fait partir : un token qui entre dans les cases du token (ou dans la région choisie), sa taille, sa hauteur — et comment on le trouve."
+      },
+      "TriggerDoor": {
+        "Hint": "Ce qui le fait partir : ouvrir la porte, rater le crochetage, ou les deux — et comment on trouve le piège."
+      },
+      "Arming": {
+        "Legend": "Armement et désamorçage",
+        "Hint": "Armé ou non, réarmement, DD de désamorçage (outils de voleur) et ce que fait un échec."
+      },
+      "Contents": {
+        "Legend": "Contenu",
+        "Hint": "Ce qu'il contient : son coffre, sa table ou son trésor tiré une fois, son propriétaire (ce qu'on y prend est volé)."
+      },
+      "Lock": {
+        "Legend": "Serrure",
+        "Hint": "Verrouillé ou non, DD de crochetage, clé (nom ou identifiant de l'objet)."
+      },
+      "Cache": {
+        "Legend": "Cachette",
+        "Hint": "Le conteneur lui-même caché, et comment on le trouve."
+      },
+      "ActivityAuto": "Selon le niveau des cibles",
+      "ActivityMissing": "Introuvable ({id})"
     }
   },
   "TYPES": {

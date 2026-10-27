@@ -107,7 +107,12 @@
       "Pick": "Pick the lock (DC {dc})",
       "GMOpen": "Unlock (GM)",
       "NoWay": "You have neither the key nor thieves' tools.",
-      "Failed": "The lock resists."
+      "Failed": "The lock resists.",
+      "PickedCard": "{name} picks the lock: {source}.",
+      "PickFailCard": "{name} fails to pick the lock: {source}.",
+      "KeyCard": "{name} opens {source} with {key}.",
+      "FloatUnlocked": "Unlocked",
+      "FloatFailed": "Lock: failed"
     },
     "Container": {
       "Folder": "Loot — containers",
@@ -205,7 +210,10 @@
       "Success": "Got it, unnoticed.",
       "Caught": "{name} caught you!",
       "StolenFrom": "Stolen from {name}",
-      "Menu": "Pickpocket"
+      "Menu": "Pickpocket",
+      "CaughtCard": "{victim} catches {thief} red-handed!",
+      "FloatCaught": "Caught!",
+      "FloatStolen": "Stolen"
     },
     "Necro": {
       "Hud": "Raise the dead",
@@ -490,7 +498,11 @@
         "noAction": "{name} has no action left this turn",
         "noBonus": "{name} has no Bonus Action left",
         "noReaction": "{name} has no Reaction left"
-      }
+      },
+      "FoundCard": "{name} notices something.",
+      "NothingCard": "{name} notices nothing special.",
+      "FloatFound": "Found!",
+      "FloatNothing": "Nothing"
     },
     "TrapZone": {
       "Hint": "Put it on the trap's effect area (the corridor the fire sweeps, or the plate itself): it holds the whole trap. A token entering its trigger (this region, or another one picked on the map) sets it off: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Trigger and source are each found on their own; a spotted trigger shows in red and the combat engine's pathfinding avoids it, a spotted source shows in red with the effect area in orange; either can be disarmed with a click (thieves' tools).",
@@ -501,7 +513,7 @@
         },
         "activity": {
           "label": "Activity",
-          "hint": "Id of the activity used. Empty: the one whose level range (\"Levels 5–10\") contains the targets' level (highest character, else highest CR), otherwise the first."
+          "hint": "The one the trap uses. “By the targets’ level”: a DMG 2024 trap has one activity per level tier (1–4, 5–10…); the one containing the targets’ level (highest character, else highest CR) is picked when it goes off, else the first."
         },
         "triggerRegion": {
           "label": "Trigger",
@@ -684,7 +696,7 @@
           },
           "activity": {
             "label": "Activity",
-            "hint": "Id of the activity used. Empty: the one whose level tier matches the targets, else the first."
+            "hint": "The one the trap uses. “By the targets’ level”: the DMG 2024 level tier containing the targets’ level, else the first."
           },
           "effectRegion": {
             "label": "Effect area",
@@ -817,7 +829,7 @@
         "Hint": "For a door: a trap that goes off when it opens (click on the door or the engine's menu), and / or when picking its lock fails. Without an effect area, it only hits whoever opens it.",
         "Enabled": "Trapped",
         "Actor": "Trap actor (UUID, or drop an actor)",
-        "Activity": "Activity (empty: by the targets' level)",
+        "Activity": "Activity",
         "EffectRegion": "Effect area (region UUID, empty: whoever opens it)",
         "Trigger": "Goes off",
         "Armed": "Armed",
@@ -849,6 +861,62 @@
       "PromptRegion": "Click a region on the map (right-click or Escape: cancel).",
       "PromptTile": "Click a region or a tile on the map (right-click or Escape: cancel).",
       "Nothing": "Nothing to pick there."
+    },
+    "TrapSections": {
+      "SheetTrap": "DAS · Trap (sections)",
+      "SheetContainer": "DAS · Container (sections)",
+      "Trap": {
+        "Legend": "Trap",
+        "Hint": "What strikes: the trap actor (a DMG 2024 trap, or a homemade NPC), its activity, its place in the initiative."
+      },
+      "Area": {
+        "Legend": "Area",
+        "Hint": "Who is hit: the creatures inside this region when the trap goes off."
+      },
+      "AreaChest": {
+        "Hint": "Who is hit: whoever opens it; or, if a region is chosen, the creatures inside it (the dart wall opposite)."
+      },
+      "AreaToken": {
+        "Hint": "Who is hit: the creatures in the token's squares; or, if a region is chosen, those inside it."
+      },
+      "AreaDoor": {
+        "Hint": "Who is hit: whoever opens it; or, if a region is chosen, the creatures inside it."
+      },
+      "Source": {
+        "Legend": "Source",
+        "Hint": "Where the effect comes from (holes in the wall, the statue) — a region or a tile — and how it is found. Empty: the trigger."
+      },
+      "Trigger": {
+        "Legend": "Trigger",
+        "Hint": "What sets it off: a token entering the chosen region (the pressure plate; empty: this region), its size, its height — and how the trigger is found."
+      },
+      "TriggerChest": {
+        "Hint": "What sets it off: opening the chest, failing to pick the lock, or both — and how the trap is found."
+      },
+      "TriggerToken": {
+        "Hint": "What sets it off: a token entering the token's squares (or the chosen region), its size, its height — and how it is found."
+      },
+      "TriggerDoor": {
+        "Hint": "What sets it off: opening the door, failing to pick the lock, or both — and how the trap is found."
+      },
+      "Arming": {
+        "Legend": "Arming and disarming",
+        "Hint": "Armed or not, rearming, disarm DC (thieves' tools) and what a failure does."
+      },
+      "Contents": {
+        "Legend": "Contents",
+        "Hint": "What it holds: its store, its table or treasure rolled once, its owner (what is taken from it is stolen)."
+      },
+      "Lock": {
+        "Legend": "Lock",
+        "Hint": "Locked or not, lockpicking DC, key (item name or identifier)."
+      },
+      "Cache": {
+        "Legend": "Hiding place",
+        "Hint": "The container itself hidden, and how it is found."
+      },
+      "ActivityAuto": "By the targets’ level",
+      "ActivityMissing": "Not found ({id})"
     }
   },
   "TYPES": {

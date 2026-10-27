@@ -19,6 +19,11 @@ import { passiveFinds, searchReach, searchWait, alreadyTried, withTry, revealWal
 import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playerToken, wallHidden } from "../adapter/hidden.mjs";
 import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend } from "../adapter/engine.mjs";
 import { concealedTraps, regionHiddenByTraps, tilesHiddenByTraps } from "../adapter/trapped.mjs";
+import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
+import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
+
+/** 0.17.2 : le bruit d'une fouille en cours (le froissement d'un objet posé), entendu de tous. */
+const RUMMAGE_SOUND = `modules/${MODULE_ID}/assets/sounds/drop-soft.mp3`;
 
 /** Tout ce qui est encore caché sur une scène : zones et murs cachés, et pièges de coffre ou de porte (0.16.0). */
 const hiddenThings = scene => [...concealedThings(scene), ...concealedTraps(scene)];
@@ -269,7 +274,7 @@ async function searchDelay(token) {
       await new Promise(resolve => setTimeout(resolve, 100));
       if ( moved() ) return false;
       bar.update({ pct: Math.min(1, (Date.now() - began) / (seconds * 1000)) });
-      if ( (Date.now() - lastPing) >= 2500 ) { lastPing = Date.now(); pingAround(token); }
+      if ( (Date.now() - lastPing) >= 2500 ) { lastPing = Date.now(); pingAround(token); playForAll(RUMMAGE_SOUND, 0.4); }
     }
     return true;
   } finally {
@@ -302,11 +307,18 @@ async function handleSearch({ token: uuid }, { user }) {
     // Jet chez le MJ, caché au joueur : mode de message « gm » (V14, CONFIG.ChatMessage.modes). Pas l'ancien
     // CONST.DICE_ROLL_MODES.BLIND (« blindroll », déprécié en V14) : dnd5e 6 le passe tel quel en `messageMode`
     // (dice/basic-roll.mjs:271), le cœur ne le reconnaît pas et le jet devenait public (vu le 2026-10-06).
+    const known = new Set(game.messages.keys());
     const rolls = await actor.rollSkill({ skill: h.skill }, { configure: false }, { rollMode: "gm" });
     const total = rolls?.[0]?.total ?? -Infinity;
+    await waitForDice(newRollMessage(known));   // 0.17.2 (règles DAS) : rien n'apparaît avant la fin des dés 3D
     if ( total >= h.dc ) { await reveal(thing, token); found++; }
     else await thing.doc.setFlag(MODULE_ID, thing.triedFlag, withTry(thing.tried, actor.id));
   }
+  // 0.17.2 (règles DAS du 2026-10-27) : l'issue se voit et s'entend chez tous — « remarque quelque chose » ou « rien » ; ce qui est
+  // trouvé reste dit au seul joueur du personnage (`reveal`).
+  await feedbackCard(token, loc(found ? "Hidden.FoundCard" : "Hidden.NothingCard", { name: token.name }), {
+    kind: found ? "gain" : "ended", icon: "fa-solid fa-magnifying-glass", sound: found ? SOUNDS.success : null,
+    float: loc(found ? "Hidden.FloatFound" : "Hidden.FloatNothing") });
   return { found };
 }
 
