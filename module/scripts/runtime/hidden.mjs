@@ -216,6 +216,9 @@ export async function requestSearch(token) {
   return result;
 }
 
+/** 0.16.1 : les deux horloges du délai de fouille (`searchWait`) : temps du monde et temps réel. */
+const searchClock = () => ({ world: game.time.worldTime, real: Date.now() });
+
 /** Ce qui refuse la fouille de ce token, en clair (même règle que chez le MJ, `handleSearch`), ou null. */
 function searchRefusal(token) {
   const actor = token.actor;
@@ -223,7 +226,7 @@ function searchRefusal(token) {
   const issues = engineBudgetIssues(actor, "action");
   if ( issues.length ) return loc("Notice.Refused", { reason: loc(`Hidden.Budget.${issues[0]}`, { name: actor.name }) });
   if ( game.combat?.started === true ) return null;
-  const wait = searchWait(actor.getFlag(MODULE_ID, "lastSearch"), game.time.worldTime, setting("searchCooldown"));
+  const wait = searchWait(actor.getFlag(MODULE_ID, "lastSearch"), searchClock(), setting("searchCooldown"));
   return (wait > 0) ? loc("Notice.Refused", { reason: loc("Hidden.Cooldown", { name: actor.name, minutes: Math.ceil(wait / 60) }) }) : null;
 }
 
@@ -286,10 +289,10 @@ async function handleSearch({ token: uuid }, { user }) {
   // 0.14.4 : hors combat, une fouille prend du temps — délai en minutes de temps du monde (réglage `searchCooldown`), par
   // personnage ; en combat, l'action Fouille suffit.
   const inCombat = game.combat?.started === true;
-  const wait = inCombat ? 0 : searchWait(actor.getFlag(MODULE_ID, "lastSearch"), game.time.worldTime, setting("searchCooldown"));
+  const wait = inCombat ? 0 : searchWait(actor.getFlag(MODULE_ID, "lastSearch"), searchClock(), setting("searchCooldown"));
   if ( wait > 0 ) throw new Error(loc("Hidden.Cooldown", { name: actor.name, minutes: Math.ceil(wait / 60) }));
   await engineSpend(actor, "action");
-  if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", game.time.worldTime);
+  if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", searchClock());
   const worldRadius = sceneSetting("searchRadius", token.parent);
   let found = 0;
   for ( const thing of hiddenThings(token.parent) ) {

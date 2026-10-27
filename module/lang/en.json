@@ -86,7 +86,7 @@
       },
       "SearchCooldown": {
         "Name": "Delay between searches",
-        "Hint": "Out of combat, minutes of world time before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching takes an action."
+        "Hint": "Out of combat, minutes (of world time or real time, whichever passes first) before the same character can \"Search the surroundings\" again (0: no delay). In combat, searching takes an action."
       },
       "SearchDuration": {
         "Name": "Search duration",

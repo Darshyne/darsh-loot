@@ -86,7 +86,7 @@
       },
       "SearchCooldown": {
         "Name": "Délai entre deux fouilles",
-        "Hint": "Hors combat, minutes de temps du monde avant qu'un même personnage puisse refaire « Fouiller les environs » (0 : aucun délai). En combat, la fouille coûte l'action."
+        "Hint": "Hors combat, minutes (de temps du monde ou de temps réel, le premier écoulé) avant qu'un même personnage puisse refaire « Fouiller les environs » (0 : aucun délai). En combat, la fouille coûte l'action."
       },
       "SearchDuration": {
         "Name": "Durée d'une fouille",

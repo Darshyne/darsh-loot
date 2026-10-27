@@ -81,3 +81,12 @@ describe("0.14.4 : délai entre deux fouilles (temps du monde)", () => {
   it("délai écoulé : rien", () => expect(searchWait(900, 1000, 1)).toBe(0));
   it("calendrier reculé : ne bloque pas", () => expect(searchWait(2000, 1000, 10)).toBe(0));
 });
+
+describe("0.16.1 : délai entre deux fouilles, temps du monde ou temps réel", () => {
+  const at = (world, real) => ({ world, real });
+  it("horloge du monde arrêtée, 10 s réelles : 50 s", () => expect(searchWait(at(1000, 0), at(1000, 10000), 1)).toBe(50));
+  it("horloge du monde arrêtée, une minute réelle : rien", () => expect(searchWait(at(1000, 0), at(1000, 60000), 1)).toBe(0));
+  it("le MJ saute 10 minutes : rien, même sans temps réel écoulé", () => expect(searchWait(at(1000, 0), at(1600, 500), 1)).toBe(0));
+  it("les deux horloges avancent : la plus avancée l'emporte", () => expect(searchWait(at(1000, 0), at(1030, 10000), 1)).toBe(30));
+  it("ancien drapeau (temps du monde seul) : jugé au temps du monde", () => expect(searchWait(990, at(1000, 999999), 1)).toBe(50));
+});
