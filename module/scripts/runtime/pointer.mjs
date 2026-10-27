@@ -20,6 +20,7 @@ import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, GROUND_MENU_HOOK, TARGETING_HOOK, en
 import { sceneContainers } from "../adapter/container-behavior.mjs";
 import { sceneZones } from "../adapter/zone-behaviors.mjs";
 import { runZone } from "./zones.mjs";
+import { pointSeen, regionFloor } from "../adapter/sight.mjs";
 
 const inCombat = () => game.combat?.started === true;
 const onBoard = event => !!canvas.ready && (event.target === canvas.app?.view);
@@ -55,7 +56,8 @@ function zoneAt(point) {
 function regionAt(behaviors, point) {
   for ( const behavior of behaviors ) {
     const region = behavior.region;
-    if ( region.viewed && region.polygonTree.testPoint(point) ) return behavior;
+    // 0.17.0 : un joueur ne trouve pas un coffre à travers le brouillard, un mur ou un toit (adapter/sight.mjs).
+    if ( region.viewed && region.polygonTree.testPoint(point) && pointSeen(point, regionFloor(region)) ) return behavior;
   }
   return null;
 }
@@ -93,8 +95,9 @@ function trapPlaceAt(point) {
   for ( const entry of knownTrapPlaces(canvas.scene) ) {
     const place = entry.place;
     if ( ["Tile", "Token"].includes(place.documentName) ) {
-      if ( place.object?.visible && place.object.bounds.contains(point.x, point.y) ) return entry;
-    } else if ( place.viewed && place.polygonTree.testPoint(point) ) return entry;
+      if ( place.object?.visible && place.object.bounds.contains(point.x, point.y)
+        && pointSeen(point, place.elevation ?? 0) ) return entry;
+    } else if ( place.viewed && place.polygonTree.testPoint(point) && pointSeen(point, regionFloor(place)) ) return entry;
   }
   return null;
 }

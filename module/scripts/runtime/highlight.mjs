@@ -23,6 +23,7 @@ import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { trappedThings, handleKnown, sourceKnown, allTraps, wallEnds } from "../adapter/trapped.mjs";
 import { concealed } from "../core/hidden.mjs";
+import { regionSeen, placeSeen, doorSeen } from "../adapter/sight.mjs";
 
 /** Couleurs : neutre pour une zone ou un cadavre, or pour une cachette trouvée, mauve (MJ seulement) pour ce qui est encore caché. */
 const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6, trap: 0xe0312b, effect: 0xf08c2b };
@@ -48,6 +49,8 @@ function zonesToDraw(scene) {
   for ( const behavior of [...sceneContainers(scene), ...sceneZones(scene)] ) {
     const region = behavior.region;
     if ( !region?.viewed || !containerWorthIt(behavior) ) continue;
+    // 0.17.0 : chez un joueur, seulement ce qu'il voit (pas à travers le brouillard, les murs ni les toits).
+    if ( !regionSeen(region) ) continue;
     const hidden = behavior.system.hidden;
     const color = behaviorConcealed(behavior) ? COLORS.concealed : (hidden?.enabled ? COLORS.found : COLORS.zone);
     out.push({ region, color });
@@ -67,7 +70,8 @@ const placeViewed = doc => (["Tile", "Token"].includes(doc.documentName) ? !!doc
 function trapsToDraw(concealedToo=false) {
   const out = [];
   const add = (place, color) => {
-    if ( place && placeViewed(place) && !out.some(o => o.place === place) ) out.push({ place, color });
+    // 0.17.0 : chez un joueur, seulement ce qu'il voit — sinon les pièges repérés de toute la carte encombrent la vue.
+    if ( place && placeViewed(place) && placeSeen(place) && !out.some(o => o.place === place) ) out.push({ place, color });
   };
   for ( const h of allTraps(canvas.scene) ) {
     if ( h.trap.disarmed ) continue;
@@ -99,7 +103,7 @@ const wallViewed = wall => !canvas.level || (typeof wall.includedInLevel !== "fu
 
 /** Les portes au piège repéré (rouge permanent) ; avec `concealedToo`, le MJ voit aussi celles au piège encore caché. */
 function doorsToDraw(concealedToo=false) {
-  return trappedThings(canvas.scene).filter(h => h.wall && !h.trap.disarmed && wallViewed(h.wall)
+  return trappedThings(canvas.scene).filter(h => h.wall && !h.trap.disarmed && wallViewed(h.wall) && doorSeen(h.wall)
     && (handleKnown(h) || (concealedToo && concealed(h.hidden))));
 }
 
@@ -211,4 +215,7 @@ export function registerHighlight() {
     // Les pièges repérés sont dessinés en permanence : on redessine toujours (ce n'est qu'un trait par zone).
     route(hook, "highlight", () => redraw());
   }
+  // 0.17.0 : ce que voit un joueur change quand ses tokens bougent ou qu'une porte s'ouvre — les pièges repérés suivent sa vue.
+  const redrawSoon = foundry.utils.debounce(() => redraw(), 60);
+  route("sightRefresh", "highlight", () => { if ( !game.user.isGM ) redrawSoon(); });
 }
