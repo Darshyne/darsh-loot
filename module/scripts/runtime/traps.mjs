@@ -226,7 +226,8 @@ const combatOf = scene => game.combats.find(c => c.started && (c.scene?.id === s
 
 /**
  * Chez le MJ actif, en mode avancé. **En combat** : on ne relance pas l'initiative, la fenêtre du MJ s'ouvre tout de suite. **Hors
- * combat** : le jeu se met en pause, un combat est créé avec les créatures de la scène, ceux qui n'avaient repéré ni le déclencheur
+ * combat** : le jeu se met en pause, un combat est créé avec les personnages des joueurs de la scène (et la créature qui l'a
+ * déclenché), ceux qui n'avaient repéré ni le déclencheur
  * ni la source sont **Surpris** (dnd5e : Désavantage à l'initiative ; le moteur retire l'état une fois l'initiative lancée), le piège
  * entre dans l'initiative comme **évènement temporaire** du moteur (son §250), à son initiative, pour le round 1, et l'initiative est
  * tirée. La fenêtre s'ouvre à son tour (`onEventTurn`).
@@ -239,7 +240,11 @@ async function springAdvanced(h, triggerer, { surprise }) {
   }
   if ( !game.paused ) game.togglePause(true, { broadcast: true });
   const combat = await foundry.documents.Combat.implementation.create({ scene: scene.id, active: true });
-  const tokens = scene.tokens.filter(t => t.actor && !t.actor.statuses?.has("dead") && !engineObjectToken(t));
+  // 0.17.0 (retour de l'utilisateur) : seulement les personnages des joueurs présents sur la scène — pas les monstres d'autres salles,
+  // ni les coffres, cercueils et autres trésors en token —, plus la créature qui l'a déclenché si ce n'en est pas un.
+  const playerCharacter = t => (t.actor.type !== "group") && t.actor.hasPlayerOwner;
+  const tokens = scene.tokens.filter(t => t.actor && !t.actor.statuses?.has("dead") && !engineObjectToken(t) && !isTrapToken(t)
+    && (playerCharacter(t) || (t.id === (triggerer?.document ?? triggerer)?.id)));
   await combat.createEmbeddedDocuments("Combatant", tokens.map(t => ({ tokenId: t.id, sceneId: scene.id, actorId: t.actorId, hidden: t.hidden })));
   // Surpris : les personnages des joueurs, quand personne n'avait repéré le piège (la découverte est commune à la table).
   if ( surprise ) {
@@ -657,6 +662,8 @@ export function knownTrapPlaces(scene) {
   for ( const h of allTraps(scene) ) {
     if ( h.trap.disarmed ) continue;
     if ( (h.kind === "zone") && h.triggerRegion && handleKnown(h) ) out.push({ h, place: h.triggerRegion });
+    // 0.17.0 : un token piège repéré se désamorce aussi d'un clic sur lui (ou sur son déclencheur désigné ailleurs).
+    if ( (h.kind === "token") && handleKnown(h) ) out.push({ h, place: (h.triggerRegion === h.region) ? h.token : h.triggerRegion });
     if ( h.source.doc && sourceKnown(h) ) out.push({ h, place: h.source.doc });
   }
   return out;
@@ -727,12 +734,47 @@ function onLockAttempt({ door, token, method, outcome }={}) {
   if ( h ) springTrap(h, token?.document ?? token, "pick");
 }
 
+/* -------------------------------------------- */
+/*  Gestes du MJ (menu contextuel, 0.17.0)      */
+/* -------------------------------------------- */
+
+/**
+ * Les entrées du MJ sur un piège, au menu contextuel du moteur (token, case, porte, coffre) : le faire partir, le remettre en état (armé,
+ * pas désamorcé, déclencheur et source de nouveau cachés), le désamorcer sans jet, le montrer aux joueurs ou le leur cacher, ouvrir ses
+ * réglages. Rien chez un joueur.
+ */
+export function gmTrapEntries(target) {
+  const h = asHandle(target);
+  if ( !h || !game.user.isGM ) return [];
+  const entries = [
+    { icon: "fa-solid fa-burst", label: loc("TrapMenu.Fire"), run: () => fireTrap(h, null) },
+    { icon: "fa-solid fa-rotate-left", label: loc("TrapMenu.Reset"), run: () => resetTrap(h) }
+  ];
+  if ( !h.trap.disarmed ) entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrapMenu.GmDisarm"),
+    run: async () => { await h.update({ disarmed: true, armed: false }); ui.notifications.info(loc("TrapZone.Disarmed")); } });
+  entries.push(anyKnown(h)
+    ? { icon: "fa-solid fa-eye-slash", label: loc("TrapMenu.Conceal"), run: () => h.update({ "hidden.found": false, "source.hidden.found": false }) }
+    : { icon: "fa-solid fa-eye", label: loc("TrapMenu.Reveal"), run: () => h.update({ "hidden.found": true, "source.hidden.found": true }) });
+  entries.push({ icon: "fa-solid fa-gear", label: loc("TrapMenu.Configure"), run: () => h.doc.sheet?.render(true) });
+  return entries;
+}
+
+/** Remettre un piège en état : armé, pas désamorcé, déclencheur et source de nouveau cachés. */
+export async function resetTrap(target) {
+  const h = asHandle(target);
+  if ( !h ) return;
+  await h.update({ armed: true, disarmed: false, triggeredAt: null, "hidden.found": false, "source.hidden.found": false });
+  log.info(`trap ${h.name || h.kind}: reset by the GM`);
+  ui.notifications.info(loc("TrapMenu.ResetDone", { name: h.name || loc("TrapZone.ThisTrap") }));
+}
+
 /** Le menu de la porte du moteur (hook public `doorMenu`) : « Désamorcer le piège » sur une porte au piège repéré. */
 function onDoorMenu(entries, { token, wall }={}) {
   const h = trapHandle(wall?.document ?? wall);
   const looter = token?.document ?? token;
-  if ( !h || !anyKnown(h) || !looter?.actor ) return;
-  entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"), run: () => requestDisarm(h, looter) });
+  if ( !h ) return;
+  if ( anyKnown(h) && looter?.actor ) entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"), run: () => requestDisarm(h, looter) });
+  entries.push(...gmTrapEntries(h));   // 0.17.0
 }
 
 /**

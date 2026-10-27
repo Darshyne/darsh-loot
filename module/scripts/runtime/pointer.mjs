@@ -12,8 +12,8 @@ import { setting, sceneSetting, loc } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
-import { knownTrapPlaces, requestDisarm } from "./traps.mjs";
-import { trapHandle, anyKnown } from "../adapter/trapped.mjs";
+import { knownTrapPlaces, requestDisarm, gmTrapEntries } from "./traps.mjs";
+import { trapHandle, anyKnown, allTraps, isTrapToken } from "../adapter/trapped.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, GROUND_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
@@ -253,13 +253,24 @@ function recheck() {
 
 /** « Fouiller le corps » au menu contextuel d'un cadavre (menu du moteur), hors combat, pour le personnage en main. */
 function onTokenMenu(entries, { token, target }) {
+  // 0.17.0 : un token piège — le désamorcer (repéré, pour le personnage en main), les gestes du MJ.
+  if ( target && isTrapToken(target) ) {
+    const h = trapHandle(target);
+    const looter = (token && (token !== target)) ? token : null;
+    if ( h && looter?.actor && anyKnown(h) && !h.trap.disarmed ) entries.push(disarmEntry(h, looter));
+    entries.push(...gmTrapEntries(h));
+    return;
+  }
   if ( !token?.actor || !target || (target === token) || inCombat() || !corpseToken(target) ) return;
   entries.push({ icon: "fa-solid fa-sack", label: loc("Window.SearchCorpse"), run: () => visitSource(corpseSource(target), token) });
 }
 
 /** 0.15.5 : « Fouiller » au menu contextuel d'une case où est un conteneur ou un tas (menu du moteur, hook `groundMenu`), hors combat. */
 function onGroundMenu(entries, { token, point }) {
-  if ( !token?.actor || !point || inCombat() ) return;
+  if ( !token?.actor || !point ) return;
+  // 0.17.0 : un piège sur cette case (en combat aussi) — le désamorcer s'il est repéré et vu, les gestes du MJ.
+  trapGroundEntries(entries, token, point);
+  if ( inCombat() ) return;
   const behavior = containerAt(point);
   if ( !behavior ) return;
   // 0.16.0 : un coffre au piège repéré se désamorce d'ici (on y va d'abord).
@@ -271,8 +282,40 @@ function onGroundMenu(entries, { token, point }) {
       if ( canApproach() && (source.distance(looter) > sceneSetting("reach", looter.parent)) ) await approachSource(source, looter);
       await requestDisarm(trap, looter);
     } });
+  if ( trap ) entries.push(...gmTrapEntries(trap));   // 0.17.0
   entries.push({ icon: "fa-solid fa-box-open", label: loc("Window.SearchContainer"),
     run: () => visitSource(containerSource(behavior), token) });
+}
+
+/** « Désamorcer le piège » : on y va d'abord s'il est hors de portée (moteur), puis le test d'outils de voleur. */
+function disarmEntry(h, looter) {
+  return { icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"), run: async () => {
+    const source = trapSource(h.doc, h.token ?? h.source.doc ?? h.triggerRegion);
+    if ( canApproach() && (source.distance(looter) > sceneSetting("reach", looter.parent)) && !(await approachSource(source, looter)) ) return;
+    await requestDisarm(h, looter);
+  } };
+}
+
+/** Les pièges d'une case : repéré et vu pour un joueur ; tous pour le MJ (token, déclencheur, source, zone d'effet). */
+function trapGroundEntries(entries, token, point) {
+  const looter = token.document ?? token;
+  const done = new Set();
+  const known = trapPlaceAt(point);
+  if ( known && !known.h.trap.disarmed ) {
+    done.add(known.h.uuid);
+    entries.push(disarmEntry(known.h, looter));
+    entries.push(...gmTrapEntries(known.h));
+  }
+  if ( !game.user.isGM ) return;
+  for ( const h of allTraps(canvas.scene) ) {
+    if ( done.has(h.uuid) || (h.kind === "door") || (h.kind === "container") ) continue;
+    const places = [h.token, h.triggerRegion, h.source.doc, h.effectRegion].filter(Boolean);
+    const under = places.some(place => (["Tile", "Token"].includes(place.documentName)
+      ? !!place.object?.bounds?.contains(point.x, point.y) : (place.viewed && place.polygonTree?.testPoint(point))));
+    if ( !under ) continue;
+    done.add(h.uuid);
+    entries.push(...gmTrapEntries(h));
+  }
 }
 
 export function registerPointer() {

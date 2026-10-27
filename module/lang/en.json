@@ -862,6 +862,15 @@
       "PromptTile": "Click a region or a tile on the map (right-click or Escape: cancel).",
       "Nothing": "Nothing to pick there."
     },
+    "TrapMenu": {
+      "Fire": "Set off the trap",
+      "Reset": "Reset the trap",
+      "ResetDone": "{name}: reset (armed, hidden again).",
+      "GmDisarm": "Disarm (GM, no roll)",
+      "Reveal": "Show the trap to players",
+      "Conceal": "Hide the trap from players",
+      "Configure": "Trap settings"
+    },
     "TrapSections": {
       "SheetTrap": "DAS · Trap (sections)",
       "SheetContainer": "DAS · Container (sections)",

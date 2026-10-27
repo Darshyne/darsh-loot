@@ -862,6 +862,15 @@
       "PromptTile": "Cliquez une région ou une tuile sur la carte (clic droit ou Échap : renoncer).",
       "Nothing": "Rien à choisir ici."
     },
+    "TrapMenu": {
+      "Fire": "Déclencher le piège",
+      "Reset": "Réinitialiser le piège",
+      "ResetDone": "{name} : réinitialisé (armé, de nouveau caché).",
+      "GmDisarm": "Désamorcer (MJ, sans jet)",
+      "Reveal": "Montrer le piège aux joueurs",
+      "Conceal": "Cacher le piège aux joueurs",
+      "Configure": "Réglages du piège"
+    },
     "TrapSections": {
       "SheetTrap": "DAS · Piège (en sections)",
       "SheetContainer": "DAS · Conteneur (en sections)",

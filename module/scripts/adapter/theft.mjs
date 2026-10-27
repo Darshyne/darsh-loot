@@ -3,6 +3,8 @@
  * Règles : core/theft.mjs.
  */
 import { MODULE_ID } from "../shared.mjs";
+import { isTrapToken } from "./trapped.mjs";
+import { engineObjectToken } from "./engine.mjs";
 import { gearEntries, coinsOf } from "../core/loot.mjs";
 import { theftDC, difficultyOf, priceInGp, purseInGp } from "../core/theft.mjs";
 
@@ -12,6 +14,8 @@ export function livingNPC(tokenDoc) {
   const actor = tokenDoc?.actor;
   if ( !actor || (actor.type !== "npc") ) return false;
   if ( actor.statuses.has("dead") ) return false;
+  // 0.17.0 : un piège (acteur ou token) ou un objet du moteur n'a pas de poches.
+  if ( isTrapToken(tokenDoc) || engineObjectToken(tokenDoc) ) return false;
   return (actor.system.attributes?.hp?.value ?? 1) > 0;
 }
 
