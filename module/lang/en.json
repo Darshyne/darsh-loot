@@ -92,6 +92,10 @@
         "Name": "Search duration",
         "Hint": "Out of combat, real seconds that \"Search the surroundings\" lasts: a progress bar for the player, a ping around the token; moving interrupts it (0: instant)."
       },
+      "DisarmDuration": {
+        "Name": "Disarm duration",
+        "Hint": "Real seconds that « Disarm the trap » takes before the roll: a progress bar for the player, a ping and a tool noise around the token; moving interrupts it (0: at once)."
+      },
       "AdvancedTraps": {
         "Name": "Advanced trap mode",
         "Hint": "Out of combat, a trap that goes off pauses the game and starts a combat with the scene's creatures (player characters Surprised if nobody had spotted it); the trap acts at its own initiative (20 by default). In combat, initiative isn't rerolled. Either way, no automatic roll: the GM gives each creature in the area Advantage or Disadvantage, then launches the trap. Off: the trap strikes at once."
@@ -601,6 +605,15 @@
       "Disarmed": "Trap disarmed.",
       "DisarmFailed": "The disarm attempt fails.",
       "DisarmFired": "Failed: the trap goes off!",
+      "Disarming": "{name} is disarming {trap}…",
+      "DisarmStart": "{name} tries to disarm {trap}.",
+      "DisarmInterrupted": "{name} moved: disarming interrupted.",
+      "DisarmCard": "{name} disarms {trap}.",
+      "DisarmFailCard": "{name} fails to disarm {trap}.",
+      "DisarmFireCard": "{name} sets off {trap} while trying to disarm it!",
+      "FloatDisarmed": "Disarmed",
+      "FloatFailed": "Failed",
+      "FloatFired": "Set off!",
       "ConfirmTitle": "Disarm the trap",
       "ConfirmText": "Try to disarm {trap}? {name} will make a thieves' tools check.",
       "ConfirmYes": "Try",

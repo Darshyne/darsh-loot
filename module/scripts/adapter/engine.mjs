@@ -158,6 +158,16 @@ export async function engineSpend(actor, cost="action") {
   return (typeof fn === "function") ? fn(actor, cost) : false;
 }
 
+/**
+ * Un texte flottant au-dessus d'un token, dessiné par le moteur (hook `dnd5e-combat.notice`, ui/feedback.mjs du moteur ; `kind` :
+ * gain, refused, ended, prompt…). Local à ce client : le hook ne part chez personne d'autre. Sans le moteur, rien.
+ */
+export const NOTICE_HOOK = `${ENGINE_ID}.notice`;
+export function engineNotice(token, text, kind="prompt") {
+  const uuid = token?.uuid ?? token?.document?.uuid ?? token ?? null;
+  if ( uuid && text ) Hooks.callAll(NOTICE_HOOK, { token: uuid, text, kind });
+}
+
 /** Étapes finales d'une action du moteur (core/action.mjs `STEPS`). */
 const FINAL_STEPS = new Set(["done", "missed"]);
 

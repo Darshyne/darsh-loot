@@ -92,6 +92,10 @@
         "Name": "Durée d'une fouille",
         "Hint": "Hors combat, secondes réelles que dure « Fouiller les environs » : une barre de progression chez le joueur, un ping autour du token ; bouger l'interrompt (0 : aussitôt)."
       },
+      "DisarmDuration": {
+        "Name": "Durée d'un désamorçage",
+        "Hint": "Secondes réelles que dure « Désamorcer le piège » avant le jet : une barre de progression chez le joueur, un ping et un bruit d'outils autour du token ; bouger l'interrompt (0 : aussitôt)."
+      },
       "AdvancedTraps": {
         "Name": "Mode piège avancé",
         "Hint": "Hors combat, un piège qui part met le jeu en pause et lance un combat avec les créatures de la scène (les personnages Surpris si personne ne l'avait repéré) ; le piège agit à son initiative (20 par défaut). En combat, on ne relance pas l'initiative. Dans les deux cas, pas de jet automatique : le MJ donne à chaque créature de la zone l'Avantage ou le Désavantage, puis lance le piège. Éteint : le piège frappe aussitôt."
@@ -601,6 +605,15 @@
       "Disarmed": "Piège désamorcé.",
       "DisarmFailed": "Le désamorçage échoue.",
       "DisarmFired": "Raté : le piège se déclenche !",
+      "Disarming": "{name} désamorce {trap}…",
+      "DisarmStart": "{name} tente de désamorcer {trap}.",
+      "DisarmInterrupted": "{name} a bougé : désamorçage interrompu.",
+      "DisarmCard": "{name} désamorce {trap}.",
+      "DisarmFailCard": "{name} n'arrive pas à désamorcer {trap}.",
+      "DisarmFireCard": "{name} déclenche {trap} en voulant le désamorcer !",
+      "FloatDisarmed": "Désamorcé",
+      "FloatFailed": "Raté",
+      "FloatFired": "Déclenché !",
       "ConfirmTitle": "Désamorcer le piège",
       "ConfirmText": "Tenter de désamorcer {trap} ? {name} fera un test d'outils de voleur.",
       "ConfirmYes": "Tenter",

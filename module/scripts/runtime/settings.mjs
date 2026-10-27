@@ -54,6 +54,12 @@ export function registerSettings() {
     scope: "world", config: true, type: Number, default: 10,
     range: { min: 0, max: 30, step: 1 }
   });
+  // 0.17.1 : durée d'un désamorçage, en secondes réelles (barre de progression, ping, bruit d'outils ; 0 : aussitôt).
+  game.settings.register(MODULE_ID, "disarmDuration", {
+    name: "DLO.Settings.DisarmDuration.Name", hint: "DLO.Settings.DisarmDuration.Hint",
+    scope: "world", config: true, type: Number, default: 5,
+    range: { min: 0, max: 30, step: 1 }
+  });
   // 0.17.0 : mode piège avancé — hors combat, un piège qui part met le jeu en pause et lance un combat où il a son initiative ; le
   // MJ juge ensuite chaque cible (Avantage / Désavantage) avant de le lancer. Éteint : l'effet est instantané, comme avant.
   game.settings.register(MODULE_ID, "advancedTraps", {

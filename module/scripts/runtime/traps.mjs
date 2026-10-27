@@ -21,6 +21,8 @@
 import { MODULE_ID, loc, log, setting, sceneSetting } from "../shared.mjs";
 import { route, routeClaim } from "./router.mjs";
 import { askGM } from "./take.mjs";
+import { channel, feedbackCard, SOUNDS } from "./feedback.mjs";
+import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
 import { haltScene } from "./hidden.mjs";
 import { TRAP_ZONE, TRAP_RELAY, TrapZoneType, TrapRelayType, registerTrapBehavior, sceneTraps, relaysOf } from "../adapter/trap-behavior.mjs";
 import { trapLevelOf, creatureSize } from "../adapter/dnd5e.mjs";
@@ -567,9 +569,22 @@ export async function requestDisarm(target, looter, { confirm=true }={}) {
     }).catch(() => false);
     if ( !ok ) return null;
   }
+  // 0.17.1 (règles DAS du 2026-10-27) : le désamorçage prend du temps — annonce publique, barre de progression, ping et bruit
+  // d'outils pendant `disarmDuration` secondes ; bouger l'interrompt. Puis le jet, et rien n'est jugé avant la fin des dés 3D.
+  const names = { name: looter.name ?? "", trap: h.name || loc("TrapZone.ThisTrap") };
+  await ChatMessage.implementation.create({
+    speaker: ChatMessage.implementation.getSpeaker({ token: looter, actor: looter.actor }),
+    content: `<p><i class="fa-solid fa-screwdriver-wrench"></i> ${foundry.utils.escapeHTML(loc("TrapZone.DisarmStart", names))}</p>`
+  });
+  if ( !(await channel(looter, { seconds: Number(setting("disarmDuration")) || 0, label: loc("TrapZone.Disarming", names) })) ) {
+    ui.notifications.info(loc("TrapZone.DisarmInterrupted", names));
+    return null;
+  }
+  const known = new Set(game.messages.keys());
   const rolls = await looter.actor.rollToolCheck({ tool: "thief", target: h.trap.disarmDc }, { configure: false });
   const total = rolls?.[0]?.total;
   if ( total === undefined ) return null;
+  await waitForDice(newRollMessage(known));
   const result = await askGM(DISARM_QUERY, handleDisarm, { behavior: h.uuid, looter: looter.uuid, total });
   if ( result?.ok === true ) ui.notifications.info(loc("TrapZone.Disarmed"));
   else if ( result?.ok === false ) ui.notifications.warn(loc(result.fired ? "TrapZone.DisarmFired" : "TrapZone.DisarmFailed"));
@@ -585,15 +600,20 @@ async function handleDisarm({ behavior: uuid, looter: looterUuid, total }, { use
   if ( !user.isGM && !anyKnown(h) ) throw new Error(loc("Refus.Introuvable"));
   if ( !user.isGM && (trapDistance(looter, h) > sceneSetting("reach", looter.parent)) ) throw new Error(loc("Refus.Loin"));
   if ( h.trap.disarmed ) return { ok: true };
+  // 0.17.1 : l'issue se voit et s'entend chez tous — carte publique, texte flottant au-dessus du token, son (runtime/feedback.mjs).
+  const names = { name: looter.name ?? "", trap: h.name || loc("TrapZone.ThisTrap") };
   if ( Number(total) >= h.trap.disarmDc ) {
     await h.update({ disarmed: true, armed: false });
     log.info(`trap ${h.name || h.kind}: disarmed by ${looter.name} (${total})`);
+    await feedbackCard(looter, loc("TrapZone.DisarmCard", names), { kind: "gain", sound: SOUNDS.success, float: loc("TrapZone.FloatDisarmed") });
     return { ok: true };
   }
   if ( (h.trap.failure === "trigger") && armedNow(h) ) {
+    await feedbackCard(looter, loc("TrapZone.DisarmFireCard", names), { kind: "refused", sound: SOUNDS.failure, float: loc("TrapZone.FloatFired") });
     await fireTrap(h, looter);
     return { ok: false, fired: true };
   }
+  await feedbackCard(looter, loc("TrapZone.DisarmFailCard", names), { kind: "refused", sound: SOUNDS.failure, float: loc("TrapZone.FloatFailed") });
   return { ok: false, fired: false };
 }
 
