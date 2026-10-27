@@ -92,7 +92,7 @@ function sourceAt(event) {
 function trapPlaceAt(point) {
   for ( const entry of knownTrapPlaces(canvas.scene) ) {
     const place = entry.place;
-    if ( place.documentName === "Tile" ) {
+    if ( ["Tile", "Token"].includes(place.documentName) ) {
       if ( place.object?.visible && place.object.bounds.contains(point.x, point.y) ) return entry;
     } else if ( place.viewed && place.polygonTree.testPoint(point) ) return entry;
   }

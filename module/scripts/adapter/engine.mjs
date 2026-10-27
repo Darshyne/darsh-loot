@@ -114,6 +114,9 @@ export function setEngineAvoid(region, avoid) {
 /** Un objet pour le moteur (son §16.60, `flags.dnd5e-combat.object`) : ni cible, ni créature. */
 export const engineObjectToken = token => !!token?.flags?.[ENGINE_ID]?.object;
 
+/** Les drapeaux qui font d'un token un objet pour le moteur (un token piège, 0.17.0), ou qui le défont (`false`), pour `updateSource` / `update`. */
+export const engineObjectFlags = (on=true) => (on ? { [`flags.${ENGINE_ID}.object`]: true } : { [`flags.${ENGINE_ID}.-=object`]: null });
+
 /** L'API publique du moteur, s'il est actif. */
 function engineApi() {
   const engine = game.modules.get(ENGINE_ID);

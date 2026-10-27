@@ -20,7 +20,10 @@ Baldur's Gate 3-style interface:
   trap actor's activity (DMG 2024 traps work as they are) is resolved by the engine. Trigger and source are each
   hidden until found (passive Perception, in line of sight, or "Search the surroundings"), with their own DC; a found
   trigger is drawn in red and avoided by the engine's pathfinding, a found source in red with the effect area in
-  orange; either can be disarmed with thieves' tools. A minimum creature size sets them off (Small by default: a rat
+  orange; either can be disarmed with thieves' tools. A trap can also be an **actor**: the DMG 2024 traps (NPCs of
+  creature type "Trap") or any NPC ticked as a trap on its token. Its placed token is the trap, hidden until found and
+  ignored by the engine as a creature; it goes off when a creature walks onto its squares (or onto a trigger picked
+  elsewhere), so traps can be kept in a compendium, listed next to monsters and treasure, and dropped from a journal. A minimum creature size sets them off (Small by default: a rat
   walks over the plate). **Advanced trap mode** (world setting, on by default): out of combat, a trap pauses the game
   and starts a combat (player characters Surprised if nobody had spotted it), acting at its own initiative (20 by
   default) through the engine's initiative events; in combat, nothing is rerolled. When it strikes, the GM gives each

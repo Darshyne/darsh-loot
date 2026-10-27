@@ -818,6 +818,17 @@
         "Initiative": "Initiative (advanced mode)",
         "Source": "Source (region or tile UUID, empty: the door)",
         "SourceHidden": "Hidden source"
+      },
+      "Token": {
+        "Legend": "DAS · Trap",
+        "Hint": "This creature is a trap (a DMG 2024 trap, or any NPC you tick here). Its placed token is the trap: hidden from players, it goes off when a creature walks onto its squares (or onto the trigger picked below), on the creatures of its squares (or of the effect area picked below). Set on the prototype token, these settings are copied to every token placed; each placed token keeps its own state.",
+        "TriggerRegion": "Trigger (region UUID; empty: the token's squares)",
+        "EffectRegion": "Effect area (region UUID; empty: the token's squares)",
+        "Height": "Height (a creature flying higher passes)",
+        "Source": "Source (region or tile UUID; empty: the token when the trigger is elsewhere)",
+        "HiddenEnabled": "Hidden trigger",
+        "SourceHidden": "Hidden source (the token, when the trigger is elsewhere)",
+        "Region": "{name} (DAS · Trap)"
       }
     },
     "Pick": {

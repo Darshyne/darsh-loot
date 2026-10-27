@@ -56,7 +56,7 @@ function zonesToDraw(scene) {
 }
 
 /** Une région ou une tuile est-elle sur le niveau affiché, visible pour ce client ? */
-const placeViewed = doc => ((doc.documentName === "Tile") ? !!doc.object?.visible : !!doc.viewed);
+const placeViewed = doc => (["Tile", "Token"].includes(doc.documentName) ? !!doc.object?.visible : !!doc.viewed);
 
 /**
  * Ce qui est repéré des pièges, sur le niveau affiché : les déclencheurs (régions des zones « DAS · Piège », coffres) et les sources
@@ -83,8 +83,16 @@ function trapsToDraw(concealedToo=false) {
   return out;
 }
 
-/** Les polygones d'un endroit de piège : une région (ou le contour de sa tuile), ou le contour d'une tuile. */
-const placePolygons = place => ((place.documentName === "Tile") ? [tileOutline(place)] : regionPolygons(place));
+/** Les polygones d'un endroit de piège : une région (ou le contour de sa tuile), le contour d'une tuile, ou les cases d'un token. */
+function placePolygons(place) {
+  if ( place.documentName === "Tile" ) return [tileOutline(place)];
+  // Un token piège (0.17.0) : le cadre de ses cases.
+  if ( place.documentName === "Token" ) {
+    const r = place.object?.bounds;
+    return r ? [[r.x, r.y, r.right, r.y, r.right, r.bottom, r.x, r.bottom]] : [];
+  }
+  return regionPolygons(place);
+}
 
 /** Une porte est-elle sur le niveau affiché ? */
 const wallViewed = wall => !canvas.level || (typeof wall.includedInLevel !== "function") || wall.includedInLevel(canvas.level.id);

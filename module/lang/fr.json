@@ -818,6 +818,17 @@
         "Initiative": "Initiative (mode avancé)",
         "Source": "Source (UUID d'une région ou d'une tuile, vide : la porte)",
         "SourceHidden": "Source cachée"
+      },
+      "Token": {
+        "Legend": "DAS · Piège",
+        "Hint": "Cette créature est un piège (un piège du DMG 2024, ou n'importe quel PNJ coché ici). Son token posé est le piège : caché aux joueurs, il part quand une créature marche sur ses cases (ou sur le déclencheur choisi plus bas), sur les créatures de ses cases (ou de la zone d'effet choisie plus bas). Réglés sur le token prototype, ces réglages sont recopiés sur chaque token posé ; chaque token posé garde son propre état.",
+        "TriggerRegion": "Déclencheur (UUID d'une région ; vide : les cases du token)",
+        "EffectRegion": "Zone d'effet (UUID d'une région ; vide : les cases du token)",
+        "Height": "Hauteur (une créature qui vole plus haut passe)",
+        "Source": "Source (UUID d'une région ou d'une tuile ; vide : le token quand le déclencheur est ailleurs)",
+        "HiddenEnabled": "Déclencheur caché",
+        "SourceHidden": "Source cachée (le token, quand le déclencheur est ailleurs)",
+        "Region": "{name} (DAS · Piège)"
       }
     },
     "Pick": {

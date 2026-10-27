@@ -89,11 +89,30 @@ export function zoneSource(behavior) {
  * son déclencheur ou sa source (une région ou une tuile) ; sans lui, son déclencheur.
  */
 export function trapSource(behavior, place=null) {
-  const base = { ...zoneSource(behavior), kind: "trap", key: `trap-${behavior.id}` };
+  // 0.17.0 (étape 11 bis) : un token piège n'est pas un comportement de région.
+  const base = (behavior.documentName === "Token") ? tokenTrapBase(behavior)
+    : { ...zoneSource(behavior), kind: "trap", key: `trap-${behavior.id}` };
   const at = place ?? trapHandle(behavior)?.triggerRegion ?? behavior.region;
   if ( !at ) return base;
-  const box = (at.documentName === "Tile") ? tileBox(at) : regionBox(at);
+  const box = (at.documentName === "Tile") ? tileBox(at) : (at.documentName === "Token") ? tokenBox(at) : regionBox(at);
   return { ...base, box: () => box, distance: looter => placeDistance(looter, at) };
+}
+
+/** Un token piège, comme source à désamorcer. */
+function tokenTrapBase(token) {
+  return {
+    kind: "trap",
+    uuid: token.uuid,
+    key: `trap-${token.id}`,
+    doc: token,
+    get actor() { return null; },
+    get name() { return token.name; },
+    get img() { return null; },
+    exists: () => !!token.parent?.tokens.get(token.id),
+    locked: () => false,
+    box: () => tokenBox(token),
+    distance: looter => placeDistance(looter, token)
+  };
 }
 
 function tileBox(tile) {

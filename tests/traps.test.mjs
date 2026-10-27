@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { checksIn, trapChecks, tierRange, pickTier, targetsLevel, normalizeTrap, triggersOn, armedAt, TRAP_DEFAULTS,
-  bigEnough, sizeOfSpan, normalizeInitiative, migrateZoneTrap }
+  bigEnough, sizeOfSpan, normalizeInitiative, migrateZoneTrap, isTrapCreatureType }
   from "../module/scripts/core/traps.mjs";
 
 describe("tests d'un texte", () => {
@@ -167,5 +167,18 @@ describe("pièges v2 : reprise de la 0.16.0", () => {
     expect(migrateZoneTrap({ effectRegion: null }, plate)).toBeNull();
     expect(migrateZoneTrap({ effectRegion: plate }, plate)).toBeNull();
     expect(migrateZoneTrap({ effectRegion: "Scene.s.Region.c", triggerRegion: plate }, plate)).toBeNull();
+  });
+});
+
+describe("étape 11 bis : l'acteur piège", () => {
+  it("un PNJ au type de créature libre « Trap » (DMG 2024) ou « Piège »", () => {
+    expect(isTrapCreatureType({ value: "custom", custom: "Trap" })).toBe(true);
+    expect(isTrapCreatureType({ value: "custom", custom: " piège " })).toBe(true);
+    expect(isTrapCreatureType({ value: "custom", custom: "Pièges" })).toBe(true);
+  });
+  it("pas une créature ordinaire ni un autre type libre", () => {
+    expect(isTrapCreatureType({ value: "construct", custom: "" })).toBe(false);
+    expect(isTrapCreatureType({ value: "custom", custom: "Trapper" })).toBe(false);
+    expect(isTrapCreatureType(undefined)).toBe(false);
   });
 });

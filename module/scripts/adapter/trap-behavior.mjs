@@ -129,7 +129,8 @@ export class TrapRelayType extends foundry.data.regionBehaviors.RegionBehaviorTy
   static LOCALIZATION_PREFIXES = ["DLO.TrapRelay"];
 
   static defineSchema() {
-    return { trap: new fields.DocumentUUIDField({ type: "RegionBehavior", nullable: true, initial: null }) };
+    // Le piège : un comportement « DAS · Piège », ou (0.17.0) un token piège.
+    return { trap: new fields.DocumentUUIDField({ nullable: true, initial: null }) };
   }
 
   /** Fourni par runtime/traps.mjs : `(relay, event) => void`. */

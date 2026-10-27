@@ -95,7 +95,7 @@ export function targetsLevel(targets) {
  * part : à l'ouverture, au crochetage raté, ou les deux). Sans zone d'effet, il ne touche que celui qui ouvre.
  */
 export const TRAP_DEFAULTS = Object.freeze({
-  enabled: false, actor: null, activity: "", effectRegion: null, trigger: "open", armed: true, rearm: "never", delay: 60,
+  enabled: false, actor: null, activity: "", effectRegion: null, triggerRegion: null, trigger: "open", armed: true, rearm: "never", delay: 60,
   triggeredAt: null, disarmDc: 15, failure: "trigger", disarmed: false, minSize: "sm", initiative: 20, source: Object.freeze({ uuid: null, hidden: {} })
 });
 
@@ -112,6 +112,7 @@ export function normalizeTrap(raw={}) {
     actor: uuid(raw.actor),
     activity: (typeof raw.activity === "string") ? raw.activity.trim() : "",
     effectRegion: uuid(raw.effectRegion),
+    triggerRegion: uuid(raw.triggerRegion),
     trigger: TRIGGERS.includes(raw.trigger) ? raw.trigger : d.trigger,
     armed: raw.armed !== false,
     rearm: REARMS.includes(raw.rearm) ? raw.rearm : d.rearm,
@@ -183,3 +184,13 @@ export function migrateZoneTrap(system, regionUuid) {
 }
 
 const clone = o => JSON.parse(JSON.stringify(o ?? {}));
+
+/* ---- piège porté par un acteur (étape 11 bis) ---- */
+
+/**
+ * Un acteur piège à sa nature : un PNJ au type de créature libre « Trap » (les pièges du DMG 2024 : `details.type.value` « custom »,
+ * `custom` « Trap ») ou « Piège » (traduit). `type` : `system.details.type` de dnd5e.
+ */
+export function isTrapCreatureType(type) {
+  return (type?.value === "custom") && /^(traps?|pièges?)$/i.test(String(type?.custom ?? "").trim());
+}
