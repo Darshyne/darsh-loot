@@ -13,12 +13,19 @@ Baldur's Gate 3-style interface:
   and treasure theme;
 - **containers**: a "Container" region behavior, contents rolled from a table or from a treasure hoard by CR
   band, locks (key, thieves' tools or GM), hover cursor;
-- **traps**: a "DAS · Trap" region behavior (a pressure plate whose effect can hit another region), and **trapped
-  containers and doors** (set in the container's behavior or the door's wall configuration) that go off when opened
-  and / or when picking the lock fails, on whoever opens them or on a remote effect area (a dart wall across the room);
-  the trap actor's activity (DMG 2024 traps work as they are) is resolved by the engine. Traps are hidden until found
-  (passive Perception or "Search the surroundings"), then drawn in red and disarmed with thieves' tools; they rearm
-  never, by hand or after a delay in world time;
+- **traps**: a "DAS · Trap" region behavior set on the trap's **effect area**, which names its **trigger** (a pressure
+  plate elsewhere, or the area itself) and its **source** (a region or a tile: the holes in the wall), both picked on
+  the map; and **trapped containers and doors** (set in the container's behavior or the door's wall configuration)
+  that go off when opened and / or when picking the lock fails, on whoever opens them or on a remote effect area. The
+  trap actor's activity (DMG 2024 traps work as they are) is resolved by the engine. Trigger and source are each
+  hidden until found (passive Perception, in line of sight, or "Search the surroundings"), with their own DC; a found
+  trigger is drawn in red and avoided by the engine's pathfinding, a found source in red with the effect area in
+  orange; either can be disarmed with thieves' tools. A minimum creature size sets them off (Small by default: a rat
+  walks over the plate). **Advanced trap mode** (world setting, on by default): out of combat, a trap pauses the game
+  and starts a combat (player characters Surprised if nobody had spotted it), acting at its own initiative (20 by
+  default) through the engine's initiative events; in combat, nothing is rerolled. When it strikes, the GM gives each
+  creature in the area Advantage or Disadvantage according to how it was played, then launches it. Traps rearm never,
+  by hand or after a delay in world time;
 - **items dropped on the ground** (drag an item from a sheet onto the map), with a throw animation and sounds;
 - **pickpocketing** (Sleight of Hand against passive Perception), stolen items are flagged;
 - **necromancy**: a dead humanoid becomes a controlled skeleton or zombie;

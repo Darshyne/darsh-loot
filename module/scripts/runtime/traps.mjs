@@ -18,20 +18,25 @@
  * ou le moteur) et / ou **au crochetage raté**. Sans zone d'effet, il ne touche que celui qui ouvre. Repéré, ouvrir demande d'abord :
  * désamorcer, ouvrir quand même ou renoncer.
  */
-import { MODULE_ID, loc, log, sceneSetting } from "../shared.mjs";
+import { MODULE_ID, loc, log, setting, sceneSetting } from "../shared.mjs";
 import { route, routeClaim } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { haltScene } from "./hidden.mjs";
-import { TRAP_ZONE, TrapZoneType, registerTrapBehavior, sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
-import { trapLevelOf } from "../adapter/dnd5e.mjs";
-import { trapHandle, handleKnown, handleDistance, trappedThings, isDoorWall } from "../adapter/trapped.mjs";
-import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap } from "../core/traps.mjs";
+import { TRAP_ZONE, TRAP_RELAY, TrapZoneType, TrapRelayType, registerTrapBehavior, sceneTraps, relaysOf } from "../adapter/trap-behavior.mjs";
+import { trapLevelOf, creatureSize } from "../adapter/dnd5e.mjs";
+import { trapHandle, handleKnown, sourceKnown, anyKnown, handleDistance, trapDistance, trappedThings, allTraps, isDoorWall }
+  from "../adapter/trapped.mjs";
+import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap, bigEnough, migrateZoneTrap, SIZES }
+  from "../core/traps.mjs";
 import { normalizeHidden } from "../core/hidden.mjs";
-import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid, LOCK_ATTEMPT_HOOK, DOOR_MENU_HOOK } from "../adapter/engine.mjs";
+import { addPickButtons, DOOR_PICKS } from "./pick.mjs";
+import { askTrapResolution } from "../apps/trap-window.mjs";
+import { engineUsageConfig, engineGivenTargetsMessage, setEngineAvoid, engineCombatEvents, engineObjectToken, LOCK_ATTEMPT_HOOK,
+  DOOR_MENU_HOOK, EVENT_TURN_HOOK } from "../adapter/engine.mjs";
 
 const DISARM_QUERY = `${MODULE_ID}.disarm`;
 const TRIGGER_QUERY = `${MODULE_ID}.trapTrigger`;
-/** Émis chez le MJ actif quand un piège part : `{ behavior, region, effectRegion, actor, activity, triggerer, targets, kind, wall }`. */
+/** Émis chez le MJ actif quand un piège part : `{ behavior, region (déclencheur), effectRegion, source (0.17.0), actor, activity, triggerer, targets, kind, wall }`. */
 const TRAP_FIRED_HOOK = `${MODULE_ID}.trapFired`;
 
 const isActiveGM = () => game.users.activeGM?.isSelf === true;
@@ -56,20 +61,18 @@ function groundOf(region, token) {
 }
 
 /** Le token est-il assez bas pour déclencher (une créature qui vole au-dessus passe) ? */
-function lowEnough(behavior, token) {
-  return (token._source.elevation ?? 0) <= groundOf(behavior.region, token) + behavior.system.height;
+function lowEnough(h, token) {
+  return (token._source.elevation ?? 0) <= groundOf(h.triggerRegion, token) + (Number(h.trap.height) || 0);
 }
 
+/** 0.17.0 : la créature est-elle assez grande pour faire partir ce piège (Petite par défaut : un rat passe) ? */
+const heavyEnough = (h, token) => bigEnough(creatureSize(token), h.trap.minSize);
+
 /**
- * La zone d'effet : la région désignée ; sinon, pour une zone « DAS · Piège », la région du déclencheur ; pour un coffre ou une
- * porte, aucune (le piège ne touche que celui qui ouvre).
+ * La zone d'effet (adapter/trapped.mjs) : une zone « DAS · Piège », sa région ; un coffre ou une porte, la région désignée ou aucune
+ * (le piège ne touche que celui qui ouvre).
  */
-function effectRegionOf(h) {
-  const uuid = h.trap.effectRegion;
-  const region = uuid ? fromUuidSync(uuid, { strict: false }) : null;
-  if ( region?.documentName === "Region" ) return region;
-  return (h.kind === "zone") ? h.region : null;
-}
+const effectRegionOf = h => h.effectRegion ?? null;
 
 /** Les tokens dans la zone d'effet (centre dans un de ses polygones, même niveau). */
 function tokensIn(region) {
@@ -134,29 +137,22 @@ const firing = new Set();
 
 /**
  * Chez le MJ actif : le piège part (zone, coffre ou porte). Il est repéré, désarmé (heure notée pour un réarmement), tout
- * s'arrête, puis l'acteur piège utilise son activité sur les cibles, par le moteur.
+ * s'arrête. En mode simple, l'acteur piège utilise aussitôt son activité sur les cibles, par le moteur. En mode avancé (0.17.0,
+ * réglage `advancedTraps`) : hors combat, pause, combat avec la scène, le piège à son initiative ; en combat, la fenêtre du MJ tout
+ * de suite. Rend true si le piège est parti (ou attend son tour).
  */
 export async function fireTrap(target, triggerer=null) {
   const h = asHandle(target);
   if ( !h || firing.has(h.uuid) ) return false;
   firing.add(h.uuid);
   try {
-    const scene = h.scene;
-    haltScene(scene);
+    haltScene(h.scene);
     // Une zone : le déclencheur y a mis le pied, on le recale sur sa case. Un coffre, une porte : il est déjà arrêté devant.
     if ( triggerer && (h.kind === "zone") ) snapToCell(triggerer);
-    await h.update({ armed: false, triggeredAt: game.time.worldTime, "hidden.found": true });
-    const targets = targetsOf(h, triggerer);
-    const activity = await activityOf(h, targets);
-    if ( !activity ) { log.warn(`trap ${h.uuid}: no actor or activity`); return false; }
-    log.info(`trap ${h.name || h.kind}: ${activity.name || activity.item.name} on ${targets.map(t => t.name).join(", ") || "nobody"}`
-      + (triggerer ? ` (triggered by ${triggerer.name})` : ""));
-    // Hook public : un module d'animation peut jouer le piège (BLFX ne joue rien sans token source, et l'acteur piège n'en a
-    // pas). On ne connaît pas qui l'écoute. `behavior` : le comportement (zone ou conteneur), null pour une porte (`wall`).
-    Hooks.callAll(TRAP_FIRED_HOOK, { behavior: h.wall ? null : h.doc, region: h.region, effectRegion: effectRegionOf(h),
-      actor: activity.actor, activity, triggerer, targets, kind: h.kind, wall: h.wall });
-    await useOnTargets(activity, scene, targets);
-    return true;
+    const known = anyKnown(h);
+    await h.update({ armed: false, triggeredAt: game.time.worldTime, "hidden.found": true, "source.hidden.found": true });
+    if ( setting("advancedTraps") && engineCombatEvents() ) return await springAdvanced(h, triggerer, { surprise: !known });
+    return await resolveTrap(h, triggerer);
   } catch(err) {
     log.warn("trap:", err.message);
     return false;
@@ -166,21 +162,133 @@ export async function fireTrap(target, triggerer=null) {
 }
 
 /**
- * L'activité utilisée par le MJ sur ces cibles : dnd5e lit les cibles de l'utilisateur au moment de l'utilisation, il faut
- * donc les désigner, sur la scène affichée par le MJ. Ses cibles d'avant lui sont rendues.
+ * Le piège frappe : l'acteur piège utilise son activité sur les cibles. Sans choix du MJ (mode simple) : les cibles de la zone d'effet
+ * et la tranche selon leur niveau. `choice` (mode avancé) : `{ targets, modes, activity }` de la fenêtre du MJ.
  */
-async function useOnTargets(activity, scene, targets) {
+async function resolveTrap(h, triggerer, choice=null) {
+  const scene = h.scene;
+  const targets = choice ? choice.targets : targetsOf(h, triggerer);
+  const activity = choice?.activity ?? await activityOf(h, targets);
+  if ( !activity ) { log.warn(`trap ${h.uuid}: no actor or activity`); return false; }
+  const modes = choice?.modes ?? {};
+  const favours = Object.entries(modes).map(([uuid, mode]) => `${fromUuidSync(uuid, { strict: false })?.name}: ${mode}`);
+  log.info(`trap ${h.name || h.kind}: ${activity.name || activity.item.name} on ${targets.map(t => t.name).join(", ") || "nobody"}`
+    + (triggerer ? ` (triggered by ${triggerer.name})` : "") + (favours.length ? ` — ${favours.join(", ")}` : ""));
+  // Hook public : un module d'animation peut jouer le piège (BLFX ne joue rien sans token source, et l'acteur piège n'en a
+  // pas). On ne connaît pas qui l'écoute. `behavior` : le comportement (zone ou conteneur), null pour une porte (`wall`).
+  Hooks.callAll(TRAP_FIRED_HOOK, { behavior: h.wall ? null : h.doc, region: h.triggerRegion ?? h.region, effectRegion: effectRegionOf(h),
+    source: h.source.doc,
+    actor: activity.actor, activity, triggerer, targets, kind: h.kind, wall: h.wall });
+  // Un jet d'attaque vaut pour toutes ses cibles : des faveurs différentes font une attaque par groupe (le moteur, son §249, n'inverse
+  // le mode sur le jet que si ses cibles s'accordent). Une sauvegarde est demandée à chacune avec son mode : une seule utilisation.
+  if ( (activity.type === "attack") && (new Set(targets.map(t => modes[t.uuid] ?? "")).size > 1) ) {
+    for ( const group of Object.values(Object.groupBy(targets, t => modes[t.uuid] ?? "")) ) await useOnTargets(activity, scene, group, modes);
+  } else await useOnTargets(activity, scene, targets, modes);
+  return true;
+}
+
+/**
+ * L'activité utilisée par le MJ sur ces cibles : dnd5e lit les cibles de l'utilisateur au moment de l'utilisation, il faut
+ * donc les désigner, sur la scène affichée par le MJ. Ses cibles d'avant lui sont rendues. `modes` : la faveur donnée par cible.
+ */
+async function useOnTargets(activity, scene, targets, modes={}) {
   if ( canvas.scene !== scene ) log.warn("trap: the GM is not viewing the trap's scene, the activity goes off without targets");
   const before = [...game.user.targets].map(t => t.id);
   const viewed = canvas.scene === scene;
   if ( viewed ) canvas.tokens.setTargets(targets.map(t => t.id), { mode: "replace" });
+  const given = Object.fromEntries(targets.filter(t => modes[t.uuid]).map(t => [t.uuid, modes[t.uuid]]));
   try {
     // Sans gabarit : la zone d'effet est la nôtre. Un piège du DMG 2024 en déclare un (la Statue au souffle de feu : un cône
     // de 15 ft) que dnd5e ferait poser à la souris (activity/mixin.mjs:449-451, `create.measuredTemplate`).
     await activity.use({ ...engineUsageConfig(), consume: false, create: { measuredTemplate: false } }, { configure: false },
-      engineGivenTargetsMessage());
+      engineGivenTargetsMessage(given));
   } finally {
     if ( viewed ) canvas.tokens.setTargets(before.filter(id => canvas.tokens.get(id)), { mode: "replace" });
+  }
+}
+
+/* -------------------------------------------- */
+/*  Mode piège avancé (0.17.0)                  */
+/* -------------------------------------------- */
+
+/** La clé de l'évènement d'initiative d'un piège. */
+const eventKey = h => `${MODULE_ID}.trap:${h.uuid}`;
+
+/** Le combat commencé de cette scène, s'il y en a un. */
+const combatOf = scene => game.combats.find(c => c.started && (c.scene?.id === scene.id)) ?? null;
+
+/**
+ * Chez le MJ actif, en mode avancé. **En combat** : on ne relance pas l'initiative, la fenêtre du MJ s'ouvre tout de suite. **Hors
+ * combat** : le jeu se met en pause, un combat est créé avec les créatures de la scène, ceux qui n'avaient repéré ni le déclencheur
+ * ni la source sont **Surpris** (dnd5e : Désavantage à l'initiative ; le moteur retire l'état une fois l'initiative lancée), le piège
+ * entre dans l'initiative comme **évènement temporaire** du moteur (son §250), à son initiative, pour le round 1, et l'initiative est
+ * tirée. La fenêtre s'ouvre à son tour (`onEventTurn`).
+ */
+async function springAdvanced(h, triggerer, { surprise }) {
+  const scene = h.scene;
+  if ( combatOf(scene) ) {
+    judgeTrap(h, triggerer, null);
+    return true;
+  }
+  if ( !game.paused ) game.togglePause(true, { broadcast: true });
+  const combat = await foundry.documents.Combat.implementation.create({ scene: scene.id, active: true });
+  const tokens = scene.tokens.filter(t => t.actor && !t.actor.statuses?.has("dead") && !engineObjectToken(t));
+  await combat.createEmbeddedDocuments("Combatant", tokens.map(t => ({ tokenId: t.id, sceneId: scene.id, actorId: t.actorId, hidden: t.hidden })));
+  // Surpris : les personnages des joueurs, quand personne n'avait repéré le piège (la découverte est commune à la table).
+  if ( surprise ) {
+    for ( const t of tokens.filter(t => t.actor.hasPlayerOwner) ) {
+      try { await t.actor.toggleStatusEffect("surprised", { active: true }); }
+      catch(err) { log.warn(`trap: ${t.name} not Surprised`, err.message); }
+    }
+  }
+  const actor = h.trap.actor ? await fromUuid(h.trap.actor) : null;
+  await engineCombatEvents().addEvent({ combat, name: h.name || actor?.name || loc("TrapZone.ThisTrap"), img: actor?.img ?? null,
+    initiative: h.trap.initiative, rounds: 1, key: eventKey(h), data: { trap: h.uuid, triggerer: triggerer?.uuid ?? null } });
+  await combat.rollAll();
+  await combat.startCombat();
+  log.info(`trap ${h.name || h.kind}: combat started, trap at initiative ${h.trap.initiative}${surprise ? ", characters Surprised" : ""}`);
+  return true;
+}
+
+/** Le tour d'un évènement d'initiative (moteur, son §250), chez le MJ actif : celui d'un piège ouvre la fenêtre du MJ. */
+function onEventTurn({ combat, combatant, data }={}) {
+  if ( !isActiveGM() || !data?.trap ) return;
+  const h = trapHandle(fromUuidSync(data.trap, { strict: false }));
+  if ( !h ) { log.warn(`trap ${data.trap}: gone, its turn is skipped`); combat?.nextTurn(); return; }
+  const triggerer = data.triggerer ? fromUuidSync(data.triggerer, { strict: false }) : null;
+  judgeTrap(h, triggerer, { combat, combatant });
+}
+
+const judging = new Set();
+
+/**
+ * La fenêtre du MJ (apps/trap-window.mjs) sur les créatures **à ce moment** dans la zone d'effet (elles ont pu en sortir avant le tour
+ * du piège), puis le piège frappe, ou non. À son tour, le tour passe ensuite.
+ */
+async function judgeTrap(h, triggerer, turn) {
+  if ( judging.has(h.uuid) ) return;
+  judging.add(h.uuid);
+  try {
+    const targets = targetsOf(h, triggerer);
+    const proposed = await activityOf(h, targets);
+    const answer = await askTrapResolution({
+      name: h.name || proposed?.item?.name || loc("TrapZone.ThisTrap"),
+      targets: targets.map(t => ({ uuid: t.uuid, name: t.name, img: t.texture?.src ?? t.actor?.img ?? null })),
+      activities: (proposed?.item.system.activities.contents ?? []).map(a => ({ id: a.id, name: a.name || a.item.name })),
+      activity: proposed?.id ?? null,
+      attack: proposed?.type === "attack"
+    });
+    if ( !answer.fire ) log.info(`trap ${h.name || h.kind}: cancelled by the GM`);
+    else {
+      const chosen = proposed?.item.system.activities.get(answer.activity) ?? proposed;
+      const picked = answer.targets.map(uuid => targets.find(t => t.uuid === uuid)).filter(Boolean);
+      await resolveTrap(h, triggerer, { targets: picked, modes: answer.modes, activity: chosen });
+    }
+  } catch(err) {
+    log.warn("trap:", err.message);
+  } finally {
+    judging.delete(h.uuid);
+    if ( turn?.combat && (turn.combat.combatant?.id === turn.combatant?.id) ) await turn.combat.nextTurn();
   }
 }
 
@@ -189,10 +297,22 @@ async function useOnTargets(activity, scene, targets) {
  * peut, documents/token.mjs:762) ; le MJ actif juge et déclenche.
  */
 function onEnter(behavior, event) {
+  // 0.17.0 : la région du piège n'est son déclencheur que si aucun autre n'est désigné (sinon c'est le relais qui prévient).
+  const h = trapHandle(behavior);
+  if ( h && (h.triggerRegion === behavior.region) ) entered(h, event);
+}
+
+/** L'évènement du cœur sur un relais (0.17.0) : un token entre dans le déclencheur désigné d'un piège posé ailleurs. */
+function onRelayEnter(relay, event) {
+  const h = trapHandle(relay);
+  if ( h && (h.kind === "zone") && (h.triggerRegion === relay.region) ) entered(h, event);
+}
+
+function entered(h, event) {
   const token = event.data?.token;
-  if ( !token || !armedNow(trapHandle(behavior)) || !lowEnough(behavior, token) ) return;
+  if ( !token || !armedNow(h) || !lowEnough(h, token) || !heavyEnough(h, token) ) return;
   if ( event.user?.isSelf ) { try { token.stopMovement(); } catch(err) { /* déjà arrêté */ } }
-  if ( isActiveGM() ) fireTrap(behavior, token);
+  if ( isActiveGM() ) fireTrap(h, token);
 }
 
 /* -------------------------------------------- */
@@ -206,13 +326,15 @@ function onEnter(behavior, event) {
 export async function springTrap(target, looter, moment) {
   const h = asHandle(target);
   if ( !h || (h.kind === "zone") || !armedNow(h) || !triggersOn(h.trap, moment) ) return false;
+  // 0.17.0 : une créature trop petite (un familier Très petit qui soulève le couvercle) ne le fait pas partir.
+  if ( looter && !heavyEnough(h, looter) ) return false;
   return fireTrap(h, looter);
 }
 
 /** Demander au MJ de faire partir le piège de ce coffre ou de cette porte, ouvert par ce token. */
 export function requestSpring(target, looter, moment) {
   const h = asHandle(target);
-  if ( !h || !looter || !armedNow(h) || !triggersOn(h.trap, moment) ) return Promise.resolve(null);
+  if ( !h || !looter || !armedNow(h) || !triggersOn(h.trap, moment) || !heavyEnough(h, looter) ) return Promise.resolve(null);
   return askGM(TRIGGER_QUERY, handleTrigger, { target: h.uuid, looter: looter.uuid, moment }).catch(err => {
     log.warn("trap:", err.message);
     return null;
@@ -233,7 +355,7 @@ async function handleTrigger({ target, looter: looterUuid, moment }, { user }) {
  */
 export async function trapGate(target, looter, moments=["open"]) {
   const h = asHandle(target);
-  if ( !h || !handleKnown(h) || !armedNow(h) || !moments.some(m => triggersOn(h.trap, m)) ) return true;
+  if ( !h || !anyKnown(h) || !armedNow(h) || !moments.some(m => triggersOn(h.trap, m)) ) return true;
   const name = foundry.utils.escapeHTML(h.name || loc(h.wall ? "TrappedTrap.ThisDoor" : "TrappedTrap.ThisContainer"));
   const choice = await foundry.applications.api.DialogV2.wait({
     window: { title: loc("TrappedTrap.GateTitle"), icon: "fa-solid fa-burst" },
@@ -256,13 +378,96 @@ export async function trapGate(target, looter, moments=["open"]) {
 /* -------------------------------------------- */
 
 /**
- * Chez le MJ : la région d'un piège repéré (et pas désamorcé) est à éviter par le chemin du moteur ; sinon, plus. Seulement les
- * zones « DAS · Piège » : un coffre ou une porte piégé ne part pas quand on passe à côté.
+ * Chez le MJ : le déclencheur d'un piège repéré (et pas désamorcé) est à éviter par le chemin du moteur ; sinon, plus. Seulement les
+ * zones « DAS · Piège » : un coffre ou une porte piégé ne part pas quand on passe à côté. 0.17.0 : le déclencheur peut être une autre
+ * région que celle du piège ; on note sur la région que c'est nous qui l'avons marquée (`avoidByTrap`), pour ne retirer que nos marques
+ * (darsh-npc et d'autres posent aussi des régions à éviter).
  */
-async function syncAvoid(behavior) {
-  const region = behavior.region;
-  if ( !region ) return;
-  await setEngineAvoid(region, trapKnown(behavior));
+async function syncAvoid(scene) {
+  if ( !scene ) return;
+  const wanted = new Set(sceneTraps(scene).map(trapHandle).filter(h => h?.triggerRegion && handleKnown(h)).map(h => h.triggerRegion));
+  for ( const region of scene.regions ) {
+    const ours = region.getFlag(MODULE_ID, "avoidByTrap") === true;
+    if ( wanted.has(region) && !ours ) {
+      await setEngineAvoid(region, true);
+      await region.setFlag(MODULE_ID, "avoidByTrap", true);
+    } else if ( !wanted.has(region) && ours ) {
+      await setEngineAvoid(region, false);
+      await region.unsetFlag(MODULE_ID, "avoidByTrap");
+    }
+  }
+}
+
+/* -------------------------------------------- */
+/*  Relais et reprise de la 0.16.0              */
+/* -------------------------------------------- */
+
+/**
+ * Chez le MJ : chaque piège dont le déclencheur est une autre région y a un relais, et un seul ; un relais dont le piège n'existe
+ * plus, ou désigne une autre région, est retiré.
+ */
+async function syncRelays(scene) {
+  if ( !scene ) return;
+  const wanted = new Map();   // région du déclencheur → UUID des pièges
+  for ( const h of sceneTraps(scene).map(trapHandle).filter(Boolean) ) {
+    if ( !h.triggerRegion || (h.triggerRegion === h.region) ) continue;
+    if ( !wanted.has(h.triggerRegion) ) wanted.set(h.triggerRegion, new Set());
+    wanted.get(h.triggerRegion).add(h.uuid);
+  }
+  for ( const region of scene.regions ) {
+    const want = wanted.get(region) ?? new Set();
+    const have = relaysOf(region);
+    const stale = have.filter(r => !want.has(r.system.trap)).map(r => r.id);
+    const missing = [...want].filter(uuid => !have.some(r => r.system.trap === uuid));
+    try {
+      if ( stale.length ) await region.deleteEmbeddedDocuments("RegionBehavior", stale);
+      if ( missing.length ) await region.createEmbeddedDocuments("RegionBehavior", missing.map(uuid => ({
+        type: TRAP_RELAY, name: loc("TrapRelay.Name"), system: { trap: uuid }
+      })));
+    } catch(err) {
+      log.warn(`trap relays of ${region.name}:`, err.message);
+    }
+  }
+}
+
+/**
+ * Chez le MJ actif, une fois par monde : les pièges de zone de la 0.16.0 posés sur leur dalle avec une zone d'effet à part sont reposés
+ * sur leur zone d'effet, la dalle désignée comme déclencheur (core/traps.mjs `migrateZoneTrap`). Le nouveau comportement est créé
+ * avant que l'ancien soit retiré, pour que la dalle reste cachée tout du long. Rend le nombre de pièges repris.
+ */
+export async function migrateTraps() {
+  let moved = 0;
+  for ( const scene of game.scenes ) {
+    for ( const behavior of sceneTraps(scene) ) {
+      const region = behavior.region;
+      const m = migrateZoneTrap(behavior.system.toObject(), region.uuid);
+      if ( !m ) continue;
+      const effect = fromUuidSync(m.effectRegion, { strict: false });
+      if ( (effect?.documentName !== "Region") || (effect.parent !== scene) ) {
+        log.warn(`trap ${behavior.uuid}: effect area ${m.effectRegion} not found, left as it is`);
+        continue;
+      }
+      try {
+        await effect.createEmbeddedDocuments("RegionBehavior", [{ type: TRAP_ZONE, name: behavior.name, disabled: behavior.disabled,
+          system: m.system, flags: foundry.utils.deepClone(behavior.flags ?? {}) }]);
+        await behavior.delete();
+        moved++;
+        log.info(`trap ${behavior.system.displayName || region.name}: moved onto its effect area ${effect.name}, triggered by ${region.name}`);
+      } catch(err) {
+        log.warn(`trap ${behavior.uuid} not migrated:`, err.message);
+      }
+    }
+  }
+  return moved;
+}
+
+/** Au démarrage, chez le MJ actif : la reprise des pièges, une fois par monde (réglage caché `trapsVersion`). */
+async function migrateOnce() {
+  if ( !isActiveGM() || (setting("trapsVersion") >= 2) ) return;
+  const moved = await migrateTraps();
+  for ( const scene of game.scenes ) { await syncRelays(scene); await syncAvoid(scene); }
+  await game.settings.set(MODULE_ID, "trapsVersion", 2);
+  if ( moved ) log.info(`traps: ${moved} trap(s) moved onto their effect area (0.17.0)`);
 }
 
 /**
@@ -299,8 +504,9 @@ async function handleDisarm({ behavior: uuid, looter: looterUuid, total }, { use
   const looter = fromUuidSync(looterUuid, { strict: false });
   if ( !h || !looter?.actor ) throw new Error(loc("Refus.Introuvable"));
   if ( !looter.actor.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
-  if ( !user.isGM && !handleKnown(h) ) throw new Error(loc("Refus.Introuvable"));
-  if ( !user.isGM && (handleDistance(looter, h) > sceneSetting("reach", looter.parent)) ) throw new Error(loc("Refus.Loin"));
+  // 0.17.0 : il se désamorce de ce qui en est repéré, son déclencheur ou sa source.
+  if ( !user.isGM && !anyKnown(h) ) throw new Error(loc("Refus.Introuvable"));
+  if ( !user.isGM && (trapDistance(looter, h) > sceneSetting("reach", looter.parent)) ) throw new Error(loc("Refus.Loin"));
   if ( h.trap.disarmed ) return { ok: true };
   if ( Number(total) >= h.trap.disarmDc ) {
     await h.update({ disarmed: true, armed: false });
@@ -342,9 +548,19 @@ export async function applyTrapChecks(target) {
   await h.doc.setFlag(MODULE_ID, flag, uuid);
 }
 
-/** Les pièges repérés d'une scène, désamorçables (pour la souris). */
-export function knownTraps(scene) {
-  return sceneTraps(scene).filter(b => trapKnown(b));
+/**
+ * Les endroits repérés des pièges d'une scène, à désamorcer d'un clic (pour la souris) : `{ h, place }`, où `place` est le déclencheur
+ * d'une zone « DAS · Piège » (une région) ou la source d'un piège (une région ou une tuile). Un coffre et une porte se désamorcent
+ * aussi par leur menu.
+ */
+export function knownTrapPlaces(scene) {
+  const out = [];
+  for ( const h of allTraps(scene) ) {
+    if ( h.trap.disarmed ) continue;
+    if ( (h.kind === "zone") && h.triggerRegion && handleKnown(h) ) out.push({ h, place: h.triggerRegion });
+    if ( h.source.doc && sourceKnown(h) ) out.push({ h, place: h.source.doc });
+  }
+  return out;
 }
 
 /** Les pièges de coffre et de porte repérés d'une scène (pour le dessin en rouge). */
@@ -386,7 +602,7 @@ function openerOf(wall, user) {
 function onPreUpdateWall(wall, changes, options) {
   if ( game.user.isGM || (changes.ds !== openState()) || options[OPEN_OK] ) return;
   const h = trapHandle(wall);
-  if ( !h || !handleKnown(h) || !armedNow(h) || !triggersOn(h.trap, "open") ) return;
+  if ( !h || !anyKnown(h) || !armedNow(h) || !triggersOn(h.trap, "open") ) return;
   (async () => {
     if ( !(await trapGate(h, openerOf(wall, game.user), ["open"])) ) return;
     if ( wall.ds === openState() ) return;
@@ -416,7 +632,7 @@ function onLockAttempt({ door, token, method, outcome }={}) {
 function onDoorMenu(entries, { token, wall }={}) {
   const h = trapHandle(wall?.document ?? wall);
   const looter = token?.document ?? token;
-  if ( !h || !handleKnown(h) || !looter?.actor ) return;
+  if ( !h || !anyKnown(h) || !looter?.actor ) return;
   entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"), run: () => requestDisarm(h, looter) });
 }
 
@@ -431,15 +647,17 @@ function onRenderWallConfig(app, html) {
   const raw = app.document?.getFlag(MODULE_ID, "trap") ?? {};
   const t = normalizeTrap(raw);
   const h = normalizeHidden({ enabled: true, ...(raw.hidden ?? {}) });
+  const sh = normalizeHidden({ enabled: true, ...(raw.source?.hidden ?? {}) });
   const name = key => `flags.${MODULE_ID}.trap.${key}`;
   const L = key => loc(`TrappedTrap.Door.${key}`);
   const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
+  const sizes = SIZES.map(k => `<option value="${k}" ${k === t.minSize ? "selected" : ""}>${esc(game.i18n.localize(CONFIG.DND5E?.actorSizes?.[k]?.label ?? k))}</option>`).join("");
   const row = (label, input) => `<div class="form-group"><label>${esc(label)}</label><div class="form-fields">${input}</div></div>`;
   const check = (key, on) => `<input type="checkbox" name="${name(key)}" ${on ? "checked" : ""}>`;
   const number = (key, value, min, step=1) => `<input type="number" min="${min}" step="${step}" name="${name(key)}" value="${value ?? ""}" data-dtype="Number">`;
   const text = (key, value, extra="") => `<input type="text" name="${name(key)}" value="${esc(value ?? "")}" ${extra}>`;
   const select = (key, value, options) => `<select name="${name(key)}">${Object.entries(options)
-    .map(([v, label]) => `<option value="${v}" ${v === value ? "selected" : ""}>${esc(loc(label))}</option>`).join("")}</select>`;
+    .map(([v, label]) => `<option value="${v}" ${v === value ? "selected" : ""}>${esc(label.startsWith("DND5E.") ? game.i18n.localize(label) : loc(label))}</option>`).join("")}</select>`;
   const fieldset = document.createElement("fieldset");
   fieldset.className = "dlo-wall-trap";
   fieldset.innerHTML = `
@@ -450,6 +668,8 @@ function onRenderWallConfig(app, html) {
     ${row(L("Activity"), text("activity", t.activity))}
     ${row(L("EffectRegion"), text("effectRegion", t.effectRegion, `placeholder="Scene.….Region.…"`))}
     ${row(L("Trigger"), select("trigger", t.trigger, { open: "TrappedTrap.Trigger.Open", pick: "TrappedTrap.Trigger.Pick", both: "TrappedTrap.Trigger.Both" }))}
+    ${row(L("MinSize"), `<select name="${name("minSize")}">${sizes}</select>`)}
+    ${row(L("Initiative"), number("initiative", t.initiative, 1))}
     ${row(L("Armed"), check("armed", t.armed))}
     ${row(L("Rearm"), select("rearm", t.rearm, { never: "TrapZone.Rearm.Never", gm: "TrapZone.Rearm.Gm", time: "TrapZone.Rearm.Time" }))}
     ${row(L("Delay"), number("delay", t.delay, 0))}
@@ -462,7 +682,15 @@ function onRenderWallConfig(app, html) {
     ${row(loc("Hidden.Wall.Passive"), number("hidden.passive", h.passive, 0, 5))}
     ${row(loc("Hidden.Wall.Radius"), number("hidden.radius", h.radius, 0, 5))}
     ${row(loc("Hidden.Wall.Found"), check("hidden.found", h.found))}
-    ${row(loc("Hidden.Wall.Text"), text("hidden.text", h.text))}`;
+    ${row(loc("Hidden.Wall.Text"), text("hidden.text", h.text))}
+    ${row(L("Source"), text("source.uuid", t.source.uuid, `placeholder="Scene.….Region.… / Tile.…"`))}
+    ${row(L("SourceHidden"), check("source.hidden.enabled", sh.enabled))}
+    ${row(loc("Hidden.Wall.Skill"), select("source.hidden.skill", sh.skill, { prc: "DND5E.SkillPrc", inv: "DND5E.SkillInv" }))}
+    ${row(loc("Hidden.Wall.Dc"), number("source.hidden.dc", sh.dc, 1))}
+    ${row(loc("Hidden.Wall.Passive"), number("source.hidden.passive", sh.passive, 0, 5))}
+    ${row(loc("Hidden.Wall.Radius"), number("source.hidden.radius", sh.radius, 0, 5))}
+    ${row(loc("Hidden.Wall.Found"), check("source.hidden.found", sh.found))}
+    ${row(loc("Hidden.Wall.Text"), text("source.hidden.text", sh.text))}`;
   // Glisser un acteur (barre latérale, compendium) sur son champ y écrit son UUID.
   fieldset.querySelector("[data-dlo-drop]")?.addEventListener("drop", event => {
     const TextEditor = foundry.applications.ux.TextEditor.implementation;
@@ -475,6 +703,7 @@ function onRenderWallConfig(app, html) {
   const footer = root.querySelector(".form-footer");
   if ( footer ) footer.before(fieldset);
   else root.append(fieldset);
+  addPickButtons(fieldset, DOOR_PICKS, app);
   app.setPosition?.({ height: "auto" });
 }
 
@@ -485,22 +714,39 @@ function onRenderWallConfig(app, html) {
 export function registerTrapsInit() {
   registerTrapBehavior();
   TrapZoneType.onEnter = onEnter;
+  TrapRelayType.onEnter = onRelayEnter;
+  game.settings.register(MODULE_ID, "trapsVersion", { scope: "world", config: false, type: Number, default: 1 });
   CONFIG.queries[DISARM_QUERY] = handleDisarm;
   CONFIG.queries[TRIGGER_QUERY] = handleTrigger;
 }
 
 export function registerTraps() {
+  // 0.17.0 : relais des déclencheurs posés ailleurs, régions à éviter. Une fois à la fois par scène : les écritures d'un passage
+  // (relais créés) déclenchent les mêmes hooks.
+  const pending = new Map();
+  const syncScene = scene => {
+    if ( !isActiveGM() || !scene || pending.has(scene.id) ) return;
+    pending.set(scene.id, (async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      try { await syncRelays(scene); await syncAvoid(scene); }
+      catch(err) { log.warn("trap sync:", err.message); }
+      finally { pending.delete(scene.id); }
+    })());
+  };
   const sync = behavior => {
     if ( !isActiveGM() || (behavior.type !== TRAP_ZONE) ) return;
-    syncAvoid(behavior);
+    syncScene(behavior.parent?.parent);
     applyTrapChecks(behavior).catch(err => log.warn("trap DCs:", err.message));
   };
   route("updateRegionBehavior", "spotted trap", sync);
   route("createRegionBehavior", "spotted trap", sync);
+  route("deleteRegionBehavior", "spotted trap", behavior => { if ( behavior.type === TRAP_ZONE ) syncScene(behavior.parent?.parent); });
   route("createRegion", "spotted trap", region => { for ( const b of region.behaviors ) sync(b); });
+  route("deleteRegion", "spotted trap", region => syncScene(region.parent));
+  migrateOnce().catch(err => log.warn("trap migration:", err.message));
   // 0.16.0 : coffres et portes piégés — DD lus dans l'acteur piège, ouverture, crochetage raté, menu de la porte.
   const syncTrapped = doc => {
-    if ( !isActiveGM() || (doc.type === TRAP_ZONE) || !trapHandle(doc) ) return;
+    if ( !isActiveGM() || [TRAP_ZONE, TRAP_RELAY].includes(doc.type) || !trapHandle(doc) ) return;
     applyTrapChecks(doc).catch(err => log.warn("trap DCs:", err.message));
   };
   route("updateRegionBehavior", "trapped container", syncTrapped);
@@ -511,5 +757,6 @@ export function registerTraps() {
   routeClaim("preUpdateWall", "trapped door", onPreUpdateWall);
   route(LOCK_ATTEMPT_HOOK, "trapped door", onLockAttempt);
   route(DOOR_MENU_HOOK, "menu: disarm a trapped door", onDoorMenu);
+  route(EVENT_TURN_HOOK, "advanced trap: its turn", onEventTurn);
   route("renderWallConfig", "trapped door settings", onRenderWallConfig);
 }

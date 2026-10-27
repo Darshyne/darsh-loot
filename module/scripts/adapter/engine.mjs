@@ -83,7 +83,24 @@ export const engineUsageConfig = () => ({ [ENGINE_ID]: { confirmed: true } });
  * La configuration du message d'utilisation qui dit au moteur que les cibles sont fournies (son SPEC §104) : une activité à
  * zone (un piège du DMG déclare un cône) se résout alors sur les cibles du message, sans attendre la pose d'un gabarit.
  */
-export const engineGivenTargetsMessage = () => ({ data: { flags: { [ENGINE_ID]: { givenTargets: true } } } });
+export const engineGivenTargetsMessage = (targetModes=null) => ({ data: { flags: { [ENGINE_ID]: {
+  givenTargets: true,
+  // Son §249 (0.265.0) : l'Avantage ou le Désavantage donné par cible, appliqué à sa sauvegarde et inversé sur le jet d'attaque contre
+  // elle. Une liste `[{ token, mode }]` (le cœur développerait les points d'un UUID pris pour clé). Un moteur plus ancien l'ignore.
+  ...(targetModes && Object.keys(targetModes).length
+    ? { targetModes: Object.entries(targetModes).map(([token, mode]) => ({ token, mode })) } : {})
+} } } });
+
+/**
+ * Évènements dans l'initiative (son §250, 0.265.0) : un combattant temporaire sans token ni acteur, à l'initiative fixe ; le moteur émet
+ * `dnd5e-combat.eventTurn` (`{ combat, combatant, key, data }`) chez le MJ actif quand vient son tour, et le retire après son dernier
+ * round. null sans cette API (moteur plus ancien).
+ */
+export const EVENT_TURN_HOOK = `${ENGINE_ID}.eventTurn`;
+export function engineCombatEvents() {
+  const api = engineApi()?.combat;
+  return (typeof api?.addEvent === "function") ? api : null;
+}
 
 /**
  * Une région que le chemin du moteur doit contourner (son SPEC §103, `flags.dnd5e-combat.avoid`) : un piège repéré. Chez le MJ.
@@ -93,6 +110,9 @@ export function setEngineAvoid(region, avoid) {
   if ( engineAvoids(region) === avoid ) return null;
   return avoid ? region.setFlag(ENGINE_ID, "avoid", true) : region.unsetFlag(ENGINE_ID, "avoid");
 }
+
+/** Un objet pour le moteur (son §16.60, `flags.dnd5e-combat.object`) : ni cible, ni créature. */
+export const engineObjectToken = token => !!token?.flags?.[ENGINE_ID]?.object;
 
 /** L'API publique du moteur, s'il est actif. */
 function engineApi() {

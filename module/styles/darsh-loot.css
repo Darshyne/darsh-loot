@@ -195,3 +195,12 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .application.wall-config .window-content > * {
   flex-shrink: 0;
 }
+
+/* 0.17.0 : la fenêtre du MJ quand un piège frappe en mode avancé. */
+.dlo-trap-window .dlo-trap-targets { width: 100%; margin: 0.5rem 0; }
+.dlo-trap-window .dlo-trap-targets td { vertical-align: middle; padding: 2px 4px; }
+.dlo-trap-window .dlo-trap-who { display: flex; align-items: center; gap: 0.5rem; }
+.dlo-trap-window .dlo-trap-who img { width: 32px; height: 32px; object-fit: contain; border: none; }
+
+/* 0.17.0 : « Choisir sur la carte » à côté d'un champ qui désigne une région ou une tuile. */
+.dlo-pick { flex: 0 0 auto; width: 28px; }

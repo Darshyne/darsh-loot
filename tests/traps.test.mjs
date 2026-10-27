@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { checksIn, trapChecks, tierRange, pickTier, targetsLevel, normalizeTrap, triggersOn, armedAt, TRAP_DEFAULTS }
+import { checksIn, trapChecks, tierRange, pickTier, targetsLevel, normalizeTrap, triggersOn, armedAt, TRAP_DEFAULTS,
+  bigEnough, sizeOfSpan, normalizeInitiative, migrateZoneTrap }
   from "../module/scripts/core/traps.mjs";
 
 describe("tests d'un texte", () => {
@@ -117,5 +118,54 @@ describe("armé maintenant", () => {
   });
   it("les réglages d'une zone « DAS · Piège » (sans `trigger`) se lisent pareil", () => {
     expect(armedAt({ armed: false, disarmed: false, rearm: "time", delay: 1, triggeredAt: 0 }, 60)).toBe(true);
+  });
+});
+
+describe("pièges v2 : taille minimale", () => {
+  it("Petite par défaut : un rat, un familier Très petit passent", () => {
+    expect(bigEnough("tiny")).toBe(false);
+    expect(bigEnough("sm")).toBe(true);
+    expect(bigEnough("grg")).toBe(true);
+  });
+  it("réglable par piège : Très petite (tout déclenche), Moyenne (une dalle lourde)", () => {
+    expect(bigEnough("tiny", "tiny")).toBe(true);
+    expect(bigEnough("sm", "med")).toBe(false);
+    expect(bigEnough("lg", "med")).toBe(true);
+  });
+  it("une taille inconnue déclenche", () => {
+    expect(bigEnough(undefined, "med")).toBe(true);
+    expect(bigEnough("med", "nope")).toBe(true);
+  });
+  it("un token sans acteur : la taille d'après sa largeur", () => {
+    expect([0.5, 1, 2, 3, 4, 6].map(sizeOfSpan)).toEqual(["tiny", "med", "lg", "huge", "grg", "grg"]);
+    expect(sizeOfSpan(undefined)).toBe("med");
+  });
+});
+
+describe("pièges v2 : réglages", () => {
+  it("initiative : 20 par défaut, un entier de 1 à 40", () => {
+    expect([undefined, null, "", "x", 12.6, 0, 99].map(normalizeInitiative)).toEqual([20, 20, 20, 20, 13, 1, 40]);
+  });
+  it("un coffre ou une porte : taille, initiative et source normalisées", () => {
+    const t = normalizeTrap({ minSize: "med", initiative: "10", source: { uuid: " Scene.a.Tile.b ", hidden: { dc: 18 } } });
+    expect(t.minSize).toBe("med");
+    expect(t.initiative).toBe(10);
+    expect(t.source).toEqual({ uuid: "Scene.a.Tile.b", hidden: { dc: 18 } });
+    expect(normalizeTrap({ minSize: "énorme" }).minSize).toBe("sm");
+  });
+});
+
+describe("pièges v2 : reprise de la 0.16.0", () => {
+  const plate = "Scene.s.Region.dalle";
+  it("un piège posé sur sa dalle, la zone d'effet ailleurs : reposé sur la zone d'effet, la dalle en déclencheur", () => {
+    const system = { actor: "Actor.a", effectRegion: "Scene.s.Region.couloir", triggerRegion: null, hidden: { dc: 15 } };
+    expect(migrateZoneTrap(system, plate)).toEqual({ effectRegion: "Scene.s.Region.couloir",
+      system: { actor: "Actor.a", effectRegion: null, triggerRegion: plate, hidden: { dc: 15 } } });
+    expect(system.effectRegion).toBe("Scene.s.Region.couloir");
+  });
+  it("rien à reprendre : pas de zone d'effet à part, ou déjà repris", () => {
+    expect(migrateZoneTrap({ effectRegion: null }, plate)).toBeNull();
+    expect(migrateZoneTrap({ effectRegion: plate }, plate)).toBeNull();
+    expect(migrateZoneTrap({ effectRegion: "Scene.s.Region.c", triggerRegion: plate }, plate)).toBeNull();
   });
 });

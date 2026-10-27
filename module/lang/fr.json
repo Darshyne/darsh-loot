@@ -91,6 +91,10 @@
       "SearchDuration": {
         "Name": "Durée d'une fouille",
         "Hint": "Hors combat, secondes réelles que dure « Fouiller les environs » : une barre de progression chez le joueur, un ping autour du token ; bouger l'interrompt (0 : aussitôt)."
+      },
+      "AdvancedTraps": {
+        "Name": "Mode piège avancé",
+        "Hint": "Hors combat, un piège qui part met le jeu en pause et lance un combat avec les créatures de la scène (les personnages Surpris si personne ne l'avait repéré) ; le piège agit à son initiative (20 par défaut). En combat, on ne relance pas l'initiative. Dans les deux cas, pas de jet automatique : le MJ donne à chaque créature de la zone l'Avantage ou le Désavantage, puis lance le piège. Éteint : le piège frappe aussitôt."
       }
     },
     "Lock": {
@@ -462,7 +466,8 @@
         "Inscription": "Vous remarquez une inscription.",
         "SecretDoor": "Vous remarquez une porte secrète.",
         "Trap": "Vous remarquez un piège.",
-        "Something": "Vous remarquez quelque chose."
+        "Something": "Vous remarquez quelque chose.",
+        "TrapSource": "Vous remarquez d'où frappe un piège."
       },
       "Wall": {
         "Legend": "DAS · Caché",
@@ -484,7 +489,7 @@
       }
     },
     "TrapZone": {
-      "Hint": "Un token qui entre dans la région déclenche le piège : l'acteur piège utilise son activité sur les tokens de la zone d'effet (résolution par le moteur de combat). Caché par défaut ; repéré, il se montre en rouge, le chemin du moteur l'évite, et il se désamorce d'un clic (outils de voleur).",
+      "Hint": "À poser sur la zone d'effet du piège (le couloir que balaie le feu, ou la dalle elle-même) : il porte tout le piège. Un token qui entre dans son déclencheur (cette région, ou une autre choisie sur la carte) le fait partir : l'acteur piège utilise son activité sur les tokens de la zone d'effet (résolution par le moteur de combat). Le déclencheur et la source se repèrent chacun ; un déclencheur repéré se montre en rouge et le chemin du moteur l'évite, une source repérée se montre en rouge avec la zone d'effet en orange ; l'un ou l'autre se désamorce d'un clic (outils de voleur).",
       "FIELDS": {
         "actor": {
           "label": "Acteur piège",
@@ -494,13 +499,60 @@
           "label": "Activité",
           "hint": "Identifiant de l'activité utilisée. Vide : celle dont la tranche de niveaux (« niveaux 5 à 10 ») contient le niveau des cibles (le plus haut personnage, sinon le plus haut FP), à défaut la première."
         },
-        "effectRegion": {
-          "label": "Zone d'effet",
-          "hint": "UUID d'une autre région de la scène (le couloir que balaie le trait de feu). Vide : cette région. Elle reste cachée aux joueurs."
+        "triggerRegion": {
+          "label": "Déclencheur",
+          "hint": "La région où un token doit entrer (la dalle), choisie sur la carte. Vide : cette région."
+        },
+        "minSize": {
+          "label": "Taille minimale",
+          "hint": "La plus petite créature qui le fait partir. Petite par défaut : un rat, un familier Très petit passent dessus."
         },
         "height": {
           "label": "Hauteur",
           "hint": "Au-dessus du sol de la zone (unités de la scène), un token ne déclenche pas : une créature qui vole passe. 0 : seulement ce qui touche le sol."
+        },
+        "source": {
+          "label": "Source",
+          "hint": "D'où part l'effet (les orifices dans le mur, la statue).",
+          "uuid": {
+            "label": "Source",
+            "hint": "Une région ou une tuile de la scène, choisie sur la carte. Vide : le déclencheur lui-même. Repérée, elle montre aussi la zone d'effet."
+          },
+          "hidden": {
+            "label": "Source cachée",
+            "enabled": {
+              "label": "Cachée",
+              "hint": "On ne voit pas la source tant qu'un personnage ne l'a pas trouvée (Perception passive, ou « Fouiller les environs »). Son propre DD : trouver la source ne trouve pas le reste."
+            },
+            "skill": {
+              "label": "Compétence",
+              "hint": "Celle qui la trouve : Perception ou Investigation."
+            },
+            "dc": {
+              "label": "DD de détection",
+              "hint": "Valeur passive ou jet de fouille à atteindre."
+            },
+            "passive": {
+              "label": "Distance passive",
+              "hint": "En pieds (convertie sur une scène en mètres). 0 : pas de détection passive."
+            },
+            "radius": {
+              "label": "Rayon de fouille",
+              "hint": "Distance maximale d'une fouille active, en pieds."
+            },
+            "found": {
+              "label": "Trouvée",
+              "hint": "Décocher pour la recacher ; les essais s'effacent."
+            },
+            "text": {
+              "label": "Texte de découverte",
+              "hint": "Ce que lit le joueur qui la trouve. Vide : un texte générique."
+            }
+          }
+        },
+        "initiative": {
+          "label": "Initiative",
+          "hint": "Sa place dans l'initiative en mode piège avancé : 20 par défaut, moins pour un piège lent (un plafond qui descend)."
         },
         "armed": {
           "label": "Armé",
@@ -527,6 +579,14 @@
         "disarmed": {
           "label": "Désamorcé",
           "hint": "Décocher pour le remettre en état (cocher aussi « Armé »)."
+        },
+        "effectRegion": {
+          "label": "Zone d'effet (0.16.0)",
+          "hint": "Laissée par la version 0.16.0, quand le piège était posé sur sa dalle : lue une fois pour reposer le piège sur cette zone."
+        },
+        "hidden": {
+          "label": "Déclencheur caché",
+          "hint": "Comment se trouve le déclencheur (la dalle). La source a sa propre détection."
         }
       },
       "Rearm": {
@@ -546,6 +606,28 @@
       "ConfirmYes": "Tenter",
       "ConfirmNo": "Renoncer",
       "ThisTrap": "ce piège"
+    },
+    "TrapRelay": {
+      "Name": "DAS · Déclencheur de piège",
+      "Hint": "Ajouté par DAS · Butin et commerce sur la région choisie comme déclencheur d'un piège : un token qui y entre fait partir ce piège. Rien à régler.",
+      "FIELDS": {
+        "trap": {
+          "label": "Piège",
+          "hint": "Le comportement « DAS · Piège » que cette région déclenche."
+        }
+      }
+    },
+    "TrapWindow": {
+      "Title": "Piège : {name}",
+      "HintSave": "Le piège frappe. Pour chaque créature de sa zone, favorisez sa sauvegarde (Avantage) ou non (Désavantage) selon le jeu des joueurs, ou retirez-la ; puis lancez-le.",
+      "HintAttack": "Le piège frappe. Pour chaque créature de sa zone, favorisez-la (le jet d'attaque du piège contre elle a le Désavantage) ou non (l'Avantage) selon le jeu des joueurs, ou retirez-la ; puis lancez-le.",
+      "Nobody": "Plus personne n'est dans la zone d'effet.",
+      "Advantage": "Avantage",
+      "Normal": "Normal",
+      "Disadvantage": "Désavantage",
+      "Tier": "Tranche de niveaux",
+      "Fire": "Lancer le piège",
+      "Cancel": "Annuler le piège"
     },
     "Pack": {
       "Outils": "DAS · Butin et commerce · Outils du MJ"
@@ -655,6 +737,53 @@
               "label": "Texte de découverte",
               "hint": "Ce que lit le joueur qui le trouve. Vide : « Vous remarquez un piège. »"
             }
+          },
+          "minSize": {
+            "label": "Taille minimale",
+            "hint": "La plus petite créature qui le fait partir en l'ouvrant. Petite par défaut."
+          },
+          "initiative": {
+            "label": "Initiative",
+            "hint": "Sa place dans l'initiative en mode piège avancé (20 par défaut)."
+          },
+          "source": {
+            "label": "Source",
+            "hint": "D'où part l'effet, si ce n'est pas le conteneur lui-même.",
+            "uuid": {
+              "label": "Source",
+              "hint": "Une région ou une tuile de la scène, choisie sur la carte. Vide : le conteneur lui-même."
+            },
+            "hidden": {
+              "label": "Source cachée",
+              "enabled": {
+                "label": "Cachée",
+                "hint": "On ne voit pas la source tant qu'un personnage ne l'a pas trouvée (Perception passive, ou « Fouiller les environs »). Son propre DD : trouver la source ne trouve pas le reste."
+              },
+              "skill": {
+                "label": "Compétence",
+                "hint": "Celle qui la trouve : Perception ou Investigation."
+              },
+              "dc": {
+                "label": "DD de détection",
+                "hint": "Valeur passive ou jet de fouille à atteindre."
+              },
+              "passive": {
+                "label": "Distance passive",
+                "hint": "En pieds (convertie sur une scène en mètres). 0 : pas de détection passive."
+              },
+              "radius": {
+                "label": "Rayon de fouille",
+                "hint": "Distance maximale d'une fouille active, en pieds."
+              },
+              "found": {
+                "label": "Trouvée",
+                "hint": "Décocher pour la recacher ; les essais s'effacent."
+              },
+              "text": {
+                "label": "Texte de découverte",
+                "hint": "Ce que lit le joueur qui la trouve. Vide : un texte générique."
+              }
+            }
           }
         }
       },
@@ -684,8 +813,18 @@
         "DisarmDc": "DD de désamorçage (outils de voleur)",
         "Failure": "Échec du désamorçage",
         "Disarmed": "Désamorcée",
-        "HiddenEnabled": "Piège caché"
+        "HiddenEnabled": "Piège caché",
+        "MinSize": "Taille minimale (plus petite créature qui le fait partir)",
+        "Initiative": "Initiative (mode avancé)",
+        "Source": "Source (UUID d'une région ou d'une tuile, vide : la porte)",
+        "SourceHidden": "Source cachée"
       }
+    },
+    "Pick": {
+      "Button": "Choisir sur la carte",
+      "PromptRegion": "Cliquez une région sur la carte (clic droit ou Échap : renoncer).",
+      "PromptTile": "Cliquez une région ou une tuile sur la carte (clic droit ou Échap : renoncer).",
+      "Nothing": "Rien à choisir ici."
     }
   },
   "TYPES": {
@@ -694,7 +833,8 @@
       "darsh-loot.macro": "DAS · Macro au clic",
       "darsh-loot.scene": "DAS · Vers une scène",
       "darsh-loot.document": "DAS · Ouvrir un document",
-      "darsh-loot.trap": "DAS · Piège"
+      "darsh-loot.trap": "DAS · Piège",
+      "darsh-loot.trapTrigger": "DAS · Déclencheur de piège"
     }
   }
 }

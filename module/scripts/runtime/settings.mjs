@@ -54,6 +54,12 @@ export function registerSettings() {
     scope: "world", config: true, type: Number, default: 10,
     range: { min: 0, max: 30, step: 1 }
   });
+  // 0.17.0 : mode piège avancé — hors combat, un piège qui part met le jeu en pause et lance un combat où il a son initiative ; le
+  // MJ juge ensuite chaque cible (Avantage / Désavantage) avant de le lancer. Éteint : l'effet est instantané, comme avant.
+  game.settings.register(MODULE_ID, "advancedTraps", {
+    name: "DLO.Settings.AdvancedTraps.Name", hint: "DLO.Settings.AdvancedTraps.Hint",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
     scope: "world", config: true, type: String, default: "all",

@@ -3,6 +3,7 @@
  */
 import { MODULE_ID } from "../shared.mjs";
 import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, COINS } from "../core/loot.mjs";
+import { sizeOfSpan } from "../core/traps.mjs";
 
 /** Le token (document) est-il un cadavre fouillable ? */
 export function corpseToken(tokenDoc) {
@@ -78,6 +79,11 @@ export function regionDistance(token, region) {
   const me = { col: token._source.x / size, row: token._source.y / size, w: token._source.width,
     h: token._source.height, elevation };
   return edgeDistance(me, box, scene.grid.distance);
+}
+
+/** La taille dnd5e d'un token (`system.traits.size`), ou, sans acteur, celle que donne sa largeur (core/traps.mjs `sizeOfSpan`). */
+export function creatureSize(token) {
+  return token?.actor?.system?.traits?.size ?? sizeOfSpan(token?._source?.width ?? token?.width);
 }
 
 /** Le niveau d'une créature pour un piège : niveau de personnage, ou FP d'un PNJ (core/traps.mjs `targetsLevel`). */

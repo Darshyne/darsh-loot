@@ -54,7 +54,8 @@
       "macro": {},
       "scene": {},
       "document": {},
-      "trap": {}
+      "trap": {},
+      "trapTrigger": {}
     }
   },
   "esmodules": [

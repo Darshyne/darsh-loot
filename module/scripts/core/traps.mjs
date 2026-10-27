@@ -96,7 +96,7 @@ export function targetsLevel(targets) {
  */
 export const TRAP_DEFAULTS = Object.freeze({
   enabled: false, actor: null, activity: "", effectRegion: null, trigger: "open", armed: true, rearm: "never", delay: 60,
-  triggeredAt: null, disarmDc: 15, failure: "trigger", disarmed: false
+  triggeredAt: null, disarmDc: 15, failure: "trigger", disarmed: false, minSize: "sm", initiative: 20, source: Object.freeze({ uuid: null, hidden: {} })
 });
 
 const TRIGGERS = ["open", "pick", "both"];
@@ -119,7 +119,10 @@ export function normalizeTrap(raw={}) {
     triggeredAt: (Number.isFinite(Number(raw.triggeredAt)) && (raw.triggeredAt !== null) && (raw.triggeredAt !== "")) ? Number(raw.triggeredAt) : null,
     disarmDc: Math.min(40, Math.round(num(raw.disarmDc, d.disarmDc, 1))),
     failure: (raw.failure === "nothing") ? "nothing" : "trigger",
-    disarmed: raw.disarmed === true
+    disarmed: raw.disarmed === true,
+    minSize: SIZES.includes(raw.minSize) ? raw.minSize : d.minSize,
+    initiative: normalizeInitiative(raw.initiative),
+    source: { uuid: uuid(raw.source?.uuid), hidden: raw.source?.hidden ?? {} }
   };
 }
 
@@ -138,3 +141,45 @@ export function armedAt(trap, now) {
   if ( trap.armed ) return true;
   return (trap.rearm === "time") && Number.isFinite(trap.triggeredAt) && (now >= trap.triggeredAt + (trap.delay * 60));
 }
+
+/* ---- pièges v2 (étape 11) ---- */
+
+/** Les tailles dnd5e, de la plus petite à la plus grande (`CONFIG.DND5E.actorSizes`), recopiées pour rester pur. */
+export const SIZES = Object.freeze(["tiny", "sm", "med", "lg", "huge", "grg"]);
+
+/**
+ * Une créature de cette taille déclenche-t-elle un piège réglé à cette taille minimale (« sm » par défaut : un rat, un familier
+ * Très petit passent) ? Une taille inconnue déclenche.
+ */
+export function bigEnough(size, minSize="sm") {
+  const i = SIZES.indexOf(size), min = SIZES.indexOf(minSize);
+  return (i < 0) || (min < 0) || (i >= min);
+}
+
+/** La taille d'un token sans acteur, d'après sa largeur en cases (½ : Très petite, 1 : Moyenne, 2 : Grande…). */
+export function sizeOfSpan(cells) {
+  const n = Number(cells);
+  if ( !(n > 0) ) return "med";
+  if ( n < 1 ) return "tiny";
+  return SIZES[Math.min(5, Math.floor(n) + 1)];
+}
+
+/** L'initiative d'un piège (2026-10-27) : un entier de 1 à 40, 20 par défaut. */
+export function normalizeInitiative(value) {
+  const n = Number(value);
+  return ((value === null) || (value === "") || !Number.isFinite(n)) ? 20 : Math.min(40, Math.max(1, Math.round(n)));
+}
+
+/**
+ * La reprise d'un piège de zone de la 0.16.0 (posé sur sa dalle, la zone d'effet ailleurs) vers la 0.17.0 (posé sur sa zone
+ * d'effet, la dalle désignée comme déclencheur). `system` : les données du comportement ; `regionUuid` : sa région. Null s'il n'y a
+ * rien à reprendre (pas de zone d'effet à part, ou déjà repris).
+ * @returns {{ effectRegion: string, system: object }|null}
+ */
+export function migrateZoneTrap(system, regionUuid) {
+  const effect = system?.effectRegion;
+  if ( !effect || (effect === regionUuid) || system.triggerRegion ) return null;
+  return { effectRegion: effect, system: { ...clone(system), effectRegion: null, triggerRegion: regionUuid } };
+}
+
+const clone = o => JSON.parse(JSON.stringify(o ?? {}));

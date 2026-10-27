@@ -14,6 +14,7 @@ import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
 import { registerHiddenInit, registerHidden, requestSearch } from "./runtime/hidden.mjs";
 import { registerHighlight } from "./runtime/highlight.mjs";
 import { registerTrapsInit, registerTraps, fireTrap } from "./runtime/traps.mjs";
+import { registerPick } from "./runtime/pick.mjs";
 import { registerTheft, registerTheftMenu, requestSteal } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
@@ -56,6 +57,7 @@ Hooks.once("ready", () => {
   registerTileZone();
   registerHidden();
   registerTraps();
+  registerPick();
   registerHighlight();
   registerStolenMark();
   registerNecromancy();

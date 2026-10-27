@@ -91,6 +91,10 @@
       "SearchDuration": {
         "Name": "Search duration",
         "Hint": "Out of combat, real seconds that \"Search the surroundings\" lasts: a progress bar for the player, a ping around the token; moving interrupts it (0: instant)."
+      },
+      "AdvancedTraps": {
+        "Name": "Advanced trap mode",
+        "Hint": "Out of combat, a trap that goes off pauses the game and starts a combat with the scene's creatures (player characters Surprised if nobody had spotted it); the trap acts at its own initiative (20 by default). In combat, initiative isn't rerolled. Either way, no automatic roll: the GM gives each creature in the area Advantage or Disadvantage, then launches the trap. Off: the trap strikes at once."
       }
     },
     "Lock": {
@@ -462,7 +466,8 @@
         "Inscription": "You notice an inscription.",
         "SecretDoor": "You notice a secret door.",
         "Trap": "You notice a trap.",
-        "Something": "You notice something."
+        "Something": "You notice something.",
+        "TrapSource": "You notice where a trap strikes from."
       },
       "Wall": {
         "Legend": "DAS · Hidden",
@@ -484,7 +489,7 @@
       }
     },
     "TrapZone": {
-      "Hint": "A token entering the region triggers the trap: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Hidden by default; once spotted it shows in red, the combat engine's pathfinding avoids it, and it can be disarmed with a click (thieves' tools).",
+      "Hint": "Put it on the trap's effect area (the corridor the fire sweeps, or the plate itself): it holds the whole trap. A token entering its trigger (this region, or another one picked on the map) sets it off: the trap actor uses its activity on the tokens in the effect area (resolved by the combat engine). Trigger and source are each found on their own; a spotted trigger shows in red and the combat engine's pathfinding avoids it, a spotted source shows in red with the effect area in orange; either can be disarmed with a click (thieves' tools).",
       "FIELDS": {
         "actor": {
           "label": "Trap actor",
@@ -494,13 +499,60 @@
           "label": "Activity",
           "hint": "Id of the activity used. Empty: the one whose level range (\"Levels 5–10\") contains the targets' level (highest character, else highest CR), otherwise the first."
         },
-        "effectRegion": {
-          "label": "Effect area",
-          "hint": "UUID of another region of the scene (the corridor swept by the jet of fire). Empty: this region. It stays hidden from players."
+        "triggerRegion": {
+          "label": "Trigger",
+          "hint": "The region a token must enter (the pressure plate), picked on the map. Empty: this region."
+        },
+        "minSize": {
+          "label": "Minimum size",
+          "hint": "The smallest creature that sets it off. Small by default: a rat or a Tiny familiar walks over it."
         },
         "height": {
           "label": "Height",
           "hint": "Above the area's floor (scene units), a token does not trigger: a flying creature passes. 0: only what touches the floor."
+        },
+        "source": {
+          "label": "Source",
+          "hint": "Where the effect comes from (the holes in the wall, the statue).",
+          "uuid": {
+            "label": "Source",
+            "hint": "A region or a tile of the scene, picked on the map. Empty: the trigger itself. Once spotted, the effect area shows too."
+          },
+          "hidden": {
+            "label": "Hidden source",
+            "enabled": {
+              "label": "Hidden",
+              "hint": "The source can't be seen until a character finds it (passive Perception, or \"Search the surroundings\"). Its own DC: finding the source does not find the rest."
+            },
+            "skill": {
+              "label": "Skill",
+              "hint": "The one that finds it: Perception or Investigation."
+            },
+            "dc": {
+              "label": "Detection DC",
+              "hint": "Passive score or search roll to reach."
+            },
+            "passive": {
+              "label": "Passive distance",
+              "hint": "In feet (converted on a scene in metres). 0: no passive detection."
+            },
+            "radius": {
+              "label": "Search radius",
+              "hint": "Maximum distance of an active search, in feet."
+            },
+            "found": {
+              "label": "Found",
+              "hint": "Untick to hide it again; attempts are cleared."
+            },
+            "text": {
+              "label": "Discovery text",
+              "hint": "What the player who finds it reads. Empty: a generic text."
+            }
+          }
+        },
+        "initiative": {
+          "label": "Initiative",
+          "hint": "Its place in the initiative in advanced trap mode: 20 by default, lower for a slow trap (a descending ceiling)."
         },
         "armed": {
           "label": "Armed",
@@ -527,6 +579,14 @@
         "disarmed": {
           "label": "Disarmed",
           "hint": "Uncheck to restore it (also check \"Armed\")."
+        },
+        "effectRegion": {
+          "label": "Effect area (0.16.0)",
+          "hint": "Left by version 0.16.0, when the trap sat on its plate: read once to move the trap onto this area."
+        },
+        "hidden": {
+          "label": "Hidden trigger",
+          "hint": "How the trigger (the plate) is found. The source has its own detection."
         }
       },
       "Rearm": {
@@ -546,6 +606,28 @@
       "ConfirmYes": "Try",
       "ConfirmNo": "Give up",
       "ThisTrap": "this trap"
+    },
+    "TrapRelay": {
+      "Name": "DAS · Trap trigger",
+      "Hint": "Added by DAS · Loot & Trade on the region picked as a trap's trigger: a token entering it sets off that trap. Nothing to set.",
+      "FIELDS": {
+        "trap": {
+          "label": "Trap",
+          "hint": "The DAS · Trap behavior this region sets off."
+        }
+      }
+    },
+    "TrapWindow": {
+      "Title": "Trap: {name}",
+      "HintSave": "The trap strikes. For each creature in its area, favour their saving throw (Advantage) or not (Disadvantage) according to how the players played it, or remove them; then launch it.",
+      "HintAttack": "The trap strikes. For each creature in its area, favour them (the trap's attack roll against them has Disadvantage) or not (Advantage) according to how the players played it, or remove them; then launch it.",
+      "Nobody": "Nobody is in the effect area any more.",
+      "Advantage": "Advantage",
+      "Normal": "Normal",
+      "Disadvantage": "Disadvantage",
+      "Tier": "Level tier",
+      "Fire": "Launch the trap",
+      "Cancel": "Cancel the trap"
     },
     "Pack": {
       "Outils": "DAS · Loot & Trade · GM tools"
@@ -655,6 +737,53 @@
               "label": "Discovery text",
               "hint": "What the player who finds it reads. Empty: \"You notice a trap.\""
             }
+          },
+          "minSize": {
+            "label": "Minimum size",
+            "hint": "The smallest creature whose opening sets it off. Small by default."
+          },
+          "initiative": {
+            "label": "Initiative",
+            "hint": "Its place in the initiative in advanced trap mode (20 by default)."
+          },
+          "source": {
+            "label": "Source",
+            "hint": "Where the effect comes from, if not the container itself.",
+            "uuid": {
+              "label": "Source",
+              "hint": "A region or a tile of the scene, picked on the map. Empty: the container itself."
+            },
+            "hidden": {
+              "label": "Hidden source",
+              "enabled": {
+                "label": "Hidden",
+                "hint": "The source can't be seen until a character finds it (passive Perception, or \"Search the surroundings\"). Its own DC: finding the source does not find the rest."
+              },
+              "skill": {
+                "label": "Skill",
+                "hint": "The one that finds it: Perception or Investigation."
+              },
+              "dc": {
+                "label": "Detection DC",
+                "hint": "Passive score or search roll to reach."
+              },
+              "passive": {
+                "label": "Passive distance",
+                "hint": "In feet (converted on a scene in metres). 0: no passive detection."
+              },
+              "radius": {
+                "label": "Search radius",
+                "hint": "Maximum distance of an active search, in feet."
+              },
+              "found": {
+                "label": "Found",
+                "hint": "Untick to hide it again; attempts are cleared."
+              },
+              "text": {
+                "label": "Discovery text",
+                "hint": "What the player who finds it reads. Empty: a generic text."
+              }
+            }
           }
         }
       },
@@ -684,8 +813,18 @@
         "DisarmDc": "Disarm DC (thieves' tools)",
         "Failure": "Failed disarm",
         "Disarmed": "Disarmed",
-        "HiddenEnabled": "Hidden trap"
+        "HiddenEnabled": "Hidden trap",
+        "MinSize": "Minimum size (smallest creature that sets it off)",
+        "Initiative": "Initiative (advanced mode)",
+        "Source": "Source (region or tile UUID, empty: the door)",
+        "SourceHidden": "Hidden source"
       }
+    },
+    "Pick": {
+      "Button": "Pick on the map",
+      "PromptRegion": "Click a region on the map (right-click or Escape: cancel).",
+      "PromptTile": "Click a region or a tile on the map (right-click or Escape: cancel).",
+      "Nothing": "Nothing to pick there."
     }
   },
   "TYPES": {
@@ -694,7 +833,8 @@
       "darsh-loot.macro": "DAS · Click macro",
       "darsh-loot.scene": "DAS · To scene",
       "darsh-loot.document": "DAS · Open document",
-      "darsh-loot.trap": "DAS · Trap"
+      "darsh-loot.trap": "DAS · Trap",
+      "darsh-loot.trapTrigger": "DAS · Trap trigger"
     }
   }
 }

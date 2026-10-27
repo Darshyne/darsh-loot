@@ -92,7 +92,7 @@ export function revealWall(wall) {
 /** La clé du texte générique de découverte, selon ce qui est trouvé. */
 export function discoveryKey(kind) {
   return { container: "Cache", macro: "Mechanism", scene: "Passage", document: "Inscription", secret: "SecretDoor",
-    ethereal: "Passage", trap: "Trap" }[kind] ?? "Something";
+    ethereal: "Passage", trap: "Trap", trapSource: "TrapSource" }[kind] ?? "Something";
 }
 
 /* ---- géométrie ---- */

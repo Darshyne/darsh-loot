@@ -12,8 +12,8 @@ import { setting, sceneSetting, loc } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
-import { knownTraps, requestDisarm } from "./traps.mjs";
-import { trapHandle, handleKnown } from "../adapter/trapped.mjs";
+import { knownTrapPlaces, requestDisarm } from "./traps.mjs";
+import { trapHandle, anyKnown } from "../adapter/trapped.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, GROUND_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
@@ -83,9 +83,20 @@ function sourceAt(event) {
   if ( behavior ) return containerSource(behavior);
   const zone = zoneAt(point);
   if ( zone ) return zoneSource(zone);
-  // Un piège repéré se désamorce d'un clic (SPEC §3.12).
-  const trap = regionAt(knownTraps(canvas.scene), point);
-  return trap ? trapSource(trap) : null;
+  // Un piège repéré se désamorce d'un clic (SPEC §3.12) : son déclencheur, ou (0.17.0) sa source.
+  const trap = trapPlaceAt(point);
+  return trap ? trapSource(trap.h.doc, trap.place) : null;
+}
+
+/** L'endroit repéré d'un piège sous ce point (une région du niveau affiché, ou une tuile visible). */
+function trapPlaceAt(point) {
+  for ( const entry of knownTrapPlaces(canvas.scene) ) {
+    const place = entry.place;
+    if ( place.documentName === "Tile" ) {
+      if ( place.object?.visible && place.object.bounds.contains(point.x, point.y) ) return entry;
+    } else if ( place.viewed && place.polygonTree.testPoint(point) ) return entry;
+  }
+  return null;
 }
 
 /* ---- curseur ---- */
@@ -250,7 +261,7 @@ function onGroundMenu(entries, { token, point }) {
   if ( !behavior ) return;
   // 0.16.0 : un coffre au piège repéré se désamorce d'ici (on y va d'abord).
   const trap = trapHandle(behavior);
-  if ( trap && handleKnown(trap) ) entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"),
+  if ( trap && anyKnown(trap) ) entries.push({ icon: "fa-solid fa-screwdriver-wrench", label: loc("TrappedTrap.Disarm"),
     run: async () => {
       const source = containerSource(behavior);
       const looter = token.document ?? token;

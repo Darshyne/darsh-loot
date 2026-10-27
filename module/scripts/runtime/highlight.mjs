@@ -6,7 +6,8 @@
  *
  * - **Hors combat seulement** : en combat, Alt est la touche d'avantage que lit le moteur ; on n'y ajoute rien (le moteur
  *   reste prioritaire).
- * - **Exception : un piège repéré** (pas désamorcé) est dessiné **en rouge en permanence**, sans touche et en combat.
+ * - **Exception : un piège repéré** (pas désamorcé) est dessiné **en rouge en permanence**, sans touche et en combat. 0.17.0 : son
+ *   déclencheur et sa source se repèrent chacun ; une source repérée montre aussi la **zone d'effet**, en orange.
  * - Forme : la zone qui contient une tuile visible prend le **contour de l'image** de la tuile (adapter/tile-outline.mjs,
  *   gardé en cache) ; sinon les polygones de la région ; un cadavre, un anneau sous son token.
  * - Tout est dessiné dans un conteneur de `canvas.interface` qui **ne prend aucun évènement** (`eventMode = "none"`) : leçon
@@ -20,12 +21,11 @@ import { behaviorConcealed, tilesIn } from "../adapter/hidden.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
-import { sceneTraps, trapKnown } from "../adapter/trap-behavior.mjs";
-import { trappedThings, handleKnown, wallEnds } from "../adapter/trapped.mjs";
+import { trappedThings, handleKnown, sourceKnown, allTraps, wallEnds } from "../adapter/trapped.mjs";
 import { concealed } from "../core/hidden.mjs";
 
 /** Couleurs : neutre pour une zone ou un cadavre, or pour une cachette trouvée, mauve (MJ seulement) pour ce qui est encore caché. */
-const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6, trap: 0xe0312b };
+const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6, trap: 0xe0312b, effect: 0xf08c2b };
 
 let layer = null;
 let active = false;
@@ -55,15 +55,36 @@ function zonesToDraw(scene) {
   return out;
 }
 
+/** Une région ou une tuile est-elle sur le niveau affiché, visible pour ce client ? */
+const placeViewed = doc => ((doc.documentName === "Tile") ? !!doc.object?.visible : !!doc.viewed);
+
 /**
- * Les zones de déclenchement des pièges repérés et pas désamorcés, sur le niveau affiché, et (0.16.0) les coffres au piège repéré.
- * Les portes au piège repéré sont dessinées à part (`doorsToDraw`).
+ * Ce qui est repéré des pièges, sur le niveau affiché : les déclencheurs (régions des zones « DAS · Piège », coffres) et les sources
+ * (régions ou tuiles), en rouge ; les zones d'effet dont la source est repérée, en orange. Les portes sont dessinées à part
+ * (`doorsToDraw`). Avec `concealedToo` (le MJ, touche tenue), ce qui est encore caché, en mauve.
+ * @returns {{ place: RegionDocument|TileDocument, color: number }[]}
  */
-function trapsToDraw() {
-  const zones = sceneTraps(canvas.scene).filter(b => trapKnown(b) && b.region?.viewed).map(b => b.region);
-  const chests = trappedThings(canvas.scene).filter(h => h.region && handleKnown(h) && h.region.viewed).map(h => h.region);
-  return [...zones, ...chests];
+function trapsToDraw(concealedToo=false) {
+  const out = [];
+  const add = (place, color) => {
+    if ( place && placeViewed(place) && !out.some(o => o.place === place) ) out.push({ place, color });
+  };
+  for ( const h of allTraps(canvas.scene) ) {
+    if ( h.trap.disarmed ) continue;
+    const trigger = h.wall ? null : h.triggerRegion;
+    if ( handleKnown(h) ) add(trigger, COLORS.trap);
+    else if ( concealedToo ) add(trigger, COLORS.concealed);
+    if ( h.source.doc ) {
+      if ( sourceKnown(h) ) add(h.source.doc, COLORS.trap);
+      else if ( concealedToo ) add(h.source.doc, COLORS.concealed);
+    }
+    if ( sourceKnown(h) ) add(h.effectRegion, COLORS.effect);
+  }
+  return out;
 }
+
+/** Les polygones d'un endroit de piège : une région (ou le contour de sa tuile), ou le contour d'une tuile. */
+const placePolygons = place => ((place.documentName === "Tile") ? [tileOutline(place)] : regionPolygons(place));
 
 /** Une porte est-elle sur le niveau affiché ? */
 const wallViewed = wall => !canvas.level || (typeof wall.includedInLevel !== "function") || wall.includedInLevel(canvas.level.id);
@@ -143,25 +164,15 @@ export function redraw() {
   const g = new PIXI.Graphics();
   g.eventMode = "none";
   // Toujours : les pièges repérés, en rouge (le MJ voit aussi, en mauve avec la touche, ceux qui sont encore cachés).
-  for ( const region of trapsToDraw() ) {
-    for ( const points of regionPolygons(region) ) drawOutline(g, points, COLORS.trap);
+  for ( const { place, color } of trapsToDraw(active && !inCombat() && game.user.isGM) ) {
+    for ( const points of placePolygons(place) ) drawOutline(g, points, color);
   }
   for ( const h of doorsToDraw() ) drawDoor(g, h.wall, COLORS.trap);
   if ( active && !inCombat() ) {
     for ( const { region, color } of zonesToDraw(canvas.scene) ) {
       for ( const points of regionPolygons(region) ) drawOutline(g, points, color);
     }
-    for ( const behavior of sceneTraps(canvas.scene) ) {
-      if ( game.user.isGM && !trapKnown(behavior) && !behavior.system.disarmed && behavior.region?.viewed ) {
-        for ( const points of regionPolygons(behavior.region) ) drawOutline(g, points, COLORS.concealed);
-      }
-    }
     if ( game.user.isGM ) {
-      for ( const h of trappedThings(canvas.scene) ) {
-        if ( h.region && concealed(h.hidden) && !h.trap.disarmed && h.region.viewed ) {
-          for ( const points of regionPolygons(h.region) ) drawOutline(g, points, COLORS.concealed);
-        }
-      }
       for ( const h of doorsToDraw(true) ) if ( !handleKnown(h) ) drawDoor(g, h.wall, COLORS.concealed);
     }
     for ( const token of corpsesToDraw() ) drawCorpse(g, token);
@@ -176,7 +187,8 @@ function onHighlight(on) {
 
 /** Ce qui est dessiné, pour les tests : nombre de zones et de cadavres. */
 export function highlightState() {
-  return { active, combat: inCombat(), traps: trapsToDraw().length, doors: doorsToDraw().length, zones: active ? zonesToDraw(canvas.scene).length : 0,
+  return { active, combat: inCombat(), traps: trapsToDraw().filter(t => t.color === COLORS.trap).length,
+    effects: trapsToDraw().filter(t => t.color === COLORS.effect).length, doors: doorsToDraw().length, zones: active ? zonesToDraw(canvas.scene).length : 0,
     corpses: active ? corpsesToDraw().length : 0, drawn: layer?.children?.[0]?.geometry?.graphicsData?.length ?? 0 };
 }
 

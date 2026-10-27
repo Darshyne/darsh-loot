@@ -28,8 +28,14 @@ export function hiddenField() {
 /** Les types de zones DAS (tous ont le champ `hidden`). */
 const isDasZone = behavior => behavior.type?.startsWith(`${MODULE_ID}.`);
 
-/** Une zone DAS encore cachée aux joueurs ? */
-export const behaviorConcealed = behavior => isDasZone(behavior) && concealed(behavior.system?.hidden);
+/**
+ * Les pièges et leurs relais (0.17.0) : leur détection est à part (adapter/trapped.mjs) — un piège est posé sur sa zone d'effet, son
+ * déclencheur et sa source peuvent être ailleurs. Noms écrits ici : adapter/trap-behavior.mjs importe ce fichier.
+ */
+const TRAP_TYPES = new Set([`${MODULE_ID}.trap`, `${MODULE_ID}.trapTrigger`]);
+
+/** Une zone DAS encore cachée aux joueurs ? (Pas un piège : voir adapter/trapped.mjs.) */
+export const behaviorConcealed = behavior => isDasZone(behavior) && !TRAP_TYPES.has(behavior.type) && concealed(behavior.system?.hidden);
 
 /** Une région porte-t-elle une zone DAS encore cachée ? */
 export const regionConcealed = region => region.behaviors.some(b => !b.disabled && behaviorConcealed(b));

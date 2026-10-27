@@ -18,7 +18,7 @@ import { askGM } from "./take.mjs";
 import { passiveFinds, searchReach, searchWait, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
 import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playerToken, wallHidden } from "../adapter/hidden.mjs";
 import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend } from "../adapter/engine.mjs";
-import { concealedTraps } from "../adapter/trapped.mjs";
+import { concealedTraps, regionHiddenByTraps, tilesHiddenByTraps } from "../adapter/trapped.mjs";
 
 /** Tout ce qui est encore caché sur une scène : zones et murs cachés, et pièges de coffre ou de porte (0.16.0). */
 const hiddenThings = scene => [...concealedThings(scene), ...concealedTraps(scene)];
@@ -44,7 +44,7 @@ async function syncRegion(region) {
   syncing.add(region.uuid);
   try {
     const memo = region.getFlag(MODULE_ID, "concealed");
-    const hide = regionConcealed(region);
+    const hide = regionConcealed(region) || regionHiddenByTraps(region);
     if ( hide && !memo ) {
       const tiles = tilesIn(region);
       const cores = region.behaviors.filter(b => !isDasZone(b));
@@ -68,9 +68,37 @@ async function syncRegion(region) {
   }
 }
 
+/**
+ * Chez le MJ : les pièges de la scène ont changé (0.17.0) — les régions de déclencheur et de source qu'ils cachent encore (ou plus)
+ * suivent, et les tuiles sources aussi (cachées tant que la source ne l'est pas ; valeur d'origine en `flags.darsh-loot.concealedTile`).
+ */
+export async function syncTrapParts(scene) {
+  if ( !scene ) return;
+  for ( const region of scene.regions ) {
+    if ( region.getFlag(MODULE_ID, "concealed") || regionHiddenByTraps(region) ) await syncRegion(region);
+  }
+  const hide = new Set(tilesHiddenByTraps(scene));
+  const updates = [];
+  for ( const tile of scene.tiles ) {
+    const memo = tile.getFlag(MODULE_ID, "concealedTile");
+    if ( hide.has(tile) && (memo === undefined) ) updates.push({ _id: tile.id, hidden: true, [`flags.${MODULE_ID}.concealedTile`]: tile.hidden });
+    else if ( !hide.has(tile) && (memo !== undefined) ) updates.push({ _id: tile.id, hidden: memo === true, [`flags.${MODULE_ID}.-=concealedTile`]: null });
+  }
+  try { if ( updates.length ) await scene.updateEmbeddedDocuments("Tile", updates); }
+  catch(err) { log.warn("trap source tiles:", err.message); }
+}
+
 /** Une zone DAS change : recachée par le MJ (« trouvée » décoché), ses essais s'effacent ; puis la région suit. */
 function onUpdateBehavior(behavior, changes) {
   if ( !isActiveGM() || !isDasZone(behavior) ) return;
+  // Un piège (ou un coffre piégé) : sa source recachée efface ses essais ; ses régions et tuiles suivent.
+  const sourceHidden = foundry.utils.getProperty(changes, "system.source.hidden") ?? foundry.utils.getProperty(changes, "system.trap.source.hidden");
+  if ( sourceHidden && ((sourceHidden.found === false) || (sourceHidden.enabled === false)) && behavior.getFlag(MODULE_ID, "sourceTried") ) {
+    behavior.unsetFlag(MODULE_ID, "sourceTried");
+  }
+  if ( foundry.utils.hasProperty(changes, "system.trap") || [`${MODULE_ID}.trap`, `${MODULE_ID}.trapTrigger`].includes(behavior.type) ) {
+    syncTrapParts(behavior.parent?.parent);
+  }
   // Le piège d'un coffre recaché : ses essais s'effacent (ceux du coffre lui-même restent).
   const trapHidden = foundry.utils.getProperty(changes, "system.trap.hidden");
   if ( trapHidden && ((trapHidden.found === false) || (trapHidden.enabled === false)) && behavior.getFlag(MODULE_ID, "trapTried") ) {
@@ -111,6 +139,11 @@ function onUpdateWall(wall, changes) {
   if ( trapHidden && ((trapHidden.found === false) || (trapHidden.enabled === false)) && wall.getFlag(MODULE_ID, "trapTried") ) {
     wall.unsetFlag(MODULE_ID, "trapTried");
   }
+  const sourceHidden = foundry.utils.getProperty(changes, `flags.${MODULE_ID}.trap.source.hidden`);
+  if ( sourceHidden && ((sourceHidden.found === false) || (sourceHidden.enabled === false)) && wall.getFlag(MODULE_ID, "sourceTried") ) {
+    wall.unsetFlag(MODULE_ID, "sourceTried");
+  }
+  if ( foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.trap`) ) syncTrapParts(wall.parent);
   if ( foundry.utils.getProperty(changes, `flags.${MODULE_ID}.hidden`) === undefined ) return;
   syncWall(wall);
 }
@@ -381,7 +414,11 @@ export function registerHidden() {
   route("updateRegionBehavior", "hidden zone", onUpdateBehavior);
   route("createRegionBehavior", "hidden zone", behavior => { if ( isActiveGM() && isDasZone(behavior) ) syncRegion(behavior.parent); });
   route("createRegion", "hidden zone", region => { if ( isActiveGM() ) syncRegion(region); });
-  route("deleteRegionBehavior", "hidden zone", behavior => { if ( isActiveGM() && isDasZone(behavior) ) syncRegion(behavior.parent); });
+  route("deleteRegionBehavior", "hidden zone", behavior => {
+    if ( !isActiveGM() || !isDasZone(behavior) ) return;
+    syncRegion(behavior.parent);
+    syncTrapParts(behavior.parent?.parent);
+  });
   route("updateWall", "hidden wall", onUpdateWall);
   route("updateToken", "passive Perception", onMoveToken);
   route("renderTokenHUD", "Search the surroundings button", onRenderTokenHUD);

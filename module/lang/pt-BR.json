@@ -543,6 +543,16 @@
       "ConfirmNo": "Desistir",
       "ThisTrap": "esta armadilha"
     },
+    "TrapRelay": {
+      "Name": "DAS · Gatilho de armadilha",
+      "Hint": "Adicionado pelo DAS · Loot & Trade na região escolhida como gatilho de uma armadilha: um token que entra nela dispara essa armadilha. Nada a configurar.",
+      "FIELDS": {
+        "trap": {
+          "label": "Armadilha",
+          "hint": "O comportamento DAS · Armadilha que esta região dispara."
+        }
+      }
+    },
     "Pack": {
       "Outils": "DAS · Loot & Trade · Ferramentas do mestre"
     },
@@ -690,7 +700,8 @@
       "darsh-loot.macro": "DAS · Macro por clique",
       "darsh-loot.scene": "DAS · Ir para cena",
       "darsh-loot.document": "DAS · Abrir documento",
-      "darsh-loot.trap": "DAS · Armadilha"
+      "darsh-loot.trap": "DAS · Armadilha",
+      "darsh-loot.trapTrigger": "DAS · Gatilho de armadilha"
     }
   }
 }

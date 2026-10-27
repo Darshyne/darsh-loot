@@ -7,6 +7,7 @@ import { corpseToken, tokenDistance, regionDistance } from "./dnd5e.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { ZONE_TYPES } from "./zone-behaviors.mjs";
 import { TRAP_ZONE } from "./trap-behavior.mjs";
+import { trapHandle, placeDistance } from "./trapped.mjs";
 import { livingNPC } from "./theft.mjs";
 import { merchantToken, merchantAlive } from "./shop.mjs";
 
@@ -83,9 +84,21 @@ export function zoneSource(behavior) {
   };
 }
 
-/** Un piège repéré, à désamorcer (SPEC §3.12) : la même portée et la même marche qu'une zone. */
-export function trapSource(behavior) {
-  return { ...zoneSource(behavior), kind: "trap", key: `trap-${behavior.id}` };
+/**
+ * Un piège repéré, à désamorcer (SPEC §3.12) : la même portée et la même marche qu'une zone. 0.17.0 : `place` est l'endroit cliqué,
+ * son déclencheur ou sa source (une région ou une tuile) ; sans lui, son déclencheur.
+ */
+export function trapSource(behavior, place=null) {
+  const base = { ...zoneSource(behavior), kind: "trap", key: `trap-${behavior.id}` };
+  const at = place ?? trapHandle(behavior)?.triggerRegion ?? behavior.region;
+  if ( !at ) return base;
+  const box = (at.documentName === "Tile") ? tileBox(at) : regionBox(at);
+  return { ...base, box: () => box, distance: looter => placeDistance(looter, at) };
+}
+
+function tileBox(tile) {
+  const size = tile.parent.grid.size;
+  return { col: tile.x / size, row: tile.y / size, w: tile.width / size, h: tile.height / size };
 }
 
 /** Les poches d'un PNJ vivant (vol à la tire, SPEC §3.3). @param {TokenDocument} token */
