@@ -20,6 +20,7 @@ import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
 import { requestGroundDrop } from "./drop.mjs";
+import { selftest } from "./selftest.mjs";
 
 function tokenOf(tokenId) {
   if ( !game.user.isGM ) throw new Error("GM only");
@@ -298,4 +299,4 @@ async function doorSet({ wallId, ds }) {
 
 export const testApi = Object.freeze({ trappedState, trappedSet, trappedSpring, trappedDisarm, doorSet, status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
   zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
-  trapState, trapFire, trapDisarm, trapSet, trapRecheck, groundDrop });
+  trapState, trapFire, trapDisarm, trapSet, trapRecheck, groundDrop, selftest });

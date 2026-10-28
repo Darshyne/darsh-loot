@@ -16,6 +16,13 @@ export const CONTAINER_TYPE = `${MODULE_ID}.container`;
 
 const fields = foundry.data.fields;
 
+/** Les jeux de sons des portes du cœur (`CONFIG.Wall.doorSounds`), plus « aucun ». */
+const soundChoices = () => ({ "": "DLO.ContainerBehavior.Sound.None",
+  ...Object.fromEntries(Object.entries(CONFIG.Wall.doorSounds ?? {}).map(([k, v]) => [k, v.label])) });
+
+/** Le jeu de sons d'un conteneur (`{ open, close, lock, unlock, test }`), ou null s'il n'en a pas. */
+export const containerSounds = behavior => CONFIG.Wall.doorSounds?.[behavior?.system?.sound] ?? null;
+
 export class ContainerBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
   static LOCALIZATION_PREFIXES = ["DLO.ContainerBehavior", "DLO.Hidden", "DLO.TrappedTrap"];
 
@@ -36,6 +43,8 @@ export class ContainerBehaviorType extends foundry.data.regionBehaviors.RegionBe
       locked: new fields.BooleanField({ initial: false }),
       dc: new fields.NumberField({ required: true, integer: true, min: 1, max: 40, initial: 15 }),
       key: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // 2026-10-28 (demande de l'utilisateur) : les sons du coffre, pris parmi ceux des portes du cœur (ouvrir, serrure) ; vide : aucun.
+      sound: new fields.StringField({ required: true, blank: true, initial: "woodBasic", choices: soundChoices }),
       // Propriétaire du contenu (une personne, une maison) : ce qu'on y prend est marqué volé (SPEC §3.3).
       owner: new fields.StringField({ required: true, blank: true, initial: "" }),
       // Option « cachée » (SPEC §3.12) : une cachette.

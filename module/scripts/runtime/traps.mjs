@@ -238,7 +238,8 @@ async function springAdvanced(h, triggerer, { surprise }) {
     judgeTrap(h, triggerer, null);
     return true;
   }
-  if ( !game.paused ) game.togglePause(true, { broadcast: true });
+  // 2026-10-28 (demande de l'utilisateur) : réglage `trapPause` éteint, pas de pause — les déplacements sont déjà arrêtés (`haltScene`).
+  if ( setting("trapPause") && !game.paused ) game.togglePause(true, { broadcast: true });
   const combat = await foundry.documents.Combat.implementation.create({ scene: scene.id, active: true });
   // 0.17.0 (retour de l'utilisateur) : seulement les personnages des joueurs présents sur la scène — pas les monstres d'autres salles,
   // ni les coffres, cercueils et autres trésors en token —, plus la créature qui l'a déclenché si ce n'en est pas un.

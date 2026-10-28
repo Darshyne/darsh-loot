@@ -9,18 +9,22 @@ import { resolveSource } from "../adapter/sources.mjs";
 import { stolenFlag } from "../core/theft.mjs";
 import { clearIfEmpty } from "../adapter/drop.mjs";
 import { behaviorConcealed } from "../adapter/hidden.mjs";
+import { playForAll, SOUNDS } from "./feedback.mjs";
 
 const TAKE_QUERY = `${MODULE_ID}.take`;
 
 /** Ce qui voyage dans une requête pour désigner une source. */
 export const sourceRef = source => ({ kind: source.kind, uuid: source.uuid });
 
-/** Envoie une requête au MJ actif (ou l'exécute si l'on est lui). Un refus devient un avertissement, jamais une erreur. */
-export async function askGM(name, handler, payload) {
+/**
+ * Envoie une requête au MJ actif (ou l'exécute si l'on est lui). Un refus devient un avertissement, jamais une erreur. `timeout` :
+ * pour une requête qui attend exprès (la fouille, qui conclut à la fin de sa durée).
+ */
+export async function askGM(name, handler, payload, { timeout=15000 }={}) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Notice.NoGM")); return null; }
   try {
-    return gm.isSelf ? await handler(payload, { user: game.user }) : await gm.query(name, payload, { timeout: 15000 });
+    return gm.isSelf ? await handler(payload, { user: game.user }) : await gm.query(name, payload, { timeout });
   } catch(err) {
     log.warn(`${name} refused:`, err.message);
     ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
@@ -65,6 +69,7 @@ async function handleTake(payload, { user }) {
     time: game.time.worldTime }) : null;
   const taken = await transfer(source.actor, looter.actor, { itemIds: payload.itemIds, coins: payload.coins, stolen });
   announce(looter, source, taken, !!stolen);
+  if ( taken.names.length || taken.coins.length ) playForAll(SOUNDS.coins, 0.6);   // 2026-10-28 : prendre s'entend (les pièces)
   if ( source.kind === "container" ) await clearIfEmpty(source.doc.parent);   // un tas au sol vidé disparaît (§3.8)
   return taken;
 }

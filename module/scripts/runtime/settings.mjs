@@ -66,6 +66,11 @@ export function registerSettings() {
     name: "DLO.Settings.AdvancedTraps.Name", hint: "DLO.Settings.AdvancedTraps.Hint",
     scope: "world", config: true, type: Boolean, default: true
   });
+  // 2026-10-28 : en mode avancé, mettre le jeu en pause quand un piège part (éteint : seuls les déplacements s'arrêtent).
+  game.settings.register(MODULE_ID, "trapPause", {
+    name: "DLO.Settings.TrapPause.Name", hint: "DLO.Settings.TrapPause.Hint",
+    scope: "world", config: true, type: Boolean, default: true
+  });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
     scope: "world", config: true, type: String, default: "all",

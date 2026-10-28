@@ -16,7 +16,12 @@ import { route } from "./router.mjs";
 export const SOUNDS = Object.freeze({
   tools: "sounds/doors/metal/test.ogg",
   success: "sounds/doors/metal/unlock.ogg",
-  failure: "sounds/doors/metal/lock.ogg"
+  failure: "sounds/doors/metal/lock.ogg",
+  // 2026-10-28 : quelque chose de caché est trouvé (porte secrète, piège, cachette), en fouillant ou en passant.
+  discover: "sounds/notify.wav",
+  // 2026-10-28 : fouiller (un cadavre, les environs) — le bruissement ; prendre un objet — les pièces.
+  rummage: `modules/${MODULE_ID}/assets/sounds/drop-soft.mp3`,
+  coins: `modules/${MODULE_ID}/assets/sounds/drop-coins.mp3`
 });
 
 /** Une carte plus vieille que ça (chargement du journal) ne refait pas son texte flottant. */

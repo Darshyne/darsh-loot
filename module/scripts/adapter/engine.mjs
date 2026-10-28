@@ -202,3 +202,12 @@ export function thrownAttack(resolution) {
   if ( !chosen.startsWith("thrown") && !beyondReach ) return null;
   return { id: resolution.id, item, thrower, targets };
 }
+
+/**
+ * La passe de test (runtime/selftest.mjs, 2026-10-28) lit le moteur comme un joueur le verrait : ses fonctions de test (`api.mcp` :
+ * menus, chemin) et sa vision (`api.vision.canHear`). Null sans moteur.
+ */
+export function engineTestApi() {
+  const api = game.modules.get(ENGINE_ID)?.api;
+  return api ? { mcp: api.mcp ?? null, canHear: api.vision?.canHear ?? null } : null;
+}

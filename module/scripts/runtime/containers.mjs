@@ -5,7 +5,7 @@
 import { MODULE_ID, loc, log, setting } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM, checkAccess, sourceRef } from "./take.mjs";
-import { CONTAINER_TYPE, registerContainerBehavior } from "../adapter/container-behavior.mjs";
+import { CONTAINER_TYPE, registerContainerBehavior, containerSounds } from "../adapter/container-behavior.mjs";
 import { keyItem } from "../adapter/dnd5e.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { rollContainer } from "../adapter/treasure.mjs";
@@ -155,17 +155,20 @@ async function handleUnlock(payload, { user }) {
  * flottant au-dessus du token, son de serrure (runtime/feedback.mjs). Le MJ qui ouvre lui-même : le son seul.
  */
 async function unlockFeedback(looter, source, method, ok) {
-  if ( !looter ) { if ( ok ) playForAll(SOUNDS.success); return; }
+  // 2026-10-28 : le jeu de sons du coffre (ceux des portes), sinon la serrure de métal du cœur.
+  const set = containerSounds(source.doc);
+  const success = set?.unlock ?? SOUNDS.success, failure = set?.test ?? SOUNDS.failure;
+  if ( !looter ) { if ( ok ) playForAll(success); return; }
   const names = { name: looter.name, source: source.name };
   if ( !ok ) {
-    await feedbackCard(looter, loc("Lock.PickFailCard", names), { kind: "refused", icon: "fa-solid fa-lock", sound: SOUNDS.failure,
+    await feedbackCard(looter, loc("Lock.PickFailCard", names), { kind: "refused", icon: "fa-solid fa-lock", sound: failure,
       float: loc("Lock.FloatFailed") });
     return;
   }
   const text = (method === "key")
     ? loc("Lock.KeyCard", { ...names, key: keyItem(looter.actor, source.doc.system.key)?.name ?? "" })
     : loc("Lock.PickedCard", names);
-  await feedbackCard(looter, text, { kind: "gain", icon: "fa-solid fa-lock-open", sound: SOUNDS.success, float: loc("Lock.FloatUnlocked") });
+  await feedbackCard(looter, text, { kind: "gain", icon: "fa-solid fa-lock-open", sound: success, float: loc("Lock.FloatUnlocked") });
 }
 
 /* -------------------------------------------- */

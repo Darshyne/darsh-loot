@@ -21,7 +21,7 @@ const ZONE_SECTIONS = [
 
 const CONTAINER_SECTIONS = [
   { key: "Contents", icon: "fa-solid fa-box-open", paths: ["label", "actor", "table", "draws", "hoard", "theme", "rolled", "owner"] },
-  { key: "Lock", icon: "fa-solid fa-lock", paths: ["locked", "dc", "key"] },
+  { key: "Lock", icon: "fa-solid fa-lock", paths: ["locked", "dc", "key", "sound"] },
   { key: "Cache", icon: "fa-solid fa-eye-slash", paths: ["hidden"] },
   { key: "Trap", icon: "fa-solid fa-burst", paths: ["trap.enabled", "trap.actor", "trap.activity", "trap.initiative"] },
   { key: "Area", icon: "fa-solid fa-bullseye", paths: ["trap.effectRegion"], hint: "AreaChest" },

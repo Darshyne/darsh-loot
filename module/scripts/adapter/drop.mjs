@@ -83,7 +83,7 @@ export async function createPile(scene, center, { level=null, elevation=0, img, 
     name, color: "#b58a45", levels, visibility: CONST.REGION_VISIBILITY.LAYER,
     shapes: [{ type: "rectangle", x, y, width: size, height: size }],
     flags: { [MODULE_ID]: { pile: { tile: tile.id } } },
-    behaviors: [{ name, type: CONTAINER_TYPE, system: { label: name, rolled: true } }]
+    behaviors: [{ name, type: CONTAINER_TYPE, system: { label: name, rolled: true, sound: "" } }]
   }]);
   return { region, behavior: region.behaviors.contents[0], tile };
 }
@@ -106,7 +106,7 @@ export async function createPlacedContainer(scene, center, item, { level=null, e
     name: item.name, color: "#b58a45", levels, visibility: CONST.REGION_VISIBILITY.LAYER,
     shapes: [{ type: "rectangle", x: Math.round(center.x - (size / 2)), y: Math.round(center.y - (size / 2)), width: size, height: size }],
     flags: { [MODULE_ID]: { tile: tile.id } },
-    behaviors: [{ name: item.name, type: CONTAINER_TYPE, system: { label: item.name, rolled: true } }]
+    behaviors: [{ name: item.name, type: CONTAINER_TYPE, system: { label: item.name, rolled: true, sound: "" } }]
   }]);
   return region;
 }

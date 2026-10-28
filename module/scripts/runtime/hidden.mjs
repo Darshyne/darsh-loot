@@ -23,7 +23,7 @@ import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
 import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
 
 /** 0.17.2 : le bruit d'une fouille en cours (le froissement d'un objet posé), entendu de tous. */
-const RUMMAGE_SOUND = `modules/${MODULE_ID}/assets/sounds/drop-soft.mp3`;
+const RUMMAGE_SOUND = SOUNDS.rummage;
 
 /** Tout ce qui est encore caché sur une scène : zones et murs cachés, et pièges de coffre ou de porte (0.16.0). */
 const hiddenThings = scene => [...concealedThings(scene), ...concealedTraps(scene)];
@@ -190,13 +190,19 @@ function inSceneUnits(hidden, scene) {
 async function onMoveToken(token, changes) {
   if ( !isActiveGM() || !playerToken(token) ) return;
   if ( !["x", "y", "elevation", "level"].some(k => k in changes) ) return;
+  let found = 0;
   for ( const thing of hiddenThings(token.parent) ) {
     // Distances de l'objet écrites en pieds, comparées dans l'unité de la scène (darsh-loot#1).
     const h = inSceneUnits(thing.hidden, token.parent);
     if ( !passiveFinds(h, thing.distance(token), passiveScore(token.actor, h.skill)) ) continue;
     if ( !reaches(token, thing, h.passive) ) continue;
     await reveal(thing, token);
+    found++;
   }
+  // 2026-10-28 (retour de l'utilisateur) : trouvé en passant, la table le voit et l'entend aussi — « remarque quelque chose », comme la
+  // fouille ; ce qui est trouvé reste dit au seul joueur du personnage (`reveal`).
+  if ( found ) await feedbackCard(token, loc("Hidden.FoundCard", { name: token.name }), { kind: "gain", icon: "fa-solid fa-eye",
+    sound: SOUNDS.discover, float: loc("Hidden.FloatFound") });
 }
 
 /* -------------------------------------------- */
@@ -215,11 +221,20 @@ export async function requestSearch(token) {
   const refusal = searchRefusal(token);
   if ( refusal ) { ui.notifications.warn(refusal); return null; }
   await announceSearch(token);
-  if ( !(await searchDelay(token)) ) { ui.notifications.info(loc("Hidden.Interrupted", { name: token.name })); return null; }
-  const result = await askGM(SEARCH_QUERY, handleSearch, { token: token.uuid });
+  // 2026-10-28 (retour de l'utilisateur) : le MJ reçoit la fouille dès le début de sa durée ; il lance les dés avant la fin, pour qu'ils
+  // s'arrêtent avec la barre (`handleSearch`), et conclut à la fin. Bouger pendant la fouille l'interrompt, des deux côtés.
+  const delayMs = searchDuration() * 1000;
+  const [result, done] = await Promise.all([
+    askGM(SEARCH_QUERY, handleSearch, { token: token.uuid, delayMs }, { timeout: delayMs + 20000 }),
+    searchDelay(token)
+  ]);
+  if ( !done || result?.interrupted ) { ui.notifications.info(loc("Hidden.Interrupted", { name: token.name })); return null; }
   if ( result && !result.found ) ui.notifications.info(loc("Hidden.Nothing"));
   return result;
 }
+
+/** La durée d'une fouille, en secondes réelles : le réglage hors combat, rien en combat (l'action suffit). */
+const searchDuration = () => ((game.combat?.started === true) ? 0 : Math.max(0, Number(setting("searchDuration")) || 0));
 
 /** 0.16.1 : les deux horloges du délai de fouille (`searchWait`) : temps du monde et temps réel. */
 const searchClock = () => ({ world: game.time.worldTime, real: Date.now() });
@@ -262,8 +277,8 @@ function pingAround(token) {
  * token a bougé entre-temps (fouille interrompue). En combat, rien à attendre : l'action Fouille suffit.
  */
 async function searchDelay(token) {
-  const seconds = Number(setting("searchDuration")) || 0;
-  if ( (seconds <= 0) || (game.combat?.started === true) ) return true;
+  const seconds = searchDuration();
+  if ( seconds <= 0 ) return true;
   const start = { x: token._source.x, y: token._source.y, elevation: token._source.elevation };
   const bar = ui.notifications.info(loc("Hidden.SearchingBar", { name: token.name }), { progress: true });
   const began = Date.now();
@@ -283,7 +298,14 @@ async function searchDelay(token) {
   }
 }
 
-async function handleSearch({ token: uuid }, { user }) {
+/**
+ * Combien de temps les dés 3D mettent à s'arrêter chez ce MJ (mesuré à chaque fouille, 2,5 s au départ) : la fouille lance ses dés
+ * d'autant avant la fin de sa durée. Sans Dice So Nice, ou fenêtre masquée : aucun délai.
+ */
+let diceLeadMs = 2500;
+const diceShown = () => !!game.modules.get("dice-so-nice")?.active && !!game.dice3d && !document.hidden;
+
+async function handleSearch({ token: uuid, delayMs=0 }, { user }) {
   const token = fromUuidSync(uuid, { strict: false });
   if ( !token?.actor ) throw new Error(loc("Refus.Introuvable"));
   if ( !token.actor.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
@@ -297,27 +319,44 @@ async function handleSearch({ token: uuid }, { user }) {
   const wait = inCombat ? 0 : searchWait(actor.getFlag(MODULE_ID, "lastSearch"), searchClock(), setting("searchCooldown"));
   if ( wait > 0 ) throw new Error(loc("Hidden.Cooldown", { name: actor.name, minutes: Math.ceil(wait / 60) }));
   await engineSpend(actor, "action");
-  if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", searchClock());
+  const deadline = Date.now() + Math.min(Math.max(0, Number(delayMs) || 0), 60000);
+  const start = { x: token._source.x, y: token._source.y, elevation: token._source.elevation };
+  const moved = () => !token.parent || (token._source.x !== start.x) || (token._source.y !== start.y) || (token._source.elevation !== start.elevation);
   const worldRadius = sceneSetting("searchRadius", token.parent);
-  let found = 0;
-  for ( const thing of hiddenThings(token.parent) ) {
-    const h = thing.hidden;
-    if ( !reaches(token, thing, searchReach(inSceneUnits(h, token.parent), worldRadius)) ) continue;
-    if ( alreadyTried(thing.tried, actor.id) ) continue;
-    // Jet chez le MJ, caché au joueur : mode de message « gm » (V14, CONFIG.ChatMessage.modes). Pas l'ancien
-    // CONST.DICE_ROLL_MODES.BLIND (« blindroll », déprécié en V14) : dnd5e 6 le passe tel quel en `messageMode`
-    // (dice/basic-roll.mjs:271), le cœur ne le reconnaît pas et le jet devenait public (vu le 2026-10-06).
+  const things = hiddenThings(token.parent).filter(thing => !alreadyTried(thing.tried, actor.id)
+    && reaches(token, thing, searchReach(inSceneUnits(thing.hidden, token.parent), worldRadius)));
+  // 2026-10-28 (retour de l'utilisateur) : **toujours** un jet — Perception, plus Investigation si un objet à portée se trouve ainsi —,
+  // même quand rien n'est caché : ni l'absence de dés ni un verdict plus rapide ne trahissent qu'il n'y a rien. Un jet par compétence,
+  // comparé au DD de chaque objet. Lancé pour que les dés 3D s'arrêtent à la fin de la durée de la fouille.
+  const skills = [...new Set(["prc", ...things.map(t => t.hidden.skill)])];
+  const lead = diceShown() ? diceLeadMs : 0;
+  await new Promise(resolve => setTimeout(resolve, Math.max(0, deadline - lead - Date.now())));
+  if ( moved() ) return { interrupted: true, found: 0 };
+  // Jet chez le MJ, caché au joueur : mode de message « gm » (V14, CONFIG.ChatMessage.modes). Pas l'ancien
+  // CONST.DICE_ROLL_MODES.BLIND (« blindroll », déprécié en V14) : dnd5e 6 le passe tel quel en `messageMode`
+  // (dice/basic-roll.mjs:271), le cœur ne le reconnaît pas et le jet devenait public (vu le 2026-10-06).
+  const rolled = Date.now();
+  const totals = {}, messages = [];
+  for ( const skill of skills ) {
     const known = new Set(game.messages.keys());
-    const rolls = await actor.rollSkill({ skill: h.skill }, { configure: false }, { rollMode: "gm" });
-    const total = rolls?.[0]?.total ?? -Infinity;
-    await waitForDice(newRollMessage(known));   // 0.17.2 (règles DAS) : rien n'apparaît avant la fin des dés 3D
-    if ( total >= h.dc ) { await reveal(thing, token); found++; }
+    const rolls = await actor.rollSkill({ skill }, { configure: false }, { rollMode: "gm" });
+    totals[skill] = rolls?.[0]?.total ?? -Infinity;
+    messages.push(newRollMessage(known));
+  }
+  await Promise.all(messages.map(m => waitForDice(m)));   // 0.17.2 (règles DAS) : rien n'apparaît avant la fin des dés 3D
+  if ( diceShown() ) diceLeadMs = Math.min(6000, Math.max(500, Date.now() - rolled));
+  await new Promise(resolve => setTimeout(resolve, Math.max(0, deadline - Date.now())));
+  if ( moved() ) return { interrupted: true, found: 0 };
+  if ( !inCombat ) await actor.setFlag(MODULE_ID, "lastSearch", searchClock());
+  let found = 0;
+  for ( const thing of things ) {
+    if ( totals[thing.hidden.skill] >= thing.hidden.dc ) { await reveal(thing, token); found++; }
     else await thing.doc.setFlag(MODULE_ID, thing.triedFlag, withTry(thing.tried, actor.id));
   }
   // 0.17.2 (règles DAS du 2026-10-27) : l'issue se voit et s'entend chez tous — « remarque quelque chose » ou « rien » ; ce qui est
   // trouvé reste dit au seul joueur du personnage (`reveal`).
   await feedbackCard(token, loc(found ? "Hidden.FoundCard" : "Hidden.NothingCard", { name: token.name }), {
-    kind: found ? "gain" : "ended", icon: "fa-solid fa-magnifying-glass", sound: found ? SOUNDS.success : null,
+    kind: found ? "gain" : "ended", icon: "fa-solid fa-magnifying-glass", sound: found ? SOUNDS.discover : null,
     float: loc(found ? "Hidden.FloatFound" : "Hidden.FloatNothing") });
   return { found };
 }

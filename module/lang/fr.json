@@ -98,7 +98,11 @@
       },
       "AdvancedTraps": {
         "Name": "Mode piège avancé",
-        "Hint": "Hors combat, un piège qui part met le jeu en pause et lance un combat avec les créatures de la scène (les personnages Surpris si personne ne l'avait repéré) ; le piège agit à son initiative (20 par défaut). En combat, on ne relance pas l'initiative. Dans les deux cas, pas de jet automatique : le MJ donne à chaque créature de la zone l'Avantage ou le Désavantage, puis lance le piège. Éteint : le piège frappe aussitôt."
+        "Hint": "Hors combat, un piège qui part arrête les déplacements, met le jeu en pause (réglage suivant) et lance un combat avec les personnages des joueurs de la scène (les personnages Surpris si personne ne l'avait repéré) ; le piège agit à son initiative (20 par défaut). En combat, on ne relance pas l'initiative. Dans les deux cas, pas de jet automatique : le MJ donne à chaque créature de la zone l'Avantage ou le Désavantage, puis lance le piège. Éteint : le piège frappe aussitôt."
+      },
+      "TrapPause": {
+        "Name": "Pause quand un piège part",
+        "Hint": "Mode piège avancé, hors combat : le jeu se met en pause quand un piège part. Éteint : pas de pause, seuls les déplacements s'arrêtent, et le combat du piège commence."
       }
     },
     "Lock": {
@@ -167,10 +171,17 @@
           "label": "Clé",
           "hint": "Nom de l'objet qui ouvre la serrure (sans tenir compte de la casse)."
         },
+        "sound": {
+          "label": "Son",
+          "hint": "Le bruit du coffre qu'on ouvre et de sa serrure, parmi ceux des portes. « Aucun » : silencieux."
+        },
         "owner": {
           "label": "Propriétaire",
           "hint": "À qui appartient le contenu. Si renseigné, tout ce qu'on y prend est marqué volé à ce nom."
         }
+      },
+      "Sound": {
+        "None": "Aucun"
       }
     },
     "Tables": {

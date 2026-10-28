@@ -14,6 +14,8 @@ import { ShopWindow } from "../apps/shop-window.mjs";
 import { SHOP_ACTIONS } from "./shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { setting, sceneSetting } from "../shared.mjs";
+import { playForAll, SOUNDS } from "./feedback.mjs";
+import { containerSounds } from "../adapter/container-behavior.mjs";
 
 const HANDLERS = { onTake: requestTake, onUnlock: requestUnlock };
 
@@ -28,7 +30,10 @@ export async function openSource(source, looter=actingToken()) {
     return StealWindow.show(source, looter, requestSteal);
   }
   if ( source.kind === "merchant" ) return ShopWindow.show(source, looter, SHOP_ACTIONS);
-  if ( source.kind === "corpse" ) await ensureRolled(source.doc);
+  if ( source.kind === "corpse" ) {
+    await ensureRolled(source.doc);
+    playForAll(SOUNDS.rummage, 0.6);   // 2026-10-28 : la fouille d'un cadavre s'entend
+  }
   else {
     // 0.16.0 : un coffre piégé part quand on l'ouvre (s'il n'est pas verrouillé : sinon, quand la serrure cède). Repéré, le joueur
     // choisit d'abord : désamorcer, ouvrir quand même, renoncer.
@@ -37,6 +42,8 @@ export async function openSource(source, looter=actingToken()) {
       await requestSpring(source.doc, looter, "open");
     }
     await ensureContainer(source.doc);
+    // 2026-10-28 : le coffre s'ouvre avec le son choisi dans sa configuration (ceux des portes) ; verrouillé, la serrure parle à sa place.
+    if ( !source.locked() ) playForAll(containerSounds(source.doc)?.open);
   }
   return LootWindow.show(source, looter, HANDLERS);
 }
