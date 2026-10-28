@@ -1,15 +1,15 @@
 /**
  * Retours d'action (règles DAS du 2026-10-27) : chaque geste donne un retour **visuel** et **sonore**, et rien de ce qui suit un jet
  * n'apparaît avant la fin des dés 3D (adapter/dice.mjs).
- *  - `channel` : un geste qui prend du temps (désamorcer…) — barre de progression chez le joueur (ui.notifications, `progress`), un
- *    ping autour du token et un bruit d'outils entendus de tous ; un déplacement l'interrompt.
+ *  - `channel` : un geste qui prend du temps (désamorcer…) — la minuterie du moteur au-dessus du token, vue de tous (repli : barre de
+ *    progression chez le joueur), un ping autour du token et un bruit d'outils entendus de tous ; un déplacement l'interrompt.
  *  - `feedbackCard` : l'issue, chez le MJ actif — une carte de chat publique marquée `flags.darsh-loot.feedback`, un son diffusé à tous.
  *    À la création de la carte, **chaque** client dessine le texte flottant au-dessus du token (moteur, `dnd5e-combat.notice`) : le hook
  *    du moteur est local, la carte le fait voir partout.
  */
 
 import { MODULE_ID } from "../shared.mjs";
-import { engineNotice } from "../adapter/engine.mjs";
+import { engineNotice, engineTimer } from "../adapter/engine.mjs";
 import { route } from "./router.mjs";
 
 /** Sons du cœur de Foundry (public/sounds/doors/metal), présents sur toute installation. */
@@ -42,28 +42,31 @@ function pingAt(token) {
 }
 
 /**
- * Un geste de `seconds` secondes réelles pour ce token (TokenDocument) : barre de progression intitulée `label` chez ce joueur, ping
+ * Un geste de `seconds` secondes réelles pour ce token (TokenDocument) : minuterie au-dessus du token intitulée `timerLabel` (repli : barre
+ * de progression intitulée `label` chez ce joueur), ping
  * et bruit d'outils toutes les 2,5 s chez tous. Rend false si le token a bougé (interrompu), true sinon (ou s'il n'y a rien à attendre).
  */
-export async function channel(token, { seconds=0, label="", sound=SOUNDS.tools }={}) {
+export async function channel(token, { seconds=0, label="", timerLabel=label, sound=SOUNDS.tools }={}) {
   if ( !token || !(seconds > 0) ) return true;
   const start = { x: token._source.x, y: token._source.y, elevation: token._source.elevation };
   const moved = () => !token.parent || (token._source.x !== start.x) || (token._source.y !== start.y) || (token._source.elevation !== start.elevation);
-  const bar = ui.notifications.info(label, { progress: true });
+  // 2026-10-28 : la minuterie au-dessus du token, vue de toute la table ; la barre de notification seulement sans elle.
+  const timer = engineTimer(token, { seconds, label: timerLabel });
+  const bar = timer ? null : ui.notifications.info(label, { progress: true });
   const began = Date.now();
   let last = 0;
   try {
     while ( (Date.now() - began) < (seconds * 1000) ) {
       if ( (Date.now() - last) >= 2500 ) { last = Date.now(); pingAt(token); playForAll(sound, 0.6); }
       await new Promise(resolve => setTimeout(resolve, 100));
-      if ( moved() ) return false;
+      if ( moved() ) { timer?.stop(); return false; }
       const left = Math.max(0, Math.ceil(seconds - ((Date.now() - began) / 1000)));
-      bar.update({ pct: Math.min(1, (Date.now() - began) / (seconds * 1000)), message: `${label} (${left} s)` });
+      bar?.update({ pct: Math.min(1, (Date.now() - began) / (seconds * 1000)), message: `${label} (${left} s)` });
     }
     return true;
   } finally {
-    bar.update({ pct: 1 });
-    bar.remove?.();
+    bar?.update({ pct: 1 });
+    bar?.remove?.();
   }
 }
 

@@ -937,6 +937,10 @@
       },
       "ActivityAuto": "By the targets’ level",
       "ActivityMissing": "Not found ({id})"
+    },
+    "Timer": {
+      "Search": "Searching…",
+      "Disarm": "Disarming…"
     }
   },
   "TYPES": {

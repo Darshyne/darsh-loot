@@ -584,7 +584,7 @@ export async function requestDisarm(target, looter, { confirm=true }={}) {
     speaker: ChatMessage.implementation.getSpeaker({ token: looter, actor: looter.actor }),
     content: `<p><i class="fa-solid fa-screwdriver-wrench"></i> ${foundry.utils.escapeHTML(loc("TrapZone.DisarmStart", names))}</p>`
   });
-  if ( !(await channel(looter, { seconds: Number(setting("disarmDuration")) || 0, label: loc("TrapZone.Disarming", names) })) ) {
+  if ( !(await channel(looter, { seconds: Number(setting("disarmDuration")) || 0, label: loc("TrapZone.Disarming", names), timerLabel: loc("Timer.Disarm") })) ) {
     ui.notifications.info(loc("TrapZone.DisarmInterrupted", names));
     return null;
   }

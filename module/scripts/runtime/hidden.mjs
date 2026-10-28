@@ -17,7 +17,7 @@ import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { passiveFinds, searchReach, searchWait, alreadyTried, withTry, revealWall, discoveryKey, normalizeHidden } from "../core/hidden.mjs";
 import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playerToken, wallHidden } from "../adapter/hidden.mjs";
-import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend } from "../adapter/engine.mjs";
+import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend, engineTimer } from "../adapter/engine.mjs";
 import { concealedTraps, regionHiddenByTraps, tilesHiddenByTraps } from "../adapter/trapped.mjs";
 import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
 import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
@@ -272,29 +272,31 @@ function pingAround(token) {
 }
 
 /**
- * Hors combat, la durée de la fouille (réglage `searchDuration`, en secondes réelles) : une barre de progression chez le joueur
- * (ui.notifications, `progress` : client/applications/ui/notifications.mjs:23-27) et un ping toutes les 2,5 s. Rend false si le
+ * Hors combat, la durée de la fouille (réglage `searchDuration`, en secondes réelles) : la minuterie du moteur au-dessus du token, vue de
+ * toute la table (repli : une barre de progression chez le joueur, ui.notifications `progress`) et un ping toutes les 2,5 s. Rend false si le
  * token a bougé entre-temps (fouille interrompue). En combat, rien à attendre : l'action Fouille suffit.
  */
 async function searchDelay(token) {
   const seconds = searchDuration();
   if ( seconds <= 0 ) return true;
   const start = { x: token._source.x, y: token._source.y, elevation: token._source.elevation };
-  const bar = ui.notifications.info(loc("Hidden.SearchingBar", { name: token.name }), { progress: true });
+  const label = loc("Hidden.SearchingBar", { name: token.name });
+  const timer = engineTimer(token, { seconds, label: loc("Timer.Search") });
+  const bar = timer ? null : ui.notifications.info(label, { progress: true });
   const began = Date.now();
   let lastPing = began;
   const moved = () => !token.parent || (token._source.x !== start.x) || (token._source.y !== start.y) || (token._source.elevation !== start.elevation);
   try {
     while ( (Date.now() - began) < (seconds * 1000) ) {
       await new Promise(resolve => setTimeout(resolve, 100));
-      if ( moved() ) return false;
-      bar.update({ pct: Math.min(1, (Date.now() - began) / (seconds * 1000)) });
+      if ( moved() ) { timer?.stop(); return false; }
+      bar?.update({ pct: Math.min(1, (Date.now() - began) / (seconds * 1000)) });
       if ( (Date.now() - lastPing) >= 2500 ) { lastPing = Date.now(); pingAround(token); playForAll(RUMMAGE_SOUND, 0.4); }
     }
     return true;
   } finally {
-    bar.update({ pct: 1 });
-    bar.remove?.();
+    bar?.update({ pct: 1 });
+    bar?.remove?.();
   }
 }
 

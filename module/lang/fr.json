@@ -937,6 +937,10 @@
       },
       "ActivityAuto": "Selon le niveau des cibles",
       "ActivityMissing": "Introuvable ({id})"
+    },
+    "Timer": {
+      "Search": "Fouille…",
+      "Disarm": "Désamorçage…"
     }
   },
   "TYPES": {

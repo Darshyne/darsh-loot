@@ -163,6 +163,15 @@ export async function engineSpend(actor, cost="action") {
  * gain, refused, ended, prompt…). Local à ce client : le hook ne part chez personne d'autre. Sans le moteur, rien.
  */
 export const NOTICE_HOOK = `${ENGINE_ID}.notice`;
+
+/**
+ * 2026-10-28 : la minuterie du moteur au-dessus du token (§272, `api.ui.timer`) — engrenage et jauge, vus de tous ceux qui voient le
+ * token. Rend `{ id, done, stop() }`, ou null avec un moteur qui ne l'a pas (la barre de notification sert alors de repli).
+ */
+export function engineTimer(token, { seconds, label="" }={}) {
+  const fn = engineApi()?.ui?.timer;
+  return (typeof fn === "function") ? fn({ token, seconds, label }) : null;
+}
 export function engineNotice(token, text, kind="prompt") {
   const uuid = token?.uuid ?? token?.document?.uuid ?? token ?? null;
   if ( uuid && text ) Hooks.callAll(NOTICE_HOOK, { token: uuid, text, kind });
