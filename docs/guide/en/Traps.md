@@ -29,6 +29,11 @@ A trap needs an **actor** carrying the activity to cast:
   level tier (1–4, 5–10, 11–16, 17–20). Their DCs (detection, disarming) are read automatically from their description;
 - or **any home-made NPC**: a creature of type "Trap", or any NPC on which you tick "Trap".
 
+> **Disarm DC 1?** That is on purpose. A Dungeon Master's Guide trap whose text calls for a Sleight of Hand check (the poisoned
+> needle, DC 15) gets that DC, and a failure sets it off. The ones you neutralize without a roll once spotted (an iron spike wedged
+> under a pit's lid, a trip wire to cut, holes to plug) get a DC of 1, and a failure does nothing. Change these values in the trap's
+> settings if your table rules otherwise.
+
 The **Activity** field is a list: pick the actor's activity to cast, or **"By the targets' level"** — the module then takes the Dungeon
 Master's Guide tier that contains the targets' level (the highest character, otherwise the highest CR).
 

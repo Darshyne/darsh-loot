@@ -30,6 +30,11 @@ Le piège a besoin d'un **acteur** qui porte l'activité à lancer :
 - ou **n'importe quel PNJ fait main** : une créature au type « Trap » (ou « Piège »), ou n'importe quel PNJ dont vous cochez
   « Piège ».
 
+> **DD de désamorçage 1 ?** C'est voulu. Un piège du Guide du maître dont le texte prévoit un test d'Escamotage (l'aiguille
+> empoisonnée, DD 15) reçoit ce DD, et un échec le déclenche. Ceux qu'on neutralise sans jet une fois repérés (un pointon coincé
+> sous le couvercle d'une fosse, un fil à couper, des trous à boucher) reçoivent un DD de 1, et un échec ne fait rien. Changez
+> ces valeurs dans les réglages du piège si votre table en décide autrement.
+
 Le champ **Activité** est une liste : choisissez l'activité de l'acteur à lancer, ou **« Selon le niveau des cibles »** — le module
 prend alors la tranche du Guide du maître qui contient le niveau des cibles (le plus haut personnage, sinon le plus haut FP).
 
