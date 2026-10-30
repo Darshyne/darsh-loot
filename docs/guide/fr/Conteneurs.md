@@ -5,7 +5,7 @@
 Un conteneur, c'est tout ce qu'on fouille sur la carte et qui n'est pas un cadavre : un coffre, un tonneau, une bibliothèque, une
 cachette sous une dalle, un tas d'objets tombés au sol.
 
-![Un coffre posé et sa fenêtre de fouille](images/conteneur-fenetre.webp)
+![Un coffre posé et sa fenêtre de fouille](images/fr/conteneur-fenetre.webp)
 
 ## Comment ça marche
 
@@ -37,7 +37,7 @@ Votre carte a déjà un coffre dessiné, ou vous avez posé une tuile de coffre 
 
 La tuile et la région restent liées : supprimer l'une supprime l'autre.
 
-![Le bouton du HUD de tuile et la fenêtre « Tuile → zone DAS »](images/tuile-vers-zone.webp)
+![Le bouton du HUD de tuile et la fenêtre « Tuile → zone DAS »](images/fr/tuile-vers-zone.webp)
 
 ### 3. Convertir un token Groupe
 
@@ -57,7 +57,7 @@ Outil Régions → dessinez une région → onglet Comportements → ajoutez **�
 
 La fenêtre de réglages est rangée en sections.
 
-![La fenêtre de réglages d'un conteneur, en sections](images/conteneur-reglages.webp)
+![La fenêtre de réglages d'un conteneur, en sections](images/fr/conteneur-reglages.webp)
 
 ### Contenu
 
@@ -121,7 +121,7 @@ piégé](Pieges#3-un-coffre-piégé).
   son de la serrure, pour toute la table.
 - **Portée** : 5 ft par défaut (réglage « Portée de fouille »), de bord à bord. Le MJ n'a pas de limite de portée.
 
-![Le curseur de fouille, le cadenas, et la fenêtre de serrure](images/conteneur-serrure.webp)
+![Un coffre verrouillé : ouvrir avec la clé ou crocheter](images/fr/conteneur-serrure.webp)
 
 ## Les tas au sol
 

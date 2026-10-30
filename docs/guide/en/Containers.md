@@ -5,7 +5,7 @@
 A container is anything on the map you can search that is not a corpse: a chest, a barrel, a bookshelf, a hiding place under a
 flagstone, a pile of items dropped on the ground.
 
-![A placed chest and its search window](images/conteneur-fenetre.webp)
+![A placed chest and its search window](images/en/conteneur-fenetre.webp)
 
 ## How it works
 
@@ -37,7 +37,7 @@ Your map already shows a chest, or you placed a chest tile?
 
 The tile and the region stay linked: deleting one deletes the other.
 
-![The tile HUD button and the "Tile → DAS zone" window](images/tuile-vers-zone.webp)
+![The tile HUD button and the "Tile → DAS zone" window](images/en/tuile-vers-zone.webp)
 
 ### 3. Convert a Group token
 
@@ -57,7 +57,7 @@ a wall), often combined with the **Hiding place** section.
 
 The settings window is split into sections.
 
-![A container's settings window, in sections](images/conteneur-reglages.webp)
+![A container's settings window, in sections](images/en/conteneur-reglages.webp)
 
 ### Contents
 
@@ -117,7 +117,7 @@ chest](Traps#3-a-trapped-chest).
   whole table.
 - **Reach**: 5 ft by default ("Search reach" setting), edge to edge. The GM has no reach limit.
 
-![The search cursor, the padlock, and the lock window](images/conteneur-serrure.webp)
+![A locked chest: open with the key or pick the lock](images/en/conteneur-serrure.webp)
 
 ## Piles on the ground
 

@@ -6,7 +6,7 @@ Un piège de DAS est **un acteur qui « lance » une activité** — une sauvega
 les créatures qui se trouvent au mauvais endroit. Le moteur de combat résout tout : jets, dégâts, états. Le module, lui, décide quand
 le piège part, sur qui, et comment les personnages le trouvent et le désamorcent.
 
-![Un piège repéré : déclencheur et source en rouge, zone d'effet en orange](images/piege-repere.webp)
+![Un piège repéré : déclencheur et source en rouge, zone d'effet en orange](images/fr/piege-repere.webp)
 
 ## Les trois parties d'un piège
 
@@ -53,7 +53,7 @@ Pour le régler : fenêtre du token, onglet **Identité**, section **« DAS · P
 réglage est recopié sur chaque token posé ; chaque token posé garde ensuite son propre état (armé, trouvé, désamorcé…). Un déclencheur
 ou une zone d'effet ailleurs (une autre région) se choisit sur un token posé, avec **« Choisir sur la carte »**.
 
-![La section « DAS · Piège » de la fenêtre du token](images/piege-token-reglages.webp)
+![La section « DAS · Piège » de la fenêtre du token](images/fr/piege-token-reglages.webp)
 
 ### 2. Un piège de zone (région)
 
@@ -86,13 +86,13 @@ le champ « Acteur piège »).
 - Sans zone d'effet, elle touche celui qui ouvre (le token le plus proche de la porte).
 - Repérée, la porte est tracée en rouge le long du mur.
 
-![La section « DAS · Porte piégée » de la fenêtre du mur](images/porte-piegee.webp)
+![La section « DAS · Porte piégée » de la fenêtre du mur](images/fr/porte-piegee.webp)
 
 ## Les réglages d'un piège
 
 La fenêtre de réglages est rangée en sections : **Piège**, **Zone d'effet**, **Source**, **Déclencheur**, **Armement et désamorçage**.
 
-![La fenêtre « DAS · Piège » en sections](images/piege-reglages.webp)
+![La fenêtre « DAS · Piège » en sections](images/fr/piege-reglages.webp)
 
 | Champ | Ce qu'il fait |
 |---|---|
@@ -134,7 +134,7 @@ Les distances sont en pieds, converties toutes seules sur une scène en mètres.
 - Le résultat attend la fin des dés 3D : réussi, raté, ou **déclenché** si l'échec fait partir le piège. Toute la table le voit (carte,
   texte au-dessus du token) et l'entend.
 
-![La jauge de désamorçage au-dessus du token](images/desamorcage.webp)
+![La jauge de désamorçage au-dessus du token](images/fr/desamorcage.webp)
 
 ## Quand il part
 
@@ -157,7 +157,7 @@ Hors combat, quand un piège part :
 
 En combat, la fenêtre s'ouvre tout de suite, sans relancer l'initiative.
 
-![La fenêtre du MJ en mode avancé](images/piege-fenetre-mj.webp)
+![La fenêtre du MJ en mode avancé](images/fr/piege-fenetre-mj.webp)
 
 ## Le menu du MJ
 

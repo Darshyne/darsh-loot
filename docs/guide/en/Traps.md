@@ -6,7 +6,7 @@ A DAS trap is **an actor that "casts" an activity** — a saving throw against d
 standing in the wrong place. The combat engine resolves everything: rolls, damage, conditions. The module decides when the trap goes off,
 on whom, and how the characters find and disarm it.
 
-![A spotted trap: trigger and source in red, area in orange](images/piege-repere.webp)
+![A spotted trap: trigger and source in red, area in orange](images/en/piege-repere.webp)
 
 ## The three parts of a trap
 
@@ -50,7 +50,7 @@ To set it up: token window, **Identity** tab, **"DAS · Trap"** section. Set on 
 every placed token; each placed token then keeps its own state (armed, found, disarmed…). A trigger or an area elsewhere (another region)
 is chosen on a placed token, with **"Pick on the map"**.
 
-![The "DAS · Trap" section of the token window](images/piege-token-reglages.webp)
+![The "DAS · Trap" section of the token window](images/en/piege-token-reglages.webp)
 
 ### 2. An area trap (region)
 
@@ -82,13 +82,13 @@ field).
 - With no area, it hits whoever opens it (the token closest to the door).
 - Once spotted, the door is drawn in red along the wall.
 
-![The "DAS · Trapped door" section of the wall window](images/porte-piegee.webp)
+![The "DAS · Trapped door" section of the wall window](images/en/porte-piegee.webp)
 
 ## A trap's settings
 
 The settings window is split into sections: **Trap**, **Area**, **Source**, **Trigger**, **Arming and disarming**.
 
-![The "DAS · Trap" window in sections](images/piege-reglages.webp)
+![The "DAS · Trap" window in sections](images/en/piege-reglages.webp)
 
 | Field | What it does |
 |---|---|
@@ -128,7 +128,7 @@ Distances are in feet, converted automatically on a metric scene.
 - The result waits for the 3D dice: success, failure, or **set off** if the failure makes the trap go off. The whole table sees it (card,
   text over the token) and hears it.
 
-![The disarm gauge over the token](images/desamorcage.webp)
+![The disarm gauge over the token](images/en/desamorcage.webp)
 
 ## When it goes off
 
@@ -150,7 +150,7 @@ Out of combat, when a trap goes off:
 
 In combat, the window opens at once, without rolling initiative again.
 
-![The GM window in advanced mode](images/piege-fenetre-mj.webp)
+![The GM window in advanced mode](images/en/piege-fenetre-mj.webp)
 
 ## The GM menu
 
