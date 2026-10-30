@@ -159,6 +159,35 @@ function trapCursor(source) {
   return (cursor === "use") ? "disarm" : cursor;
 }
 
+/**
+ * 2026-10-28 (demande de l'utilisateur, comme le clic-déplacement et le clic-attaque du moteur) : réglage par poste `clickToLoot` —
+ * « jamais » (par défaut : le clic droit propose « Fouiller »), « à portée » (le clic ouvre ce qui est à portée, sans marcher) ou
+ * « y aller » (le clic fait marcher jusqu'à portée puis ouvre). Le **survol reste** dans tous les cas (le curseur montre ce qu'on
+ * peut fouiller — retour de l'utilisateur) ; seul le clic suit le réglage, sinon il reste au cœur (sélection, glisser). Hors « y
+ * aller », un objet hors de portée montre « trop loin » plutôt que « y aller ». Les zones « DAS · … » (macro, scène, document) se
+ * cliquent toujours : c'est leur geste. Le MJ sans token sélectionné ouvre encore de loin (préparation), même à « jamais ».
+ */
+function clickMode() {
+  const mode = setting("clickToLoot");
+  return ["off", "reach", "walk"].includes(mode) ? mode : "off";
+}
+
+/** Le curseur au survol. */
+export function shownCursor(source) {
+  const cursor = cursorFor(source);
+  if ( !cursor || (source.kind === "zone") ) return cursor;
+  return ((cursor === "go") && (clickMode() !== "walk")) ? "far" : cursor;
+}
+
+/** Ce que le clic gauche fera sur cette source : le curseur du survol si le réglage le permet, sinon null (clic laissé au cœur). */
+export function clickCursor(source) {
+  const cursor = shownCursor(source);
+  if ( !cursor || (source.kind === "zone") ) return cursor;
+  const mode = clickMode();
+  if ( (mode === "walk") || (mode === "reach") ) return cursor;
+  return (game.user.isGM && !gmToken()) ? cursor : null;
+}
+
 /** Le token que le MJ a sélectionné (un seul), ou null. */
 function gmToken() {
   const controlled = canvas.tokens?.controlled ?? [];
@@ -178,13 +207,13 @@ let lastMove = null;
 function onPointerMove(event) {
   lastMove = event;
   if ( !onBoard(event) ) return setCursor(null);
-  setCursor(cursorFor(sourceAt(event)));
+  setCursor(shownCursor(sourceAt(event)));
 }
 
 /** Survol d'un token : le curseur change aussi sans bouger la souris (token qui meurt sous le pointeur). */
 function onHoverToken(token, hovered) {
   if ( !hovered ) return setCursor(null);
-  setCursor(cursorFor(corpseToken(token.document) ? corpseSource(token.document) : null));
+  setCursor(shownCursor(corpseToken(token.document) ? corpseSource(token.document) : null));
 }
 
 /* ---- clic ---- */
@@ -200,14 +229,14 @@ function clickedSource(event) {
   if ( !onBoard(event) || (event.button !== 0) || !plain(event) || inCombat() || engineTargeting() ) return null;
   const source = sourceAt(event);
   if ( !source ) return null;
-  return cursorFor(source) ? source : null;
+  return clickCursor(source) ? source : null;
 }
 
 function onPointerDown(event) {
   down = null;
   const source = clickedSource(event);
   if ( !source ) return;
-  down = { x: event.clientX, y: event.clientY, at: Date.now(), source, looter: actingToken(), cursor: cursorFor(source) };
+  down = { x: event.clientX, y: event.clientY, at: Date.now(), source, looter: actingToken(), cursor: clickCursor(source) };
   event.stopImmediatePropagation();
   event.preventDefault();
 }
@@ -248,7 +277,7 @@ async function goThenOpen(source, looter) {
 
 /** Recalcule le curseur sous la souris après un changement (coffre vidé, serrure ouverte, combat commencé). */
 function recheck() {
-  if ( lastMove && canvas.ready ) setCursor(onBoard(lastMove) ? cursorFor(sourceAt(lastMove)) : null);
+  if ( lastMove && canvas.ready ) setCursor(onBoard(lastMove) ? shownCursor(sourceAt(lastMove)) : null);
 }
 
 /** « Fouiller le corps » au menu contextuel d'un cadavre (menu du moteur), hors combat, pour le personnage en main. */

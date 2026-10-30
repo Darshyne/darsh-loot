@@ -100,15 +100,61 @@ export async function createPlacedContainer(scene, center, item, { level=null, e
   const levels = level ? [level] : [];
   const [tile] = await scene.createEmbeddedDocuments("Tile", [{
     texture: { src: item.img, anchorX: 0.5, anchorY: 0.5 }, x: Math.round(center.x), y: Math.round(center.y),
-    width: size, height: size, elevation, levels, sort: 1000
+    width: size, height: size, elevation, levels, sort: 1000, flags: { [MODULE_ID]: { objectTile: true } }
   }]);
   const [region] = await scene.createEmbeddedDocuments("Region", [{
     name: item.name, color: "#b58a45", levels, visibility: CONST.REGION_VISIBILITY.LAYER,
     shapes: [{ type: "rectangle", x: Math.round(center.x - (size / 2)), y: Math.round(center.y - (size / 2)), width: size, height: size }],
     flags: { [MODULE_ID]: { tile: tile.id } },
-    behaviors: [{ name: item.name, type: CONTAINER_TYPE, system: { label: item.name, rolled: true, sound: "" } }]
+    // 2026-10-28 : un coffre posé a le son de porte par défaut du conteneur (bois) ; seuls les tas sont muets.
+    behaviors: [{ name: item.name, type: CONTAINER_TYPE, system: { label: item.name, rolled: true } }]
   }]);
   return region;
+}
+
+/**
+ * 2026-10-28 : un token d'acteur **Groupe** converti en conteneur par le MJ (menu contextuel) — une tuile à l'image du token,
+ * de son emprise, et une région « Conteneur » de même emprise liée à elle, au nom de l'acteur. Le contenu se copie ensuite
+ * (`fillFromActor`). Le token, lui, est retiré par l'appelant. À appeler chez un MJ.
+ * @returns {Promise<RegionDocument>}
+ */
+export async function createContainerFromToken(token) {
+  const scene = token.parent;
+  const s = token._source;
+  const size = scene.grid.size;
+  const width = s.width * size, height = s.height * size;
+  const levels = s.level ? [s.level] : [];
+  const name = token.name || token.actor?.name || "?";
+  // Même visuel que le token : la tuile et le token se dessinent par le même `mesh.resize(width, height, { fit, scaleX, scaleY })`
+  // et la même ancre (canvas/placeables/tile.mjs `_refreshSize`, token.mjs `_refreshMeshSizeAndScale`) — on recopie toute la
+  // texture (échelle, miroir, ajustement, teinte, ancre) et l'opacité, posée au centre du token. Avec l'anneau dynamique, l'image est
+  // celle du sujet de l'anneau ; l'anneau lui-même n'existe pas pour une tuile.
+  const { src, fit, scaleX, scaleY, anchorX, anchorY, offsetX, offsetY, tint, alphaThreshold } = s.texture;
+  const subject = s.ring?.enabled ? s.ring.subject?.texture : null;
+  const [tile] = await scene.createEmbeddedDocuments("Tile", [{
+    texture: { src: subject || src, fit, scaleX, scaleY, anchorX, anchorY, offsetX, offsetY, tint, alphaThreshold },
+    x: Math.round(s.x + (width / 2)), y: Math.round(s.y + (height / 2)), alpha: s.alpha ?? 1,
+    width, height, rotation: s.rotation ?? 0, elevation: s.elevation ?? 0, levels, hidden: !!s.hidden, sort: 1000,
+    flags: { [MODULE_ID]: { objectTile: true } }
+  }]);
+  const [region] = await scene.createEmbeddedDocuments("Region", [{
+    name, color: "#b58a45", levels, visibility: CONST.REGION_VISIBILITY.LAYER,
+    shapes: [{ type: "rectangle", x: s.x, y: s.y, width, height }],
+    flags: { [MODULE_ID]: { tile: tile.id } },
+    behaviors: [{ name, type: CONTAINER_TYPE, system: { label: name, rolled: true } }]
+  }]);
+  return region;
+}
+
+/** Le contenu d'un acteur (objets, rangement dans les sacs gardé, et argent), copié dans `store`. */
+export async function fillFromActor(store, actor) {
+  const items = actor.items.map(i => i.toObject());
+  if ( items.length ) await CONFIG.Item.documentClass.createDocuments(items, { keepId: true, parent: store });
+  const update = {};
+  for ( const [k, v] of Object.entries(actor.system.currency ?? {}) ) {
+    if ( Number(v) > 0 ) update[`system.currency.${k}`] = (Number(store.system.currency?.[k]) || 0) + Number(v);
+  }
+  if ( Object.keys(update).length ) await store.update(update);
 }
 
 /** Le contenu d'un sac (objets, sous-sacs compris, et argent), prêt à créer dans `store` : le sac lui-même n'y est pas. */

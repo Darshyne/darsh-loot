@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { checksIn, trapChecks, tierRange, pickTier, targetsLevel, normalizeTrap, triggersOn, armedAt, TRAP_DEFAULTS,
-  bigEnough, sizeOfSpan, normalizeInitiative, migrateZoneTrap, isTrapCreatureType }
+  bigEnough, sizeOfSpan, normalizeInitiative, migrateZoneTrap, isTrapCreatureType, objectImmunities }
   from "../module/scripts/core/traps.mjs";
 
 describe("tests d'un texte", () => {
@@ -180,5 +180,26 @@ describe("étape 11 bis : l'acteur piège", () => {
     expect(isTrapCreatureType({ value: "construct", custom: "" })).toBe(false);
     expect(isTrapCreatureType({ value: "custom", custom: "Trapper" })).toBe(false);
     expect(isTrapCreatureType(undefined)).toBe(false);
+  });
+});
+
+describe("objectImmunities", () => {
+  it("ajoute poison, psychique et les états d'objet", () => {
+    const u = objectImmunities([], []);
+    expect(u["system.traits.di.value"]).toEqual(["poison", "psychic"]);
+    expect(u["system.traits.ci.value"]).toContain("charmed");
+    expect(u["system.traits.ci.value"]).not.toContain("invisible");
+  });
+  it("garde ce que le MJ a déjà mis", () => {
+    const u = objectImmunities(["fire", "poison"], ["charmed"]);
+    expect(u["system.traits.di.value"]).toEqual(["fire", "poison", "psychic"]);
+    expect(u["system.traits.ci.value"][0]).toBe("charmed");
+  });
+  it("rien à faire : null", () => {
+    expect(objectImmunities(["poison", "psychic"], ["blinded", "charmed", "deafened", "exhaustion", "frightened", "grappled",
+      "incapacitated", "paralyzed", "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"])).toBeNull();
+  });
+  it("n'écrit pas un état inconnu du système", () => {
+    expect(objectImmunities(["poison", "psychic"], [], ["charmed"])["system.traits.ci.value"]).toEqual(["charmed"]);
   });
 });

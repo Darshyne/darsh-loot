@@ -17,6 +17,17 @@ export function pileSpot(cellTopLeft, size) {
   return { x: cellTopLeft.x + offset, y: cellTopLeft.y + offset };
 }
 
+/**
+ * 2026-10-28 (demande de l'utilisateur, « que ça respire ») : l'échelle d'affichage d'un objet posé (coffre, tas, piège) pour que son
+ * image tienne dans `max` (fraction, 0,8 par défaut) des cases qu'il occupe — un objet déjà plus petit (le tas d'une demi-case) ne
+ * grandit pas. `width` / `height` : sa taille en pixels, `size` : la case.
+ */
+export function objectScale(width, height, size, max) {
+  if ( !(width > 0) || !(height > 0) || !(size > 0) || !(max > 0) ) return 1;
+  const cells = v => Math.max(1, Math.ceil((v / size) - 1e-6)) * size;
+  return Math.min(1, (max * cells(width)) / width, (max * cells(height)) / height);
+}
+
 /** Durée du vol, en millisecondes. */
 export const FLIGHT_MS = 520;
 

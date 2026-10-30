@@ -80,6 +80,13 @@
         "Name": "Rayon de fouille",
         "Hint": "Distance en pieds jusqu'où « Fouiller les environs » cherche, murs compris (convertie sur une scène en mètres : 5 ft = 1,5 m). Un objet caché peut demander moins."
       },
+      "ClickToLoot": {
+        "Name": "Fouille au clic gauche",
+        "Hint": "Ce que fait un clic gauche sur un cadavre, un coffre, un tas, un marchand ou un piège repéré, hors combat. Jamais : le clic reste celui de Foundry, et le clic droit propose « Fouiller ». À portée : le clic ouvre ce qui est à portée. Y aller : le personnage marche jusqu’à portée, puis ouvre. Réglage de cet ordinateur. Les zones cliquables (macro, scène, document) se cliquent toujours.",
+        "Off": "Jamais (clic droit)",
+        "Reach": "Seulement à portée",
+        "Walk": "Y aller, puis ouvrir"
+      },
       "SearchMenu": {
         "Name": "Proposer « Fouiller les environs »",
         "Hint": "Ajoute l’action « Fouiller les environs » au menu contextuel de son propre token. Décoché : l’action disparaît du menu, mais les objets cachés se trouvent toujours par Perception passive. Utile surtout pour le dungeon crawl."
@@ -99,6 +106,14 @@
       "AdvancedTraps": {
         "Name": "Mode piège avancé",
         "Hint": "Hors combat, un piège qui part arrête les déplacements, met le jeu en pause (réglage suivant) et lance un combat avec les personnages des joueurs de la scène (les personnages Surpris si personne ne l'avait repéré) ; le piège agit à son initiative (20 par défaut). En combat, on ne relance pas l'initiative. Dans les deux cas, pas de jet automatique : le MJ donne à chaque créature de la zone l'Avantage ou le Désavantage, puis lance le piège. Éteint : le piège frappe aussitôt."
+      },
+      "TrapImmunities": {
+        "Name": "Pièges : immunités d’objet",
+        "Hint": "Un token piège posé reçoit les immunités d’un objet (Guide du maître) : dégâts de poison et psychiques, et les états qu’un objet ne subit pas (tous sauf Invisible). Celles déjà présentes restent ; rien n’est retiré si vous décochez."
+      },
+      "ObjectSize": {
+        "Name": "Taille des objets posés (%)",
+        "Hint": "Les coffres, tas et pièges posés par le module se dessinent au plus à cette part de leurs cases, pour laisser de l'air autour. Affichage seulement : la zone de fouille ou de déclenchement garde ses cases. Les tuiles de votre carte transformées en zone ne changent pas."
       },
       "TrapPause": {
         "Name": "Pause quand un piège part",
@@ -120,7 +135,9 @@
     },
     "Container": {
       "Folder": "Butin — conteneurs",
-      "ActorName": "Conteneur : {name}"
+      "ActorName": "Conteneur : {name}",
+      "ConvertMenu": "Convertir en conteneur",
+      "Converted": "{name} est maintenant un conteneur (tuile et région)."
     },
     "ContainerBehavior": {
       "Hoard": {

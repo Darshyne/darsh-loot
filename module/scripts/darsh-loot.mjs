@@ -3,6 +3,7 @@
  */
 import { MODULE_ID } from "./shared.mjs";
 import { registerSettings } from "./runtime/settings.mjs";
+import { registerObjectSize } from "./runtime/object-size.mjs";
 import { registerTake, requestTake } from "./runtime/take.mjs";
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
 import { registerContainersInit, registerContainers, ensureContainer, requestUnlock } from "./runtime/containers.mjs";
@@ -34,6 +35,11 @@ import { createGenericTables } from "./adapter/treasure.mjs";
 const doc = token => token?.document ?? token;
 /** L'acteur d'un token, d'un document de token ou d'un acteur. */
 const actorOf = thing => { const d = doc(thing); return (d instanceof Actor) ? d : (d?.actor ?? null); };
+
+// 2026-10-28 : la taille des objets posés s'inscrit dès le chargement du script, avant le `init` des autres modules, pour passer
+// la première dans `refreshTile` / `refreshToken` : un voisin qui relève l'échelle de l'image à ce moment-là (la perspective de
+// DAS · Shadows & Ambience) multiplie alors la taille réduite au lieu de l'écraser.
+registerObjectSize();
 
 Hooks.once("init", () => {
   registerSettings();

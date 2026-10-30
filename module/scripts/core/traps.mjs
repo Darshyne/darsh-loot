@@ -146,6 +146,29 @@ export function armedAt(trap, now) {
 /* ---- pièges v2 (étape 11) ---- */
 
 /** Les tailles dnd5e, de la plus petite à la plus grande (`CONFIG.DND5E.actorSizes`), recopiées pour rester pur. */
+/**
+ * 2026-10-28 (demande de l'utilisateur) : un piège est un objet (DMG 2024, « Objects ») — immunisé aux dégâts de poison et psychiques,
+ * et aux états qu'un objet ne peut pas subir (tout sauf Invisible). Les immunités du MJ restent ; on n'ajoute que ce qui manque.
+ */
+export const TRAP_DAMAGE_IMMUNITIES = Object.freeze(["poison", "psychic"]);
+export const TRAP_CONDITION_IMMUNITIES = Object.freeze(["blinded", "charmed", "deafened", "exhaustion", "frightened", "grappled",
+  "incapacitated", "paralyzed", "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"]);
+
+/**
+ * La mise à jour qui ajoute à un acteur les immunités d'objet qui lui manquent (`di`, `ci` : listes actuelles), ou null s'il les a.
+ * `known` : les états que le système connaît (on n'écrit pas une clé qu'il refuserait).
+ */
+export function objectImmunities(di=[], ci=[], known=null) {
+  const has = (list, k) => list.includes(k);
+  const addDi = TRAP_DAMAGE_IMMUNITIES.filter(k => !has(di, k));
+  const addCi = TRAP_CONDITION_IMMUNITIES.filter(k => !has(ci, k) && (!known || known.includes(k)));
+  if ( !addDi.length && !addCi.length ) return null;
+  const update = {};
+  if ( addDi.length ) update["system.traits.di.value"] = [...di, ...addDi];
+  if ( addCi.length ) update["system.traits.ci.value"] = [...ci, ...addCi];
+  return update;
+}
+
 export const SIZES = Object.freeze(["tiny", "sm", "med", "lg", "huge", "grg"]);
 
 /**

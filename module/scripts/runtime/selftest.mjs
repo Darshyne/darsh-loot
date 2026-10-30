@@ -15,8 +15,9 @@ import { ensureRolled } from "./treasure.mjs";
 import { requestTake } from "./take.mjs";
 import { corpseSource, containerSource } from "../adapter/sources.mjs";
 import { openSource } from "./open.mjs";
-import { requestUnlock } from "./containers.mjs";
+import { requestUnlock, convertGroupToken } from "./containers.mjs";
 import { requestGroundDrop } from "./drop.mjs";
+import { shownCursor, clickCursor } from "./pointer.mjs";
 
 const TEST = { [MODULE_ID]: { test: true } };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -324,6 +325,20 @@ async function tokenTrap(b) {
     b.expect(isTrapToken(trap), "un PNJ de type « Trap » posé est un piège");
     b.expect(await until(() => autoRegionOf(trap)), "une région est posée sous lui (déclencheur et zone d'effet)");
     b.expect(!livingNPC(trap), "pas de « Voler » sur un piège");
+    // 2026-10-28 : immunités d'objet (poison, psychique, états), sur l'acteur du token.
+    const imm = await until(() => trap.actor?.system.traits.di.value.has?.("psychic") && trap.actor.system.traits.ci.value.has?.("charmed"));
+    b.expect(imm && trap.actor.system.traits.di.value.has("poison") && !trap.actor.system.traits.ci.value.has("invisible"),
+      `immunités d'objet : ${[...trap.actor.system.traits.di.value].join(", ")} / ${[...trap.actor.system.traits.ci.value].length} états`);
+    b.expect(!game.actors.get(actor.id)?.system.traits.di.value.has("psychic") || trap.actorLink, "l'acteur du monde n'est pas touché (token non lié)");
+    const hp0 = trap.actor.system.attributes.hp.value;
+    await trap.actor.applyDamage([{ value: 5, type: "psychic" }, { value: 5, type: "poison" }]);
+    b.expect(trap.actor.system.attributes.hp.value === hp0, `5 psychiques + 5 poison : PV inchangés (${hp0} → ${trap.actor.system.attributes.hp.value})`);
+    // 2026-10-28 : dessiné au plus à `objectSize` % de sa case.
+    const max = setting("objectSize") / 100;
+    const m = trap.object?.mesh;
+    if ( m && !trap.object.hasDynamicRing ) b.expect((Math.abs(m.width) <= (max * b.G) + 1) && (Math.abs(m.height) <= (max * b.G) + 1),
+      `piège dessiné dans ${Math.round(max * 100)} % de sa case (${Math.round(Math.abs(m.width))}×${Math.round(Math.abs(m.height))} pour ${b.G})`);
+    else b.note("piège non dessiné ou à anneau : taille à l'écran non vérifiée");
     const engine = engineTestApi();
     if ( engine?.canHear ) b.expect(!engine.canHear(walker.object ?? walker, trap.object ?? trap), "un piège ne s'entend pas");
     const menu = engine?.mcp?.menu?.({ tokenId: walker.id, targetId: trap.id });
@@ -503,8 +518,93 @@ async function search(b) {
   await searcher.actor.unsetFlag(MODULE_ID, "lastSearch");
 }
 
+/** Un token d'acteur Groupe converti en conteneur par le MJ (2026-10-28) : menu, tuile, région, contenu copié, token retiré. */
+async function groupContainer(b) {
+  const looter = await b.token(await testCharacter(b), 0, 0);
+  const group = await b.actor({ name: "Essai coffre groupe", type: "group", img: "icons/containers/chest/chest-worn-oak-tan.webp",
+    system: { currency: { gp: 5 } }, items: [{ name: "Essai gemme", type: "loot", system: { quantity: 2 } }] });
+  const token = await b.token(group, 2, 0, { width: 2, height: 1,
+    texture: { src: "icons/containers/chest/chest-worn-oak-tan.webp", scaleX: -1.2, scaleY: 1.2, fit: "contain", tint: "#c08040" }, alpha: 0.8 });
+  const engine = engineTestApi();
+  const menu = engine?.mcp?.menu?.({ tokenId: looter.id, targetId: token.id });
+  if ( menu ) b.expect(menu.labels.some(l => /conteneur|container/i.test(l)), `menu du MJ sur le token Groupe : ${menu.labels.join(" | ")}`);
+  const tm = token.object?.mesh;
+  // Position dans le repère de la scène (l'écran peut défiler entre deux mesures).
+  const at = m => canvas.stage.toLocal(m.getGlobalPosition());
+  const drawn = tm ? { w: Math.round(tm.width), h: Math.round(tm.height), x: Math.round(at(tm).x), y: Math.round(at(tm).y) } : null;
+  const region = await convertGroupToken(token);
+  if ( region ) b.created.Region.push(region.id);
+  await sleep(500);
+  b.expect(!b.scene.tokens.has(token.id), "le token est retiré");
+  b.expect(game.actors.has(group.id), "l'acteur Groupe du monde reste");
+  const behavior = region?.behaviors.find(x => x.type === `${MODULE_ID}.container`);
+  b.expect(behavior, "une région « Conteneur » le remplace");
+  const tile = b.scene.tiles.get(region?.getFlag(MODULE_ID, "tile"));
+  b.expect(tile?.texture.src === token.texture.src, "une tuile à l'image du token, liée à la région");
+  b.expect(tile && (tile.width === 2 * b.G) && (tile.height === b.G), "de l'emprise du token (2 × 1)");
+  const same = ["fit", "scaleX", "scaleY", "anchorX", "anchorY", "tint"].filter(k => String(tile?.texture[k]) !== String(token.texture[k]));
+  b.expect(tile && !same.length && (tile.alpha === token.alpha), `même visuel (échelle, miroir, ajustement, teinte, opacité)${same.length ? ` — diffère : ${same.join(", ")}` : ""}`);
+  await sleep(500);
+  const mesh = tile?.object?.mesh;
+  if ( mesh && drawn ) {
+    const now = { w: Math.round(mesh.width), h: Math.round(mesh.height), x: Math.round(at(mesh).x), y: Math.round(at(mesh).y) };
+    // Même image, réduite à `objectSize` % (le token Groupe, lui, n'était pas réduit), même centre.
+    const k = setting("objectSize") / 100;
+    b.expect((Math.abs(now.w - (drawn.w * k)) <= 1) && (Math.abs(now.h - (drawn.h * k)) <= 1) && (Math.abs(now.x - drawn.x) <= 1) && (Math.abs(now.y - drawn.y) <= 1),
+      `même image à ${Math.round(k * 100)} %, même centre : token ${drawn.w}×${drawn.h} en ${drawn.x},${drawn.y} → tuile ${now.w}×${now.h} en ${now.x},${now.y}`);
+    // Le réglage change : la tuile se redessine aussitôt.
+    const before = setting("objectSize");
+    await game.settings.set(MODULE_ID, "objectSize", 100);
+    await sleep(400);
+    b.expect(Math.abs(Math.round(mesh.width) - drawn.w) <= 1, `réglage à 100 % : taille du token retrouvée (${Math.round(mesh.width)})`);
+    await game.settings.set(MODULE_ID, "objectSize", before);
+  } else b.note("image non dessinée (fenêtre du MJ en arrière-plan ?) : taille à l'écran non comparée");
+  b.expect(behavior?.system.sound === "woodBasic", `son du coffre : ${behavior?.system.sound}`);
+  const store = behavior?.system.actor ? fromUuidSync(behavior.system.actor) : null;
+  if ( store ) await store.setFlag(MODULE_ID, "test", true);
+  b.expect(store?.items.find(i => i.name === "Essai gemme")?.system.quantity === 2, "le coffre reçoit ses objets");
+  b.expect(store?.system.currency.gp === 5, "et son argent");
+  b.expect(behavior?.system.rolled, "rien n'est tiré par-dessus (contenu du groupe)");
+}
+
+/** Fouille au clic gauche (2026-10-28) : « jamais » par défaut, « à portée », « y aller » — le curseur dit ce que le clic fera. */
+async function clickLoot(b) {
+  const before = setting("clickToLoot");
+  b.expect(game.settings.settings.get(`${MODULE_ID}.clickToLoot`)?.default === "off", "par défaut : jamais (clic droit)");
+  const looter = await b.token(await testCharacter(b), 0, 0);
+  const victim = await b.actor({ name: "Essai cadavre clic", type: "npc", img: "icons/svg/skull.svg",
+    system: { attributes: { hp: { value: 10, max: 10 } }, details: { type: { value: "humanoid" }, cr: 1 } },
+    items: [{ name: "Essai dague", type: "weapon", system: { quantity: 1, properties: ["gear"] } }] });
+  const near = await b.token(victim, 1, 0);
+  const far = await b.token(victim, 4, 0);
+  for ( const t of [near, far] ) await t.actor.toggleStatusEffect("dead", { active: true, overlay: true });
+  await sleep(500);
+  looter.object?.control({ releaseOthers: true });
+  try {
+    const seen = {};
+    for ( const mode of ["off", "reach", "walk"] ) {
+      await game.settings.set(MODULE_ID, "clickToLoot", mode);
+      seen[mode] = { hover: [shownCursor(corpseSource(near)), shownCursor(corpseSource(far))],
+        click: [clickCursor(corpseSource(near)), clickCursor(corpseSource(far))] };
+    }
+    b.expect((seen.off.hover[0] === "loot") && (seen.off.hover[1] === "far"), `jamais : le survol montre toujours la fouille (${seen.off.hover})`);
+    b.expect(!seen.off.click[0] && !seen.off.click[1], `jamais : le clic reste à Foundry (${seen.off.click})`);
+    b.expect((seen.reach.click[0] === "loot") && (seen.reach.click[1] === "far"), `à portée : ouvre à côté, refuse de loin sans marcher (${seen.reach.click})`);
+    b.expect((seen.walk.click[0] === "loot") && (seen.walk.click[1] === "go") && (seen.walk.hover[1] === "go"), `y aller : ouvre à côté, marche de loin (${seen.walk.click})`);
+    const engine = engineTestApi();
+    const menu = engine?.mcp?.menu?.({ tokenId: looter.id, targetId: far.id });
+    if ( menu ) b.expect(menu.labels.some(l => /fouiller|search/i.test(l)), `le clic droit propose toujours la fouille : ${menu.labels.join(" | ")}`);
+    looter.object?.release();
+    await game.settings.set(MODULE_ID, "clickToLoot", "off");
+    b.expect(clickCursor(corpseSource(far)) === "loot", "le MJ sans token sélectionné ouvre encore de loin (préparation)");
+  } finally {
+    await game.settings.set(MODULE_ID, "clickToLoot", before);
+  }
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
-  "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3] };
+  "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
+  "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

@@ -37,6 +37,13 @@ export function registerSettings() {
     scope: "world", config: true, type: Number, default: 15,
     range: { min: 5, max: 60, step: 5 }
   });
+  // 2026-10-28 : le clic gauche sur un cadavre, un coffre, un marchand ou un piège repéré — jamais (par défaut, comme le
+  // clic-déplacement du moteur : le clic droit propose « Fouiller »), à portée, ou y aller puis ouvrir. Réglage de chaque poste.
+  game.settings.register(MODULE_ID, "clickToLoot", {
+    name: "DLO.Settings.ClickToLoot.Name", hint: "DLO.Settings.ClickToLoot.Hint",
+    scope: "client", config: true, type: String, default: "off",
+    choices: { off: "DLO.Settings.ClickToLoot.Off", reach: "DLO.Settings.ClickToLoot.Reach", walk: "DLO.Settings.ClickToLoot.Walk" }
+  });
   // 0.15.7 : « Fouiller les environs » proposé dans le menu du token (la Perception passive et l'API restent actives).
   game.settings.register(MODULE_ID, "searchMenu", {
     name: "DLO.Settings.SearchMenu.Name", hint: "DLO.Settings.SearchMenu.Hint",
@@ -70,6 +77,18 @@ export function registerSettings() {
   game.settings.register(MODULE_ID, "trapPause", {
     name: "DLO.Settings.TrapPause.Name", hint: "DLO.Settings.TrapPause.Hint",
     scope: "world", config: true, type: Boolean, default: true
+  });
+  // 2026-10-28 : un token piège est un objet — immunités aux dégâts de poison et psychiques, et aux états d'objet, ajoutées à sa pose.
+  game.settings.register(MODULE_ID, "trapImmunities", {
+    name: "DLO.Settings.TrapImmunities.Name", hint: "DLO.Settings.TrapImmunities.Hint",
+    scope: "world", config: true, type: Boolean, default: true
+  });
+  // 2026-10-28 : coffres, tas et pièges posés dessinés au plus à cette fraction de leurs cases (affichage seulement).
+  game.settings.register(MODULE_ID, "objectSize", {
+    name: "DLO.Settings.ObjectSize.Name", hint: "DLO.Settings.ObjectSize.Hint",
+    scope: "world", config: true, type: Number, default: 80,
+    range: { min: 50, max: 100, step: 5 },
+    onChange: () => Hooks.callAll(`${MODULE_ID}.objectSize`)
   });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",

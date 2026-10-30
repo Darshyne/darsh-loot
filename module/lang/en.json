@@ -80,6 +80,13 @@
         "Name": "Search radius",
         "Hint": "Distance in feet covered by \"Search the surroundings\", stopped by walls (converted on metric scenes: 5 ft = 1.5 m). A hidden object may require the searcher to be closer."
       },
+      "ClickToLoot": {
+        "Name": "Left-click looting",
+        "Hint": "What a left click on a body, a chest, a pile, a merchant or a spotted trap does, out of combat. Never: the click stays Foundry's, and the right-click menu offers \"Search\". In reach: the click opens what is within reach. Walk there: the character walks within reach, then opens. Setting for this computer. Clickable zones (macro, scene, document) can always be clicked.",
+        "Off": "Never (right click)",
+        "Reach": "Only within reach",
+        "Walk": "Walk there, then open"
+      },
       "SearchMenu": {
         "Name": "Offer \"Search the surroundings\"",
         "Hint": "Adds the \"Search the surroundings\" action to the context menu of one’s own token. Unchecked: the action leaves the menu, but hidden objects are still found by passive Perception. Mostly useful for dungeon crawls."
@@ -99,6 +106,14 @@
       "AdvancedTraps": {
         "Name": "Advanced trap mode",
         "Hint": "Out of combat, a trap that goes off stops movement, pauses the game (next setting) and starts a combat with the scene's player characters (player characters Surprised if nobody had spotted it); the trap acts at its own initiative (20 by default). In combat, initiative isn't rerolled. Either way, no automatic roll: the GM gives each creature in the area Advantage or Disadvantage, then launches the trap. Off: the trap strikes at once."
+      },
+      "TrapImmunities": {
+        "Name": "Traps: object immunities",
+        "Hint": "A placed trap token gets the immunities of an object (Dungeon Master's Guide): Poison and Psychic damage, and the conditions an object can't have (all but Invisible). Existing ones stay; nothing is removed if you uncheck this."
+      },
+      "ObjectSize": {
+        "Name": "Size of placed objects (%)",
+        "Hint": "Chests, piles and traps placed by the module are drawn at most at this share of their squares, to leave some room around them. Display only: the search or trigger area keeps its squares. Map tiles turned into a zone are not changed."
       },
       "TrapPause": {
         "Name": "Pause when a trap goes off",
@@ -120,7 +135,9 @@
     },
     "Container": {
       "Folder": "Loot — containers",
-      "ActorName": "Container: {name}"
+      "ActorName": "Container: {name}",
+      "ConvertMenu": "Convert to container",
+      "Converted": "{name} is now a container (tile and region)."
     },
     "ContainerBehavior": {
       "Hoard": {

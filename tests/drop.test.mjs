@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { soundKind, clampDrop, outsideRect, flight, pileSpot } from "../module/scripts/core/drop.mjs";
+import { soundKind, clampDrop, outsideRect, flight, pileSpot, objectScale } from "../module/scripts/core/drop.mjs";
 
 describe("place du tas dans sa case", () => {
   it("quart haut-gauche : coin de la case + un quart de case", () => {
@@ -56,4 +56,12 @@ describe("vol de l'objet", () => {
     expect(hit.scaleY).toBeLessThan(0.8);
     expect(hit.scaleX).toBeGreaterThan(1.2);
   });
+});
+
+describe("objectScale", () => {
+  it("ramène un objet d'une case à 80 %", () => expect(objectScale(100, 100, 100, 0.8)).toBeCloseTo(0.8));
+  it("un objet de 2 × 1 cases aussi", () => expect(objectScale(200, 100, 100, 0.8)).toBeCloseTo(0.8));
+  it("ne grandit pas un tas d'une demi-case", () => expect(objectScale(50, 50, 100, 0.8)).toBe(1));
+  it("100 % : rien ne change", () => expect(objectScale(100, 100, 100, 1)).toBe(1));
+  it("valeurs absurdes : 1", () => expect(objectScale(0, 100, 100, 0.8)).toBe(1));
 });

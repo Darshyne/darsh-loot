@@ -28,7 +28,7 @@ import { TRAP_ZONE, TRAP_RELAY, TrapZoneType, TrapRelayType, registerTrapBehavio
 import { trapLevelOf, creatureSize } from "../adapter/dnd5e.mjs";
 import { trapHandle, handleKnown, sourceKnown, anyKnown, handleDistance, trapDistance, trappedThings, allTraps, isDoorWall,
   isTrapActor, isTrapToken, sceneTrapTokens, autoRegionOf } from "../adapter/trapped.mjs";
-import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap, bigEnough, migrateZoneTrap, SIZES }
+import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap, bigEnough, migrateZoneTrap, SIZES, objectImmunities }
   from "../core/traps.mjs";
 import { normalizeHidden, concealed } from "../core/hidden.mjs";
 import { addPickButtons, DOOR_PICKS } from "./pick.mjs";
@@ -502,10 +502,25 @@ async function syncTrapObject(token) {
   const ours = token.getFlag(MODULE_ID, "trapObject") === true;
   if ( isTrapToken(token) && !engineObjectToken(token) ) {
     await token.update({ ...engineObjectFlags(), disposition: CONST.TOKEN_DISPOSITIONS.SECRET, [`flags.${MODULE_ID}.trapObject`]: true });
-  } else if ( !isTrapToken(token) && ours ) {
+  }
+  if ( isTrapToken(token) ) await addObjectImmunities(token);
+  else if ( !isTrapToken(token) && ours ) {
     await token.update({ ...engineObjectFlags(false), disposition: token.actor?.prototypeToken?.disposition ?? CONST.TOKEN_DISPOSITIONS.HOSTILE,
       [`flags.${MODULE_ID}.-=trapObject`]: null });
   }
+}
+
+/**
+ * 2026-10-28 : un token piège reçoit les immunités d'un objet (poison, psychique, états — core/traps.mjs `objectImmunities`), sur
+ * l'acteur du token (le delta d'un token non lié, l'acteur du monde s'il est lié). Réglage de monde `trapImmunities`.
+ */
+async function addObjectImmunities(token) {
+  const actor = token.actor;
+  if ( !actor || !setting("trapImmunities") ) return;
+  const traits = actor.system?.traits;
+  const known = Object.keys(CONFIG.DND5E?.conditionTypes ?? {});
+  const update = objectImmunities([...(traits?.di?.value ?? [])], [...(traits?.ci?.value ?? [])], known.length ? known : null);
+  if ( update ) await actor.update(update);
 }
 
 /** Les cases d'un token, en forme de région. */
@@ -973,6 +988,7 @@ export function registerTraps() {
     if ( !isActiveGM() || !isTrapToken(token) ) return;
     syncAutoRegion(token).then(() => syncScene(token.parent)).catch(err => log.warn("trap token:", err.message));
     applyTrapChecks(token).catch(err => log.warn("trap DCs:", err.message));
+    addObjectImmunities(token).catch(err => log.warn("trap immunities:", err.message));
   });
   route("updateToken", "trap token", (token, changes) => {
     if ( !isActiveGM() ) return;

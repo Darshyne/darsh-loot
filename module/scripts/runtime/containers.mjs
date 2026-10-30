@@ -12,6 +12,8 @@ import { rollContainer } from "../adapter/treasure.mjs";
 import { trapGate, springTrap } from "./traps.mjs";
 import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
 import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
+import { createContainerFromToken, fillFromActor } from "../adapter/drop.mjs";
+import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 
 const ROLL_QUERY = `${MODULE_ID}.containerRoll`;
 const UNLOCK_QUERY = `${MODULE_ID}.unlock`;
@@ -192,6 +194,36 @@ async function onCreateBehavior(behavior) {
   await ensureStore(behavior);
 }
 
+/* -------------------------------------------- */
+/*  Un token Groupe devient un conteneur        */
+/* -------------------------------------------- */
+
+/**
+ * 2026-10-28 (demande de l'utilisateur) : le MJ convertit un token d'acteur Groupe posé sur la carte en conteneur — tuile à son
+ * image, région « Conteneur », coffre qui reçoit une copie de ses objets et de son argent ; le token est retiré, l'acteur du monde
+ * reste. Le contenu étant celui du groupe, rien n'est tiré.
+ * @param {TokenDocument} token
+ * @returns {Promise<RegionDocument|null>}
+ */
+export async function convertGroupToken(token) {
+  if ( !game.user.isGM || (token?.actor?.type !== "group") ) return null;
+  const region = await createContainerFromToken(token);
+  await fillFromActor(await ensureStore(region.behaviors.contents[0]), token.actor);
+  await token.delete();
+  ui.notifications.info(loc("Container.Converted", { name: region.name }));
+  return region;
+}
+
+/** L'entrée du menu contextuel du MJ sur un token Groupe (menu du moteur, hook `tokenMenu`). */
+function onTokenMenu(entries, { target }) {
+  if ( !game.user.isGM || (target?.actor?.type !== "group") ) return;
+  entries.push({ icon: "fa-solid fa-box-open", label: loc("Container.ConvertMenu"),
+    run: () => convertGroupToken(target).catch(err => {
+      log.warn("group → container:", err.message);
+      ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
+    }) });
+}
+
 export function registerContainersInit() {
   registerContainerBehavior();
   CONFIG.queries[ROLL_QUERY] = handleRoll;
@@ -213,4 +245,5 @@ export function registerContainers() {
   // Des comportements créés avec leur région (ou supprimés avec elle) ne tirent que les hooks de la région.
   route("createRegion", "container store", region => { for ( const b of region.behaviors ) onCreateBehavior(b); });
   route("deleteRegion", "container store", region => { for ( const b of region.behaviors ) onDeleteBehavior(b); });
+  route(TOKEN_MENU_HOOK, "menu: group → container", onTokenMenu);
 }
