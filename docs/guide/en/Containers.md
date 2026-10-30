@@ -103,8 +103,8 @@ Distances are in feet and converted automatically on a metric scene (5 ft = 1.5 
 
 ### Trapped container
 
-A container can also carry a trap that goes off on opening or on a failed pick: see [Traps → trapped chests and
-doors](Traps#trapped-chests-and-doors).
+A container can also carry a trap that goes off on opening or on a failed pick: see [Traps → a trapped
+chest](Traps#3-a-trapped-chest).
 
 ## On the players' side
 

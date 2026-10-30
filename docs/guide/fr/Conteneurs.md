@@ -105,8 +105,8 @@ Les distances sont en pieds et converties toutes seules sur une scène en mètre
 
 ### Coffre piégé
 
-Un conteneur peut aussi porter un piège qui part à l'ouverture ou au crochetage raté : voir [Pièges → coffres et portes
-piégés](Pieges#coffres-et-portes-piégés).
+Un conteneur peut aussi porter un piège qui part à l'ouverture ou au crochetage raté : voir [Pièges → un coffre
+piégé](Pieges#3-un-coffre-piégé).
 
 ## Côté joueurs
 
