@@ -10,6 +10,7 @@ import { ATTITUDES, STOLEN_POLICIES } from "../module/scripts/core/shop.mjs";
 import { GENERIC_TABLES } from "../module/scripts/core/tables.mjs";
 import { discoveryKey } from "../module/scripts/core/hidden.mjs";
 import { difficultyOf } from "../module/scripts/core/theft.mjs";
+import { TABS } from "../module/scripts/core/settings-tabs.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 const lang = l => JSON.parse(readFileSync(join(ROOT, "module", "lang", `${l}.json`), "utf8"));
@@ -58,6 +59,9 @@ const DYNAMIC = {
   // 0.17.2 : les sections des réglages d'un piège (apps/trap-config.mjs `sectionText`) : légende par partie, aide par partie et par variante.
   "DLO.TrapSections": [...["Trap", "Area", "Source", "Trigger", "Arming", "Contents", "Lock", "Cache"].flatMap(k => [`${k}.Legend`, `${k}.Hint`]),
     ...["AreaChest", "AreaToken", "AreaDoor", "TriggerChest", "TriggerToken", "TriggerDoor"].map(k => `${k}.Hint`)],
+  // 2026-10-30 : la fenêtre de réglages (runtime/settings-window.mjs) : un libellé par onglet, trois textes par outil.
+  "DLO.SettingsWindow.Tab": TABS.map(t => t.id),
+  "DLO.SettingsWindow.Tool": TABS.flatMap(t => t.tools ?? []).flatMap(t => ["Name", "Hint", "Button"].map(k => `${t.id}.${k}`)),
   "TYPES.RegionBehavior": Object.keys(manifest.documentTypes?.RegionBehavior ?? {}).map(t => `${manifest.id}.${t}`)
 };
 // Préfixes d'aide locale (`const L = key => … \`DLO.TileZone.${key}\``) : leurs appels L("X") sont des clés littérales.

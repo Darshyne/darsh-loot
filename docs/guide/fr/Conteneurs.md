@@ -71,7 +71,7 @@ La fenêtre de réglages est rangée en sections.
 | **Déjà tiré** | Coché tout seul après le premier tirage. Décochez pour tirer de nouveau (le nouveau tirage s'ajoute). |
 | **Propriétaire** | À qui appartient le contenu. Renseigné, tout ce qu'on y prend est **marqué volé** à ce nom. |
 
-> **Tables prêtes à l'emploi** : dans les réglages du module, le bouton **« Créer les tables »** crée sept tables génériques (coffre,
+> **Tables prêtes à l'emploi** : dans la fenêtre de réglages du module, onglet **Conteneurs**, le bouton **« Créer les tables »** crée sept tables génériques (coffre,
 > tonneau, caisse, bibliothèque, bureau, autel, sac de campement), faites d'objets du Manuel des joueurs, dans le dossier « Butin —
 > tables ». Il faut le module Manuel des joueurs.
 

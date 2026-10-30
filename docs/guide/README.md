@@ -26,4 +26,5 @@ Taken 2026-10-30 in world `dnd-6`, scene Redbrand Hideout, once with the GM clie
 | `porte-piegee.webp` | A door wall's window, "DAS · Porte piégée" section. |
 | `piege-reglages.webp` | A "DAS · Piège" behavior window, its five sections. |
 | `desamorcage.webp` | The disarm gauge over a token, during the 5 s. |
+| `reglages-fenetre.webp` | The module's settings window (DAS · Core's shared window), Conteneurs tab with the tables tool. |
 | `piege-fenetre-mj.webp` | Advanced mode: the GM window with Avantage / Normal / Désavantage per creature. |

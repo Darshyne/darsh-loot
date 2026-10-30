@@ -120,6 +120,27 @@
         "Hint": "Mode piège avancé, hors combat : le jeu se met en pause quand un piège part. Éteint : pas de pause, seuls les déplacements s'arrêtent, et le combat du piège commence."
       }
     },
+    "SettingsWindow": {
+      "Title": "DAS · Loot & Trade — réglages",
+      "Menu": {
+        "Name": "Réglages de DAS · Loot & Trade",
+        "Label": "Ouvrir les réglages",
+        "Hint": "Fouille, butin, conteneurs et pièges, rangés en onglets."
+      },
+      "Tab": {
+        "search": "Fouille",
+        "loot": "Butin et vol",
+        "containers": "Conteneurs",
+        "traps": "Pièges"
+      },
+      "Tool": {
+        "tables": {
+          "Name": "Tables génériques de conteneurs",
+          "Hint": "Sept tables de butin (coffre, tonneau, caisse, bibliothèque, bureau, autel, sac de campement) dans « Butin — tables ». Il faut le Manuel des joueurs.",
+          "Button": "Créer les tables"
+        }
+      }
+    },
     "Lock": {
       "Locked": "Verrouillé.",
       "UseKey": "Ouvrir avec {name}",

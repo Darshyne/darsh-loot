@@ -120,6 +120,27 @@
         "Hint": "Advanced trap mode, out of combat: the game pauses when a trap goes off. Off: no pause, only movement stops, and the trap's combat starts."
       }
     },
+    "SettingsWindow": {
+      "Title": "DAS · Loot & Trade — settings",
+      "Menu": {
+        "Name": "DAS · Loot & Trade settings",
+        "Label": "Open settings",
+        "Hint": "Searching, loot, containers and traps, in tabs."
+      },
+      "Tab": {
+        "search": "Searching",
+        "loot": "Loot & theft",
+        "containers": "Containers",
+        "traps": "Traps"
+      },
+      "Tool": {
+        "tables": {
+          "Name": "Generic container tables",
+          "Hint": "Seven loot tables (chest, barrel, crate, bookshelf, desk, altar, camping bag) in \"Loot — tables\". Needs the Player's Handbook.",
+          "Button": "Create the tables"
+        }
+      }
+    },
     "Lock": {
       "Locked": "Locked.",
       "UseKey": "Open with {name}",

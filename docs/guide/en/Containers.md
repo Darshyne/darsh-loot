@@ -71,7 +71,7 @@ The settings window is split into sections.
 | **Already rolled** | Ticked automatically after the first roll. Untick it to roll again (the new roll adds to the contents). |
 | **Owner** | Who the contents belong to. When set, everything taken from it is **marked stolen** from that name. |
 
-> **Ready-made tables**: in the module settings, the **"Create the tables"** button creates seven generic tables (chest, barrel, crate,
+> **Ready-made tables**: in the module settings window, **Containers** tab, the **"Create the tables"** button creates seven generic tables (chest, barrel, crate,
 > bookshelf, desk, altar, camping bag), made of Player's Handbook items, in the "Loot — tables" folder. It needs the Player's Handbook
 > module.
 

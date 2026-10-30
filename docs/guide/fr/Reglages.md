@@ -2,14 +2,22 @@
 
 *[English version](Settings)*
 
-Les réglages de DAS · Loot & Trade qui touchent aux conteneurs et aux pièges, dans **Paramètres → Configurer les paramètres →
-DAS · Loot & Trade**. Sauf mention, ce sont des réglages **du monde** (le MJ les choisit pour toute la table).
+Les réglages de DAS · Loot & Trade sont dans leur propre fenêtre : **Paramètres → Configurer les paramètres → DAS · Loot & Trade →
+Ouvrir les réglages**. Elle a quatre onglets (**Fouille**, **Butin et vol**, **Conteneurs**, **Pièges**), une recherche par nom ou par
+aide, et sépare les réglages **pour toute la table** (choisis par le MJ) de ceux **pour ce poste** (chaque joueur règle les
+siens). C'est la même fenêtre que celle de DAS · Core ; avec une version de DAS · Core antérieure à 0.241.0, les réglages restent
+dans la liste de Foundry.
+
+![La fenêtre de réglages, onglet Conteneurs](images/fr/reglages-fenetre.webp)
+
+Cette page détaille les onglets qui touchent aux conteneurs et aux pièges. L'onglet **Butin et vol** règle les cadavres (qui les
+fouille, trésor tiré, poches des humanoïdes, annonce de ce qui est pris) et le vol à la tire.
 
 ## Fouille
 
 | Réglage | Par défaut | Ce qu'il fait |
 |---|---|---|
-| **Fouille au clic gauche** *(réglage de cet ordinateur)* | Jamais | Ce que fait un clic gauche sur un cadavre, un coffre, un tas, un marchand ou un piège repéré, hors combat. **Jamais** : le clic reste celui de Foundry, le clic droit propose « Fouiller ». **Seulement à portée** : le clic ouvre ce qui est à portée. **Y aller, puis ouvrir** : le personnage marche jusqu'à portée, puis ouvre. Le curseur de survol reste dans tous les cas. |
+| **Fouille au clic gauche** *(réglage de ce poste)* | Jamais | Ce que fait un clic gauche sur un cadavre, un coffre, un tas, un marchand ou un piège repéré, hors combat. **Jamais** : le clic reste celui de Foundry, le clic droit propose « Fouiller ». **Seulement à portée** : le clic ouvre ce qui est à portée. **Y aller, puis ouvrir** : le personnage marche jusqu'à portée, puis ouvre. Le curseur de survol reste dans tous les cas. |
 | **Portée de fouille** | 5 ft | Distance maximale, de bord à bord, pour fouiller. |
 | **Proposer « Fouiller les environs »** | Oui | L'action dans le menu de son propre token. Décoché, la Perception passive trouve toujours. |
 | **Rayon de fouille** | 15 ft | Jusqu'où « Fouiller les environs » cherche (murs compris). |
@@ -24,7 +32,7 @@ DAS · Loot & Trade**. Sauf mention, ce sont des réglages **du monde** (le MJ l
 | **Poser des objets au sol** | Oui | Glisser un objet d'une fiche sur la carte le pose en tas. |
 | **Supprimer le coffre avec son conteneur** | Non | Supprimer un conteneur supprime aussi son acteur de « Butin — conteneurs ». |
 | **Les armes de jet quittent la main** | Oui | Une arme lancée tombe au sol ou reste plantée dans la cible. |
-| **Tables génériques de conteneurs** *(bouton)* | — | **« Créer les tables »** : sept tables de butin (coffre, tonneau, caisse, bibliothèque, bureau, autel, sac de campement) dans « Butin — tables ». Il faut le Manuel des joueurs. |
+| **Tables génériques de conteneurs** *(outil du MJ)* | — | **« Créer les tables »** : sept tables de butin (coffre, tonneau, caisse, bibliothèque, bureau, autel, sac de campement) dans « Butin — tables ». Il faut le Manuel des joueurs. |
 
 ## Pièges
 

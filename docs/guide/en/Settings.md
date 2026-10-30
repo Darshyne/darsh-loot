@@ -2,8 +2,15 @@
 
 *[Version française](Reglages)*
 
-The DAS · Loot & Trade settings that concern containers and traps, in **Settings → Configure Settings → DAS · Loot & Trade**. Unless
-noted, they are **world** settings (the GM chooses them for the whole table).
+The DAS · Loot & Trade settings have their own window: **Settings → Configure Settings → DAS · Loot & Trade → Open settings**. It has
+four tabs (**Searching**, **Loot & theft**, **Containers**, **Traps**), a search by name or help, and separates the settings **for
+the whole table** (chosen by the GM) from those **for this computer** (each player sets their own). It is the same window as DAS ·
+Core's; with a DAS · Core older than 0.241.0, the settings stay in Foundry's list.
+
+![The settings window, Containers tab](images/en/reglages-fenetre.webp)
+
+This page details the tabs that concern containers and traps. The **Loot & theft** tab sets up bodies (who searches them, rolled
+treasure, humanoid pockets, announcing what is taken) and pickpocketing.
 
 ## Searching
 
@@ -24,7 +31,7 @@ noted, they are **world** settings (the GM chooses them for the whole table).
 | **Drop items on the ground** | Yes | Dragging an item from a sheet onto the map drops it as a pile. |
 | **Delete the store with its container** | No | Deleting a container also deletes its actor from "Loot — containers". |
 | **Thrown weapons leave the hand** | Yes | A thrown weapon lands on the ground or stays stuck in the target. |
-| **Generic container tables** *(button)* | — | **"Create the tables"**: seven loot tables (chest, barrel, crate, bookshelf, desk, altar, camping bag) in "Loot — tables". Needs the Player's Handbook. |
+| **Generic container tables** *(GM tool)* | — | **"Create the tables"**: seven loot tables (chest, barrel, crate, bookshelf, desk, altar, camping bag) in "Loot — tables". Needs the Player's Handbook. |
 
 ## Traps
 

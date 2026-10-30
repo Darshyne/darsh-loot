@@ -220,3 +220,12 @@ export function engineTestApi() {
   const api = game.modules.get(ENGINE_ID)?.api;
   return api ? { mcp: api.mcp ?? null, canHear: api.vision?.canHear ?? null } : null;
 }
+
+/**
+ * La fenêtre de réglages partagée des modules DAS (`api.settings.registerWindow`, moteur ≥ 0.241.0) : `registerWindow(def)` range les réglages
+ * de ce module dans des onglets et les retire de la liste de Foundry. Null avec un moteur plus ancien : la liste reste.
+ */
+export function engineSettingsWindow() {
+  const register = game.modules.get(ENGINE_ID)?.api?.settings?.registerWindow;
+  return (typeof register === "function") ? register : null;
+}

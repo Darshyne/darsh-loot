@@ -3,6 +3,7 @@
  */
 import { MODULE_ID } from "./shared.mjs";
 import { registerSettings } from "./runtime/settings.mjs";
+import { registerSettingsWindow } from "./runtime/settings-window.mjs";
 import { registerObjectSize } from "./runtime/object-size.mjs";
 import { registerTake, requestTake } from "./runtime/take.mjs";
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
@@ -43,6 +44,7 @@ registerObjectSize();
 
 Hooks.once("init", () => {
   registerSettings();
+  registerSettingsWindow();
   registerTake();
   registerTreasure();
   registerContainersInit();

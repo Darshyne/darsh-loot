@@ -11,13 +11,18 @@ import { createGenericTables } from "../adapter/treasure.mjs";
  */
 class CreateTablesMenu extends foundry.applications.api.ApplicationV2 {
   async render() {
-    try {
-      const created = await createGenericTables();
-      ui.notifications.info(loc("Tables.Created", { count: created.length }));
-    } catch(err) {
-      log.warn("generic tables:", err.message);
-      ui.notifications.warn(loc("Tables.NeedPHB"));
-    }
+    await createTablesNow();
+  }
+}
+
+/** Créer les tables génériques de conteneurs, avec un message : le bouton de la liste de Foundry ou l'outil de la fenêtre DAS. */
+export async function createTablesNow() {
+  try {
+    const created = await createGenericTables();
+    ui.notifications.info(loc("Tables.Created", { count: created.length }));
+  } catch(err) {
+    log.warn("generic tables:", err.message);
+    ui.notifications.warn(loc("Tables.NeedPHB"));
   }
 }
 
