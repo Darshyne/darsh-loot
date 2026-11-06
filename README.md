@@ -28,7 +28,13 @@ Baldur's Gate 3-style interface:
   and starts a combat (player characters Surprised if nobody had spotted it), acting at its own initiative (20 by
   default) through the engine's initiative events; in combat, nothing is rerolled. When it strikes, the GM gives each
   creature in the area Advantage or Disadvantage according to how it was played, then launches it. Traps rearm never,
-  by hand or after a delay in world time;
+  by hand or after a delay in world time. A "DAS · Trap" can also go off **on click** instead of (or as well as) when a
+  token steps in: a trapped lever or button, which stays visible while its trap is hidden;
+- **mechanisms**: a "DAS · Mechanism" region behavior for levers, buttons and pressure plates — on click (hand cursor,
+  within reach) or when a token steps in, the active GM performs its actions: open, close, lock or unlock a door, turn a
+  light on or off, show or hide a tile, play a sound, set off a trap, run a macro. As a toggle, each use reverses the
+  previous one, and the lever's tile can change image with its position. Hovering over anything you can interact with
+  lightly highlights it, and every action is heard by the whole table;
 - **items dropped on the ground** (drag an item from a sheet onto the map), with a throw animation and sounds;
 - **pickpocketing** (Sleight of Hand against passive Perception), stolen items are flagged;
 - **necromancy**: a dead humanoid becomes a controlled skeleton or zombie;

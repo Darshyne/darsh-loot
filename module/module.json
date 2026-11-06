@@ -55,7 +55,8 @@
       "scene": {},
       "document": {},
       "trap": {},
-      "trapTrigger": {}
+      "trapTrigger": {},
+      "mechanism": {}
     }
   },
   "esmodules": [

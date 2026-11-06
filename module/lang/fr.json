@@ -652,6 +652,10 @@
         "hidden": {
           "label": "Déclencheur caché",
           "hint": "Comment se trouve le déclencheur (la dalle). La source a sa propre détection."
+        },
+        "activation": {
+          "label": "Déclenchement",
+          "hint": "Ce qui fait partir le piège : un token qui entre dans le déclencheur (une dalle), un clic sur le déclencheur (un levier ou un bouton piégé : curseur main, à portée), ou les deux. Au clic, le déclencheur reste visible des joueurs ; seul le piège est caché."
         }
       },
       "Rearm": {
@@ -679,7 +683,12 @@
       "ConfirmText": "Tenter de désamorcer {trap} ? {name} fera un test d'outils de voleur.",
       "ConfirmYes": "Tenter",
       "ConfirmNo": "Renoncer",
-      "ThisTrap": "ce piège"
+      "ThisTrap": "ce piège",
+      "Activation": {
+        "enter": "Quand un token y entre",
+        "click": "Au clic (levier, bouton)",
+        "both": "Les deux"
+      }
     },
     "TrapRelay": {
       "Name": "DAS · Déclencheur de piège",
@@ -701,7 +710,9 @@
       "Disadvantage": "Désavantage",
       "Tier": "Tranche de niveaux",
       "Fire": "Lancer le piège",
-      "Cancel": "Annuler le piège"
+      "Cancel": "Annuler le piège",
+      "Surprised": "Surpris",
+      "SurprisedHint": "Pris au dépourvu : personne n'avait repéré le piège (Désavantage à l'initiative). Pensez-y pour sa sauvegarde."
     },
     "Pack": {
       "Outils": "DAS · Butin et commerce · Outils du MJ"
@@ -903,13 +914,19 @@
         "HiddenEnabled": "Déclencheur caché",
         "SourceHidden": "Source cachée (le token, quand le déclencheur est ailleurs)",
         "Region": "{name} (DAS · Piège)"
-      }
+      },
+      "ThisLever": "ce levier",
+      "GateTextUse": "Vous avez repéré un piège sur {name}. Que faites-vous ?",
+      "GateUse": "Actionner quand même"
     },
     "Pick": {
       "Button": "Choisir sur la carte",
       "PromptRegion": "Cliquez une région sur la carte (clic droit ou Échap : renoncer).",
       "PromptTile": "Cliquez une région ou une tuile sur la carte (clic droit ou Échap : renoncer).",
-      "Nothing": "Rien à choisir ici."
+      "Nothing": "Rien à choisir ici.",
+      "PromptDoor": "Cliquez une porte sur la carte (clic droit ou Échap : renoncer).",
+      "PromptLight": "Cliquez une lumière sur la carte (clic droit ou Échap : renoncer).",
+      "PromptTrap": "Cliquez la région d'un piège ou un token piège sur la carte (clic droit ou Échap : renoncer)."
     },
     "TrapMenu": {
       "Fire": "Déclencher le piège",
@@ -979,6 +996,109 @@
     "Timer": {
       "Search": "Fouille…",
       "Disarm": "Désamorçage…"
+    },
+    "MechanismZone": {
+      "Hint": "Un levier, un bouton ou une dalle : au clic (à portée) ou quand un token y entre, le MJ actif fait ses actions — ouvrir ou verrouiller une porte, allumer une lumière, montrer une tuile, jouer un son, faire partir un piège, lancer une macro. À bascule, chaque fois inverse la précédente.",
+      "Sheet": "DAS · Mécanisme (actions)",
+      "Activation": {
+        "click": "Au clic",
+        "enter": "Quand un token y entre",
+        "both": "Les deux"
+      },
+      "Mode": {
+        "toggle": "À bascule (deux positions)",
+        "once": "Une seule fois",
+        "always": "À chaque fois"
+      },
+      "FIELDS": {
+        "activation": {
+          "label": "Déclenchement",
+          "hint": "Au clic : un levier, un bouton (curseur main, à portée). Quand un token y entre : une dalle de pression. Les deux : une dalle qu'on peut aussi enfoncer à la main."
+        },
+        "minSize": {
+          "label": "Taille minimale",
+          "hint": "Pour une dalle : la plus petite créature qui l'enfonce (un rat ne l'enfonce pas)."
+        },
+        "mode": {
+          "label": "Fonctionnement",
+          "hint": "À bascule : deux positions, et chaque actionnement inverse les actions (la porte ouverte se referme ; un piège ne repart pas). Une seule fois : ensuite, rien ne se passe. À chaque fois : les mêmes actions."
+        },
+        "active": {
+          "label": "Actionné",
+          "hint": "La position du levier (à bascule). Décocher : le remettre sans faire ses actions."
+        },
+        "used": {
+          "label": "Déjà servi",
+          "hint": "Pour un mécanisme qui ne sert qu'une fois. Décocher pour le rendre de nouveau utilisable."
+        },
+        "tile": {
+          "label": "Tuile du levier",
+          "hint": "La tuile qui montre le mécanisme ; vide : la tuile posée dans la région. Son image suit la position du levier."
+        },
+        "imageOff": {
+          "label": "Image au repos",
+          "hint": "Image de la tuile levier relevé (vide : l'image qu'avait la tuile au départ)."
+        },
+        "imageOn": {
+          "label": "Image actionnée",
+          "hint": "Image de la tuile levier abaissé (vide : la tuile ne change pas)."
+        },
+        "sound": {
+          "label": "Son",
+          "hint": "Joué pour toute la table à chaque actionnement (vide : un bruit de levier)."
+        }
+      },
+      "Actions": {
+        "Legend": "Actions",
+        "Hint": "Ce que fait le mécanisme, dans l'ordre. Chaque cible se choisit sur la carte (viseur) ; une macro se glisse sur son champ.",
+        "Add": "Ajouter une action",
+        "Remove": "Supprimer",
+        "Browse": "Choisir un fichier",
+        "Volume": "Volume",
+        "TypeLabel": "Type d'action",
+        "ModeLabel": "Effet",
+        "Missing": "introuvable",
+        "Door": "Porte",
+        "Light": "Lumière",
+        "MacroHint": "Glissez une macro sur le champ, ou collez son UUID.",
+        "NoTrap": "Aucun piège ici : cliquez la région d'un « DAS · Piège » ou un token piège.",
+        "Type": {
+          "door": "Porte",
+          "light": "Lumière",
+          "tile": "Tuile",
+          "sound": "Son",
+          "trap": "Piège",
+          "macro": "Macro"
+        },
+        "Mode": {
+          "open": "Ouvrir",
+          "close": "Fermer",
+          "toggle": "Basculer",
+          "lock": "Verrouiller",
+          "unlock": "Déverrouiller",
+          "on": "Allumer",
+          "off": "Éteindre",
+          "show": "Montrer",
+          "hide": "Cacher",
+          "play": "Jouer",
+          "fire": "Faire partir",
+          "gm": "Lancer chez le MJ",
+          "user": "Lancer chez celui qui actionne"
+        }
+      }
+    },
+    "Mechanism": {
+      "ThisLever": "ce mécanisme",
+      "UseCard": "{name} actionne {thing}.",
+      "EnterCard": "Une dalle s'enfonce sous {name} : {thing}.",
+      "NothingCard": "{name} actionne {thing} : rien ne se passe.",
+      "FloatUse": "Actionné",
+      "FloatEnter": "Clac !",
+      "FloatNothing": "Rien ne se passe",
+      "Use": "Actionner : {name}",
+      "Reset": "Réinitialiser : {name}",
+      "Configure": "Réglages : {name}",
+      "ResetDone": "{name} est revenu dans sa première position."
     }
   },
   "TYPES": {
@@ -988,7 +1108,8 @@
       "darsh-loot.scene": "DAS · Vers une scène",
       "darsh-loot.document": "DAS · Ouvrir un document",
       "darsh-loot.trap": "DAS · Piège",
-      "darsh-loot.trapTrigger": "DAS · Déclencheur de piège"
+      "darsh-loot.trapTrigger": "DAS · Déclencheur de piège",
+      "darsh-loot.mechanism": "DAS · Mécanisme"
     }
   }
 }

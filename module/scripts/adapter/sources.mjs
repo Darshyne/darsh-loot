@@ -7,7 +7,7 @@ import { corpseToken, tokenDistance, regionDistance } from "./dnd5e.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { ZONE_TYPES } from "./zone-behaviors.mjs";
 import { TRAP_ZONE } from "./trap-behavior.mjs";
-import { trapHandle, placeDistance } from "./trapped.mjs";
+import { trapHandle, placeDistance, clickTrapsOn } from "./trapped.mjs";
 import { livingNPC } from "./theft.mjs";
 import { merchantToken, merchantAlive } from "./shop.mjs";
 
@@ -95,7 +95,29 @@ export function trapSource(behavior, place=null) {
   const at = place ?? trapHandle(behavior)?.triggerRegion ?? behavior.region;
   if ( !at ) return base;
   const box = (at.documentName === "Tile") ? tileBox(at) : (at.documentName === "Token") ? tokenBox(at) : regionBox(at);
-  return { ...base, box: () => box, distance: looter => placeDistance(looter, at) };
+  return { ...base, place: at, box: () => box, distance: looter => placeDistance(looter, at) };
+}
+
+/**
+ * Étape 13 (issue darsh-loot#4) : une région qu'on actionne d'un clic sans « DAS · Mécanisme » — le déclencheur au clic d'un piège (un
+ * levier, un bouton piégé). La même portée et la même marche qu'une zone.
+ * @param {RegionDocument} region
+ */
+export function leverSource(region) {
+  return {
+    kind: "lever",
+    uuid: region.uuid,
+    key: `lever-${region.id}`,
+    doc: region,
+    place: region,
+    get actor() { return null; },
+    get name() { return clickTrapsOn(region)[0]?.name || region.name; },
+    get img() { return null; },
+    exists: () => !!region.parent?.regions.get(region.id) && (clickTrapsOn(region).length > 0),
+    locked: () => false,
+    box: () => regionBox(region),
+    distance: looter => regionDistance(looter, region)
+  };
 }
 
 /** Un token piège, comme source à désamorcer. */
@@ -186,5 +208,6 @@ export function resolveSource({ kind, uuid }) {
   if ( (kind === "container") && (doc.type === CONTAINER_TYPE) ) return containerSource(doc);
   if ( (kind === "zone") && ZONE_TYPES.includes(doc.type) ) return zoneSource(doc);
   if ( (kind === "trap") && (doc.type === TRAP_ZONE) ) return trapSource(doc);
+  if ( (kind === "lever") && (doc.documentName === "Region") ) return leverSource(doc);
   return null;
 }

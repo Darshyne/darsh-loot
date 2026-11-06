@@ -652,6 +652,10 @@
         "hidden": {
           "label": "Hidden trigger",
           "hint": "How the trigger (the plate) is found. The source has its own detection."
+        },
+        "activation": {
+          "label": "Triggered",
+          "hint": "What sets the trap off: a token stepping into the trigger (a pressure plate), a click on the trigger (a trapped lever or button: hand cursor, within reach), or both. On click, the trigger stays visible to players; only the trap is hidden."
         }
       },
       "Rearm": {
@@ -679,7 +683,12 @@
       "ConfirmText": "Try to disarm {trap}? {name} will make a thieves' tools check.",
       "ConfirmYes": "Try",
       "ConfirmNo": "Give up",
-      "ThisTrap": "this trap"
+      "ThisTrap": "this trap",
+      "Activation": {
+        "enter": "When a token steps in",
+        "click": "On click (lever, button)",
+        "both": "Both"
+      }
     },
     "TrapRelay": {
       "Name": "DAS · Trap trigger",
@@ -701,7 +710,9 @@
       "Disadvantage": "Disadvantage",
       "Tier": "Level tier",
       "Fire": "Launch the trap",
-      "Cancel": "Cancel the trap"
+      "Cancel": "Cancel the trap",
+      "Surprised": "Surprised",
+      "SurprisedHint": "Caught off guard: nobody had spotted the trap (Disadvantage on Initiative). Keep it in mind for their save."
     },
     "Pack": {
       "Outils": "DAS · Loot & Trade · GM tools"
@@ -903,13 +914,19 @@
         "HiddenEnabled": "Hidden trigger",
         "SourceHidden": "Hidden source (the token, when the trigger is elsewhere)",
         "Region": "{name} (DAS · Trap)"
-      }
+      },
+      "ThisLever": "this lever",
+      "GateTextUse": "You have spotted a trap on {name}. What do you do?",
+      "GateUse": "Use it anyway"
     },
     "Pick": {
       "Button": "Pick on the map",
       "PromptRegion": "Click a region on the map (right-click or Escape: cancel).",
       "PromptTile": "Click a region or a tile on the map (right-click or Escape: cancel).",
-      "Nothing": "Nothing to pick there."
+      "Nothing": "Nothing to pick there.",
+      "PromptDoor": "Click a door on the map (right-click or Escape: cancel).",
+      "PromptLight": "Click a light on the map (right-click or Escape: cancel).",
+      "PromptTrap": "Click a trap's region or a trap token on the map (right-click or Escape: cancel)."
     },
     "TrapMenu": {
       "Fire": "Set off the trap",
@@ -979,6 +996,109 @@
     "Timer": {
       "Search": "Searching…",
       "Disarm": "Disarming…"
+    },
+    "MechanismZone": {
+      "Hint": "A lever, a button or a pressure plate: on click (within reach) or when a token steps in, the active GM performs its actions — open or lock a door, turn a light on, show a tile, play a sound, set off a trap, run a macro. As a toggle, each use undoes the previous one.",
+      "Sheet": "DAS · Mechanism (actions)",
+      "Activation": {
+        "click": "On click",
+        "enter": "When a token steps in",
+        "both": "Both"
+      },
+      "Mode": {
+        "toggle": "Toggle (two positions)",
+        "once": "Once only",
+        "always": "Every time"
+      },
+      "FIELDS": {
+        "activation": {
+          "label": "Triggered",
+          "hint": "On click: a lever, a button (hand cursor, within reach). When a token steps in: a pressure plate. Both: a plate that can also be pressed by hand."
+        },
+        "minSize": {
+          "label": "Minimum size",
+          "hint": "For a pressure plate: the smallest creature that presses it (a rat does not)."
+        },
+        "mode": {
+          "label": "Works",
+          "hint": "Toggle: two positions, and each use reverses the actions (the open door closes again; a trap does not fire again). Once only: afterwards, nothing happens. Every time: the same actions."
+        },
+        "active": {
+          "label": "Pulled",
+          "hint": "The lever's position (toggle). Untick: put it back without performing its actions."
+        },
+        "used": {
+          "label": "Already used",
+          "hint": "For a mechanism that works only once. Untick to make it usable again."
+        },
+        "tile": {
+          "label": "Lever tile",
+          "hint": "The tile that shows the mechanism; empty: the tile placed in the region. Its image follows the lever's position."
+        },
+        "imageOff": {
+          "label": "Resting image",
+          "hint": "The tile's image with the lever up (empty: the image the tile had to begin with)."
+        },
+        "imageOn": {
+          "label": "Pulled image",
+          "hint": "The tile's image with the lever down (empty: the tile does not change)."
+        },
+        "sound": {
+          "label": "Sound",
+          "hint": "Played for the whole table at each use (empty: a lever sound)."
+        }
+      },
+      "Actions": {
+        "Legend": "Actions",
+        "Hint": "What the mechanism does, in order. Pick each target on the map (crosshair); drop a macro onto its field.",
+        "Add": "Add an action",
+        "Remove": "Remove",
+        "Browse": "Pick a file",
+        "Volume": "Volume",
+        "TypeLabel": "Action type",
+        "ModeLabel": "Effect",
+        "Missing": "not found",
+        "Door": "Door",
+        "Light": "Light",
+        "MacroHint": "Drop a macro onto the field, or paste its UUID.",
+        "NoTrap": "No trap here: click a « DAS · Trap » region or a trap token.",
+        "Type": {
+          "door": "Door",
+          "light": "Light",
+          "tile": "Tile",
+          "sound": "Sound",
+          "trap": "Trap",
+          "macro": "Macro"
+        },
+        "Mode": {
+          "open": "Open",
+          "close": "Close",
+          "toggle": "Toggle",
+          "lock": "Lock",
+          "unlock": "Unlock",
+          "on": "Turn on",
+          "off": "Turn off",
+          "show": "Show",
+          "hide": "Hide",
+          "play": "Play",
+          "fire": "Set off",
+          "gm": "Run for the GM",
+          "user": "Run for whoever uses it"
+        }
+      }
+    },
+    "Mechanism": {
+      "ThisLever": "this mechanism",
+      "UseCard": "{name} uses {thing}.",
+      "EnterCard": "A plate sinks under {name}: {thing}.",
+      "NothingCard": "{name} uses {thing}: nothing happens.",
+      "FloatUse": "Used",
+      "FloatEnter": "Click!",
+      "FloatNothing": "Nothing happens",
+      "Use": "Use: {name}",
+      "Reset": "Reset: {name}",
+      "Configure": "Settings: {name}",
+      "ResetDone": "{name} is back in its first position."
     }
   },
   "TYPES": {
@@ -988,7 +1108,8 @@
       "darsh-loot.scene": "DAS · To scene",
       "darsh-loot.document": "DAS · Open document",
       "darsh-loot.trap": "DAS · Trap",
-      "darsh-loot.trapTrigger": "DAS · Trap trigger"
+      "darsh-loot.trapTrigger": "DAS · Trap trigger",
+      "darsh-loot.mechanism": "DAS · Mechanism"
     }
   }
 }

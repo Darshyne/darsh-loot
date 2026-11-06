@@ -11,6 +11,7 @@ import { GENERIC_TABLES } from "../module/scripts/core/tables.mjs";
 import { discoveryKey } from "../module/scripts/core/hidden.mjs";
 import { difficultyOf } from "../module/scripts/core/theft.mjs";
 import { TABS } from "../module/scripts/core/settings-tabs.mjs";
+import { ACTIVATIONS, MECHANISM_MODES, ACTION_TYPES, ACTION_MODES } from "../module/scripts/core/mechanisms.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 const lang = l => JSON.parse(readFileSync(join(ROOT, "module", "lang", `${l}.json`), "utf8"));
@@ -53,7 +54,11 @@ const DYNAMIC = {
   "DLO.Merchant.StolenPolicy": [...STOLEN_POLICIES],
   "DLO.Steal.Difficulty": [...new Set([0, 1, 5, 10, 50, 1000, 100000].map(value => difficultyOf({ value, weight: 0 })))
     .add(difficultyOf({ value: 0, weight: 0, alert: true }))],
-  "DLO.Hidden.Found": [...new Set(["container", "macro", "scene", "document", "secret", "ethereal", "trap", "?"].map(discoveryKey))],
+  "DLO.Hidden.Found": [...new Set(["container", "macro", "mechanism", "scene", "document", "secret", "ethereal", "trap", "?"].map(discoveryKey))],
+  // Étape 13 : les choix d'un « DAS · Mécanisme » (adapter/zone-behaviors.mjs) et les lignes de ses actions (apps/mechanism-config.mjs).
+  "DLO.MechanismZone": [...ACTIVATIONS.map(k => `Activation.${k}`), ...MECHANISM_MODES.map(k => `Mode.${k}`)],
+  "DLO.MechanismZone.Actions.Type": [...ACTION_TYPES],
+  "DLO.MechanismZone.Actions.Mode": [...new Set(Object.values(ACTION_MODES).flat())],
   // Les refus du budget du moteur de combat (son `api.budget.issues`, SPEC §102 du moteur).
   "DLO.Hidden.Budget": ["notYourTurn", "noAction", "noBonus", "noReaction"],
   // 0.17.2 : les sections des réglages d'un piège (apps/trap-config.mjs `sectionText`) : légende par partie, aide par partie et par variante.

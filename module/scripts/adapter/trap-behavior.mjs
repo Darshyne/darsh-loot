@@ -50,6 +50,10 @@ export class TrapZoneType extends foundry.data.regionBehaviors.RegionBehaviorTyp
       activity: new fields.StringField({ required: true, blank: true, initial: "" }),
       // Le déclencheur : une autre région de la scène (la dalle), ou cette région (vide).
       triggerRegion: new fields.DocumentUUIDField({ type: "Region", nullable: true, initial: null }),
+      // Étape 13 (issue darsh-loot#4) : il part quand un token entre dans le déclencheur, quand on clique dessus (un levier, un
+      // bouton piégé), ou les deux.
+      activation: new fields.StringField({ required: true, blank: false, initial: "enter",
+        choices: { enter: "DLO.TrapZone.Activation.enter", click: "DLO.TrapZone.Activation.click", both: "DLO.TrapZone.Activation.both" } }),
       // La plus petite créature qui le fait partir (2026-10-27 : Petite par défaut).
       minSize: new fields.StringField({ required: true, blank: false, initial: TRAP_DEFAULTS.minSize, choices: SIZE_CHOICES }),
       // Hauteur au-dessus du sol du déclencheur sous laquelle on déclenche (0 : seulement ce qui touche le sol).

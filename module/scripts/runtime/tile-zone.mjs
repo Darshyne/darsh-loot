@@ -7,7 +7,7 @@
 import { MODULE_ID, loc, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { CONTAINER_TYPE } from "../adapter/container-behavior.mjs";
-import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE } from "../adapter/zone-behaviors.mjs";
+import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { prettyName } from "../core/outline.mjs";
@@ -20,6 +20,8 @@ const TYPES = [
   { kind: "macro", id: MACRO_ZONE },
   { kind: "scene", id: SCENE_ZONE },
   { kind: "document", id: DOCUMENT_ZONE },
+  // Étape 13 : un levier, un bouton — la tuile est la sienne, son image de départ est celle de la position « relevé ».
+  { kind: "mechanism", id: MECHANISM_ZONE },
   // La zone de déclenchement d'un piège (une dalle) ; sa zone d'effet se dessine à la main.
   { kind: "trap", id: TRAP_ZONE }
 ];
@@ -37,6 +39,7 @@ export async function tileToZone(tile, { kind="container", name="", system={}, o
   }
   const type = TYPES.find(t => t.kind === kind);
   if ( !type ) throw new Error(`unknown zone type: ${kind}`);
+  if ( kind === "mechanism" ) system = { tile: tile.uuid, imageOff: tile.texture?.src || null, ...system };
   const { points, traced } = tileShape(tile);
   name ||= prettyName(tile.texture?.src) || loc("TileZone.DefaultName");
   const typeName = game.i18n.localize(`TYPES.RegionBehavior.${type.id}`);

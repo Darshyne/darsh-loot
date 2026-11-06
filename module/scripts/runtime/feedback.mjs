@@ -21,7 +21,14 @@ export const SOUNDS = Object.freeze({
   discover: "sounds/notify.wav",
   // 2026-10-28 : fouiller (un cadavre, les environs) — le bruissement ; prendre un objet — les pièces.
   rummage: `modules/${MODULE_ID}/assets/sounds/drop-soft.mp3`,
-  coins: `modules/${MODULE_ID}/assets/sounds/drop-coins.mp3`
+  coins: `modules/${MODULE_ID}/assets/sounds/drop-coins.mp3`,
+  // 2026-11-05 (étape 13, règle DAS : toute action a un retour sonore) : se servir d'une zone, actionner un levier, un mécanisme
+  // qui allume ou éteint, ouvrir un document.
+  use: "sounds/doors/industrial/unlock.ogg",
+  lever: "sounds/doors/industrial/lock.ogg",
+  click: "sounds/lock.wav",
+  page: `modules/${MODULE_ID}/assets/sounds/drop-soft.mp3`,
+  nothing: "sounds/doors/metal/test.ogg"
 });
 
 /** Une carte plus vieille que ça (chargement du journal) ne refait pas son texte flottant. */

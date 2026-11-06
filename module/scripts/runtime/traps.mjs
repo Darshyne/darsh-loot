@@ -27,7 +27,7 @@ import { haltScene } from "./hidden.mjs";
 import { TRAP_ZONE, TRAP_RELAY, TrapZoneType, TrapRelayType, registerTrapBehavior, sceneTraps, relaysOf } from "../adapter/trap-behavior.mjs";
 import { trapLevelOf, creatureSize } from "../adapter/dnd5e.mjs";
 import { trapHandle, handleKnown, sourceKnown, anyKnown, handleDistance, trapDistance, trappedThings, allTraps, isDoorWall,
-  isTrapActor, isTrapToken, sceneTrapTokens, autoRegionOf } from "../adapter/trapped.mjs";
+  isTrapActor, isTrapToken, sceneTrapTokens, autoRegionOf, enterActivated } from "../adapter/trapped.mjs";
 import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap, bigEnough, migrateZoneTrap, SIZES, objectImmunities }
   from "../core/traps.mjs";
 import { normalizeHidden, concealed } from "../core/hidden.mjs";
@@ -57,6 +57,9 @@ const asHandle = x => ((x?.kind && x.doc) ? x : trapHandle(x));
 function armedNow(h) {
   return !!h && armedAt(h.trap, game.time.worldTime);
 }
+
+/** Le piège (poignée ou document) est-il armé maintenant ? Pour les mécanismes (runtime/mechanisms.mjs). */
+export const trapArmed = target => armedNow(asHandle(target));
 
 /** Le sol de la zone sous ce token : le bas de la région s'il est fini, sinon la base de son niveau. */
 function groundOf(region, token) {
@@ -248,19 +251,27 @@ async function springAdvanced(h, triggerer, { surprise }) {
     && (playerCharacter(t) || (t.id === (triggerer?.document ?? triggerer)?.id)));
   await combat.createEmbeddedDocuments("Combatant", tokens.map(t => ({ tokenId: t.id, sceneId: scene.id, actorId: t.actorId, hidden: t.hidden })));
   // Surpris : les personnages des joueurs, quand personne n'avait repéré le piège (la découverte est commune à la table).
-  if ( surprise ) {
-    for ( const t of tokens.filter(t => t.actor.hasPlayerOwner) ) {
-      try { await t.actor.toggleStatusEffect("surprised", { active: true }); }
-      catch(err) { log.warn(`trap: ${t.name} not Surprised`, err.message); }
-    }
-  }
+  const surprised = surprise ? tokens.filter(t => t.actor.hasPlayerOwner).map(t => t.actor) : [];
+  await setSurprised(surprised, true);
   const actor = h.trap.actor ? await fromUuid(h.trap.actor) : null;
   await engineCombatEvents().addEvent({ combat, name: h.name || actor?.name || loc("TrapZone.ThisTrap"), img: actor?.img ?? null,
-    initiative: h.trap.initiative, rounds: 1, key: eventKey(h), data: { trap: h.uuid, triggerer: triggerer?.uuid ?? null } });
+    initiative: h.trap.initiative, rounds: 1, key: eventKey(h),
+    data: { trap: h.uuid, triggerer: triggerer?.uuid ?? null, surprised: surprised.map(a => a.uuid) } });
+  // 2026-11-06 : les surpris sont notés dans l'évènement (le moteur retire l'état au jet d'initiative, son §210) : la fenêtre du MJ les
+  // montre à son tour.
   await combat.rollAll();
   await combat.startCombat();
   log.info(`trap ${h.name || h.kind}: combat started, trap at initiative ${h.trap.initiative}${surprise ? ", characters Surprised" : ""}`);
   return true;
+}
+
+/** Poser l'état Surpris de dnd5e sur ces acteurs (seulement s'il ne l'ont pas). */
+async function setSurprised(actors, active) {
+  for ( const actor of actors ) {
+    if ( !actor || (actor.statuses?.has("surprised") === active) ) continue;
+    try { await actor.toggleStatusEffect("surprised", { active }); }
+    catch(err) { log.warn(`trap: ${actor.name} — Surprised not ${active ? "set" : "removed"}`, err.message); }
+  }
 }
 
 /** Le tour d'un évènement d'initiative (moteur, son §250), chez le MJ actif : celui d'un piège ouvre la fenêtre du MJ. */
@@ -269,7 +280,7 @@ function onEventTurn({ combat, combatant, data }={}) {
   const h = trapHandle(fromUuidSync(data.trap, { strict: false }));
   if ( !h ) { log.warn(`trap ${data.trap}: gone, its turn is skipped`); combat?.nextTurn(); return; }
   const triggerer = data.triggerer ? fromUuidSync(data.triggerer, { strict: false }) : null;
-  judgeTrap(h, triggerer, { combat, combatant });
+  judgeTrap(h, triggerer, { combat, combatant, surprised: data.surprised ?? [] });
 }
 
 const judging = new Set();
@@ -286,7 +297,9 @@ async function judgeTrap(h, triggerer, turn) {
     const proposed = await activityOf(h, targets);
     const answer = await askTrapResolution({
       name: h.name || proposed?.item?.name || loc("TrapZone.ThisTrap"),
-      targets: targets.map(t => ({ uuid: t.uuid, name: t.name, img: t.texture?.src ?? t.actor?.img ?? null })),
+      // 2026-11-06 (demande de l'utilisateur) : ceux qui ont été surpris par le piège sont marqués dans la liste.
+      targets: targets.map(t => ({ uuid: t.uuid, name: t.name, img: t.texture?.src ?? t.actor?.img ?? null,
+        surprised: !!t.actor && (turn?.surprised ?? []).includes(t.actor.uuid) })),
       activities: (proposed?.item.system.activities.contents ?? []).map(a => ({ id: a.id, name: a.name || a.item.name })),
       activity: proposed?.id ?? null,
       attack: proposed?.type === "attack"
@@ -325,6 +338,8 @@ function entered(h, event) {
   const token = event.data?.token;
   // Un objet (un token piège, une arme spirituelle) ne déclenche rien.
   if ( !token || isTrapToken(token) || engineObjectToken(token) ) return;
+  // Étape 13 : un levier piégé ne part qu'au clic (runtime/mechanisms.mjs), pas quand on marche dessus.
+  if ( !enterActivated(h) ) return;
   if ( !armedNow(h) || !lowEnough(h, token) || !heavyEnough(h, token) ) return;
   if ( event.user?.isSelf ) { try { token.stopMovement(); } catch(err) { /* déjà arrêté */ } }
   if ( isActiveGM() ) fireTrap(h, token);
@@ -368,16 +383,17 @@ async function handleTrigger({ target, looter: looterUuid, moment }, { user }) {
  * Chez le joueur, avant d'ouvrir un coffre ou une porte dont le piège est **repéré** et armé pour l'un de ces moments : désamorcer,
  * ouvrir quand même, ou renoncer. Rend true s'il peut ouvrir (piège inconnu, désamorcé à l'instant, ou ouvert quand même).
  */
-export async function trapGate(target, looter, moments=["open"]) {
+export async function trapGate(target, looter, moments=["open"], { use=false }={}) {
   const h = asHandle(target);
   if ( !h || !anyKnown(h) || !armedNow(h) || !moments.some(m => triggersOn(h.trap, m)) ) return true;
-  const name = foundry.utils.escapeHTML(h.name || loc(h.wall ? "TrappedTrap.ThisDoor" : "TrappedTrap.ThisContainer"));
+  // Étape 13 : devant un levier piégé, « Actionner quand même » au lieu d'« Ouvrir quand même ».
+  const name = foundry.utils.escapeHTML(h.name || loc(use ? "TrappedTrap.ThisLever" : h.wall ? "TrappedTrap.ThisDoor" : "TrappedTrap.ThisContainer"));
   const choice = await foundry.applications.api.DialogV2.wait({
     window: { title: loc("TrappedTrap.GateTitle"), icon: "fa-solid fa-burst" },
-    content: `<p>${loc("TrappedTrap.GateText", { name })}</p>`,
+    content: `<p>${loc(use ? "TrappedTrap.GateTextUse" : "TrappedTrap.GateText", { name })}</p>`,
     buttons: [
       { action: "disarm", label: loc("TrappedTrap.GateDisarm"), icon: "fa-solid fa-screwdriver-wrench", default: true },
-      { action: "open", label: loc("TrappedTrap.GateOpen"), icon: "fa-solid fa-triangle-exclamation" },
+      { action: "open", label: loc(use ? "TrappedTrap.GateUse" : "TrappedTrap.GateOpen"), icon: "fa-solid fa-triangle-exclamation" },
       { action: "cancel", label: loc("TrapZone.ConfirmNo") }
     ],
     rejectClose: false
@@ -400,7 +416,7 @@ export async function trapGate(target, looter, moments=["open"]) {
  */
 async function syncAvoid(scene) {
   if ( !scene ) return;
-  const wanted = new Set([...sceneTraps(scene), ...sceneTrapTokens(scene)].map(trapHandle).filter(h => h?.triggerRegion && handleKnown(h))
+  const wanted = new Set([...sceneTraps(scene), ...sceneTrapTokens(scene)].map(trapHandle).filter(h => h?.triggerRegion && handleKnown(h) && enterActivated(h))
     .map(h => h.triggerRegion));
   for ( const region of scene.regions ) {
     const ours = region.getFlag(MODULE_ID, "avoidByTrap") === true;

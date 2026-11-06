@@ -18,6 +18,10 @@ import { openSource } from "./open.mjs";
 import { requestUnlock, convertGroupToken } from "./containers.mjs";
 import { requestGroundDrop } from "./drop.mjs";
 import { shownCursor, clickCursor } from "./pointer.mjs";
+import { testActuate, clickable } from "./mechanisms.mjs";
+import { MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
+import { regionHiddenByTraps } from "../adapter/trapped.mjs";
+import { SOUNDS } from "./feedback.mjs";
 
 const TEST = { [MODULE_ID]: { test: true } };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -602,9 +606,93 @@ async function clickLoot(b) {
   }
 }
 
+/**
+ * Mécanismes (étape 13, issue darsh-loot#4) : un levier à bascule (porte, lumière, son ; retour à rebours), « une seule fois », une dalle
+ * (un rat ne l'enfonce pas), un levier piégé (visible, ne part pas quand on marche dessus, part au clic, le chemin ne l'évite pas).
+ */
+async function mechanism(b) {
+  const before = { advanced: setting("advancedTraps") };
+  await game.settings.set(MODULE_ID, "advancedTraps", false);
+  const lights = [];
+  const tiles = [];
+  try {
+    const looter = await b.token(await testCharacter(b), 0, 1);
+    const door = await b.wall({ c: [b.pt(7, 0).x, b.pt(7, 0).y, b.pt(7, 2).x, b.pt(7, 2).y], door: 1, ds: 0 });
+    const [light] = await b.scene.createEmbeddedDocuments("AmbientLight", [{ ...b.center(6, 3), hidden: true, config: { bright: 10, dim: 20 }, flags: TEST }]);
+    lights.push(light.id);
+    const lever = await b.region({ name: "Essai levier", shapes: [b.rect(1, 0, 1, 1)], behaviors: [{ type: MECHANISM_ZONE, name: "Essai levier",
+      system: { label: "Essai levier", mode: "toggle", actions: [{ type: "door", mode: "open", target: door.uuid }, { type: "light", mode: "on", target: light.uuid },
+        { type: "sound", mode: "play", src: SOUNDS.click, volume: 0.3 }] } }] });
+    const m = () => lever.behaviors.find(x => x.type === MECHANISM_ZONE);
+    // 2026-11-06 : deux visuels — la tuile posée dans la région est trouvée seule, son image de départ sert d'image au repos.
+    const UP = "icons/commodities/tech/lever.webp", DOWN = "icons/commodities/tech/levers-colored.webp";
+    const [leverTile] = await b.scene.createEmbeddedDocuments("Tile", [{ ...b.center(1, 0), width: b.G, height: b.G, texture: { src: UP }, flags: TEST }]);
+    tiles.push(leverTile.id);
+    await m().update({ "system.imageOn": DOWN });
+    b.expect(clickable(lever), "le levier se clique");
+    const d0 = Date.now();
+    const s0 = b.sounds.length;
+    let out = await testActuate(lever, looter);
+    await sleep(500);
+    b.expect(out.did && (door.ds === CONST.WALL_DOOR_STATES.OPEN) && !light.hidden && m().system.active,
+      `aller : porte ouverte (${door.ds}), lumière allumée (${!light.hidden}), levier abaissé (${m().system.active})`);
+    b.expect(await until(() => feedbackAfter(d0).length), "aller : carte de retour pour la table");
+    b.expect(leverTile.texture.src === DOWN, `aller : la tuile prend l'image « actionnée » (${leverTile.texture.src})`);
+    const heard = b.sounds.slice(s0);
+    b.expect(heard.some(x => x.broadcast && (x.src === SOUNDS.lever)) && heard.some(x => x.src === SOUNDS.click),
+      `aller : bruit de levier diffusé et son de l'action (${heard.map(x => x.src).join(", ")})`);
+    out = await testActuate(lever, looter);
+    await sleep(500);
+    b.expect((door.ds === CONST.WALL_DOOR_STATES.CLOSED) && light.hidden && !m().system.active, "retour : porte refermée, lumière éteinte, levier relevé");
+    b.expect(leverTile.texture.src === UP, `retour : la tuile revient à son image de départ (${leverTile.texture.src})`);
+    await m().update({ "system.mode": "once", "system.active": false, "system.used": false });
+    out = await testActuate(lever, looter);
+    const again = await testActuate(lever, looter);
+    await sleep(300);
+    b.expect(out.did && m().system.used && !again.did, "une seule fois : sert, puis rien ne se passe");
+
+    // Une dalle : un rat ne l'enfonce pas, une créature moyenne oui.
+    await door.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
+    await b.region({ name: "Essai dalle", shapes: [b.rect(3, 0, 1, 1)], behaviors: [{ type: MECHANISM_ZONE, name: "Essai dalle",
+      system: { label: "Essai dalle", activation: "enter", mode: "always", actions: [{ type: "door", mode: "toggle", target: door.uuid }] } }] });
+    const rat = await b.token(await testCreature(b, "Essai rat", "tiny"), 3, 2);
+    await b.moveTo(rat, 3, 0);
+    await sleep(800);
+    b.expect(door.ds === CONST.WALL_DOOR_STATES.CLOSED, "dalle : un rat ne l'enfonce pas");
+    const walker = await b.token(await testCreature(b), 2, 2);
+    await b.moveTo(walker, 3, 0);
+    b.expect(await until(() => door.ds === CONST.WALL_DOOR_STATES.OPEN, 6000), "dalle : une créature moyenne l'enfonce (porte ouverte)");
+
+    // Un levier piégé : visible, ne part qu'au clic.
+    const actor = await trapActor(b);
+    if ( !actor ) { b.note("compendium du DMG 2024 absent : levier piégé sauté"); return; }
+    const trapLever = await b.region({ name: "Essai levier piégé", shapes: [b.rect(5, 0, 1, 1)] });
+    const area = await b.region({ name: "Essai couloir", shapes: [b.rect(4, 2, 2, 1)], behaviors: [{ type: TRAP_ZONE, name: "Essai levier piégé",
+      system: { actor: actor.uuid, activation: "click", triggerRegion: trapLever.uuid, hidden: { enabled: true, dc: 30, passive: 0 } } }] });
+    const trap = () => trapHandle(area.behaviors.find(x => x.type === TRAP_ZONE));
+    b.expect(!regionHiddenByTraps(trapLever), "levier piégé : il reste visible (seul le piège est caché)");
+    b.expect(clickable(trapLever), "levier piégé : il se clique");
+    await b.moveTo(rat, 6, 2);
+    await b.moveTo(walker, 5, 0);
+    await sleep(800);
+    b.expect(trap().trap.armed, "levier piégé : marcher dessus ne le fait pas partir");
+    await area.behaviors.find(x => x.type === TRAP_ZONE).update({ "system.hidden.found": true });
+    await sleep(800);
+    b.expect(!engineAvoids(trapLever), "levier piégé repéré : le chemin du moteur ne l'évite pas");
+    await b.moveTo(walker, 4, 2);
+    out = await testActuate(trapLever, looter);
+    b.expect(out.fired === 1 && !trap().trap.armed, `levier piégé : le clic le fait partir (${out.fired})`);
+  } finally {
+    if ( lights.length ) await b.scene.deleteEmbeddedDocuments("AmbientLight", lights.filter(id => b.scene.lights.has(id))).catch(() => {});
+    if ( tiles.length ) await b.scene.deleteEmbeddedDocuments("Tile", tiles.filter(id => b.scene.tiles.has(id))).catch(() => {});
+    await game.settings.set(MODULE_ID, "advancedTraps", before.advanced);
+  }
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
-  "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2] };
+  "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
+  mecanisme: [mechanism, 9, 4] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

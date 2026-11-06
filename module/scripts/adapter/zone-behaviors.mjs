@@ -8,11 +8,15 @@
  */
 import { MODULE_ID } from "../shared.mjs";
 import { hiddenField, behaviorConcealed } from "./hidden.mjs";
+import { ACTIVATIONS, MECHANISM_MODES, ACTION_TYPES } from "../core/mechanisms.mjs";
+import { SIZES } from "../core/traps.mjs";
 
 export const MACRO_ZONE = `${MODULE_ID}.macro`;
 export const SCENE_ZONE = `${MODULE_ID}.scene`;
 export const DOCUMENT_ZONE = `${MODULE_ID}.document`;
-export const ZONE_TYPES = [MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE];
+/** Étape 13 (SPEC §3.13) : un levier, un bouton, une dalle, et ses actions. */
+export const MECHANISM_ZONE = `${MODULE_ID}.mechanism`;
+export const ZONE_TYPES = [MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, MECHANISM_ZONE];
 
 const fields = foundry.data.fields;
 
@@ -80,16 +84,67 @@ export class DocumentZoneType extends ZoneBehaviorType {
   get target() { return this.document ? fromUuidSync(this.document, { strict: false }) : null; }
 }
 
+/**
+ * « DAS · Mécanisme » (étape 13, SPEC §3.13) : un levier, un bouton ou une dalle. Il part au clic (une zone comme les autres : curseur,
+ * portée, option « cachée », surbrillance), à l'entrée d'un token (une dalle), ou les deux ; ses actions sont faites par le MJ actif
+ * (runtime/mechanisms.mjs) : porte, lumière, tuile, son, piège, macro. À bascule, il a deux positions, et la tuile qui le montre peut
+ * changer d'image avec elles. Les actions sont une liste, réglée dans sa fenêtre (apps/mechanism-config.mjs).
+ */
+export class MechanismZoneType extends ZoneBehaviorType {
+  static LOCALIZATION_PREFIXES = ["DLO.Zone", "DLO.Hidden", "DLO.MechanismZone"];
+
+  static defineSchema() {
+    const choices = (list, prefix) => Object.fromEntries(list.map(k => [k, `DLO.MechanismZone.${prefix}.${k}`]));
+    return {
+      ...commonFields(),
+      activation: new fields.StringField({ required: true, blank: false, initial: "click", choices: choices(ACTIVATIONS, "Activation") }),
+      // La plus petite créature qui enfonce la dalle (comme un piège : un rat passe).
+      minSize: new fields.StringField({ required: true, blank: false, initial: "sm",
+        choices: () => Object.fromEntries(SIZES.map(k => [k, CONFIG.DND5E?.actorSizes?.[k]?.label ?? k])) }),
+      mode: new fields.StringField({ required: true, blank: false, initial: "toggle", choices: choices(MECHANISM_MODES, "Mode") }),
+      // L'état : la position du levier (à bascule), déjà servi (une fois).
+      active: new fields.BooleanField({ initial: false }),
+      used: new fields.BooleanField({ initial: false }),
+      // La tuile qui montre le levier, et son image dans chaque position (vide : elle ne change pas).
+      tile: new fields.DocumentUUIDField({ type: "Tile", nullable: true, initial: null }),
+      imageOff: new fields.FilePathField({ categories: ["IMAGE"], required: false, nullable: true, initial: null }),
+      imageOn: new fields.FilePathField({ categories: ["IMAGE"], required: false, nullable: true, initial: null }),
+      // Le son de l'actionnement, entendu de tous (vide : le son de levier par défaut).
+      sound: new fields.FilePathField({ categories: ["AUDIO"], required: false, nullable: true, initial: null }),
+      actions: new fields.ArrayField(new fields.SchemaField({
+        type: new fields.StringField({ required: true, blank: false, initial: "door", choices: Object.fromEntries(ACTION_TYPES.map(k => [k, k])) }),
+        target: new fields.StringField({ required: false, nullable: true, blank: true, initial: null }),
+        mode: new fields.StringField({ required: true, blank: false, initial: "open" }),
+        src: new fields.StringField({ required: false, blank: true, initial: "" }),
+        volume: new fields.NumberField({ required: false, nullable: true, min: 0, max: 1, initial: 0.8 })
+      }))
+    };
+  }
+
+  /** Fourni par runtime/mechanisms.mjs : `(behavior, event) => void`. */
+  static onEnter = null;
+
+  static async #onTokenMoveIn(event) {
+    return MechanismZoneType.onEnter?.(this.parent, event);
+  }
+
+  static events = {
+    [CONST.REGION_EVENTS.TOKEN_MOVE_IN]: this.#onTokenMoveIn
+  };
+}
+
 const ICONS = {
   [MACRO_ZONE]: "fa-solid fa-hand-pointer",
   [SCENE_ZONE]: "fa-solid fa-door-open",
-  [DOCUMENT_ZONE]: "fa-solid fa-scroll"
+  [DOCUMENT_ZONE]: "fa-solid fa-scroll",
+  [MECHANISM_ZONE]: "fa-solid fa-gears"
 };
 
 export function registerZoneBehaviors() {
   CONFIG.RegionBehavior.dataModels[MACRO_ZONE] = MacroZoneType;
   CONFIG.RegionBehavior.dataModels[SCENE_ZONE] = SceneZoneType;
   CONFIG.RegionBehavior.dataModels[DOCUMENT_ZONE] = DocumentZoneType;
+  CONFIG.RegionBehavior.dataModels[MECHANISM_ZONE] = MechanismZoneType;
   for ( const [type, icon] of Object.entries(ICONS) ) CONFIG.RegionBehavior.typeIcons[type] = icon;
   // `typeHints` n'existe qu'en V14.
   const hints = CONFIG.RegionBehavior.typeHints;
@@ -97,6 +152,7 @@ export function registerZoneBehaviors() {
     hints[MACRO_ZONE] = "DLO.MacroZone.Hint";
     hints[SCENE_ZONE] = "DLO.SceneZone.Hint";
     hints[DOCUMENT_ZONE] = "DLO.DocumentZone.Hint";
+    hints[MECHANISM_ZONE] = "DLO.MechanismZone.Hint";
   }
 }
 

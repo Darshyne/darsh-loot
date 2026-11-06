@@ -15,7 +15,7 @@ const ZONE_SECTIONS = [
   { key: "Trap", icon: "fa-solid fa-burst", paths: ["label", "actor", "activity", "initiative"] },
   { key: "Area", icon: "fa-solid fa-bullseye", paths: ["effectRegion"] },
   { key: "Source", icon: "fa-solid fa-crosshairs", paths: ["source"] },
-  { key: "Trigger", icon: "fa-solid fa-shoe-prints", paths: ["triggerRegion", "minSize", "height", "hidden"] },
+  { key: "Trigger", icon: "fa-solid fa-shoe-prints", paths: ["triggerRegion", "activation", "minSize", "height", "hidden"] },
   { key: "Arming", icon: "fa-solid fa-screwdriver-wrench", paths: ["armed", "rearm", "delay", "triggeredAt", "disarmDc", "failure", "disarmed"] }
 ];
 

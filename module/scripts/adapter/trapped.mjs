@@ -12,6 +12,7 @@
  */
 import { MODULE_ID } from "../shared.mjs";
 import { normalizeTrap, isTrapCreatureType } from "../core/traps.mjs";
+import { activatesOn } from "../core/mechanisms.mjs";
 import { normalizeHidden, concealed, pointSegmentDistance, closestOnSegment, stepToward } from "../core/hidden.mjs";
 import { TRAP_ZONE, TRAP_RELAY, sceneTraps } from "./trap-behavior.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
@@ -33,7 +34,7 @@ export function trapHandle(doc) {
   if ( !doc ) return null;
   if ( doc.documentName === "RegionBehavior" ) {
     if ( doc.disabled ) return null;
-    if ( doc.type === TRAP_ZONE ) return handle("zone", doc, "system.", { ...doc.system.toObject(), trigger: "enter" }, doc.system.hidden);
+    if ( doc.type === TRAP_ZONE ) return handle("zone", doc, "system.", { ...doc.system.toObject(), trigger: doc.system.activation ?? "enter" }, doc.system.hidden);
     if ( doc.type === TRAP_RELAY ) return trapHandle(fromUuidSync(doc.system.trap ?? "", { strict: false }));
     if ( (doc.type === CONTAINER_TYPE) && doc.system.trap?.enabled ) {
       return handle("container", doc, "system.trap.", foundry.utils.deepClone(doc.system.trap), doc.system.trap.hidden);
@@ -151,6 +152,19 @@ function tokenHandle(token, prefix, trap, hidden) {
     prefix,
     update: changes => token.update(Object.fromEntries(Object.entries(changes).map(([k, v]) => [prefix + k, v])))
   };
+}
+
+/**
+ * Étape 13 (issue darsh-loot#4) : un piège de zone part-il à l'entrée d'un token dans son déclencheur, ou d'un clic dessus (un levier
+ * piégé) ? Un coffre, une porte, un token piège : seulement par leurs propres moments (ouverture, crochetage ; l'entrée pour un token).
+ */
+export const enterActivated = h => (h?.kind === "token") || ((h?.kind === "zone") && activatesOn(h.trap.trigger, "enter"));
+export const clickActivated = h => (h?.kind === "zone") && activatesOn(h.trap.trigger, "click");
+
+/** Les pièges de zone qui partent d'un clic sur cette région (leur déclencheur). */
+export function clickTrapsOn(region) {
+  if ( !region ) return [];
+  return sceneTraps(region.parent).map(trapHandle).filter(h => h && clickActivated(h) && (h.triggerRegion === region));
 }
 
 /** Le déclencheur repéré (trouvé, ou jamais caché) et pas désamorcé : il se montre en rouge et se désamorce. */
@@ -312,7 +326,8 @@ export function concealedTraps(scene) {
 export function regionHiddenByTraps(region) {
   for ( const h of allTraps(region.parent) ) {
     if ( h.trap.disarmed ) continue;
-    if ( ["zone", "token"].includes(h.kind) && (h.triggerRegion === region) && concealed(h.hidden) ) return true;
+    // Un levier piégé reste visible (seul son piège est caché), comme un coffre piégé.
+    if ( ["zone", "token"].includes(h.kind) && (h.triggerRegion === region) && concealed(h.hidden) && !clickActivated(h) ) return true;
     if ( (h.source.doc === region) && concealed(h.source.hidden) ) return true;
   }
   return false;

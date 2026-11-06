@@ -6,7 +6,9 @@
  */
 import { MODULE_ID, loc, log, setting, sceneSetting } from "../shared.mjs";
 import { askGM } from "./take.mjs";
-import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, registerZoneBehaviors } from "../adapter/zone-behaviors.mjs";
+import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, MECHANISM_ZONE, registerZoneBehaviors } from "../adapter/zone-behaviors.mjs";
+import { playForAll, SOUNDS } from "./feedback.mjs";
+import { actuate } from "./mechanisms.mjs";
 import { regionDistance } from "../adapter/dnd5e.mjs";
 import { behaviorConcealed } from "../adapter/hidden.mjs";
 
@@ -22,6 +24,7 @@ export async function runZone(behavior, looter=null) {
     if ( behavior.type === MACRO_ZONE ) return await runMacro(behavior, looter);
     if ( behavior.type === SCENE_ZONE ) return await goToScene(behavior);
     if ( behavior.type === DOCUMENT_ZONE ) return await openDocument(behavior, looter);
+    if ( behavior.type === MECHANISM_ZONE ) return await actuate(behavior.region, looter);
   } catch(err) {
     log.warn(`zone ${behavior.uuid}:`, err.message);
     ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
@@ -41,12 +44,21 @@ export async function runZone(behavior, looter=null) {
 async function runMacro(behavior, looter) {
   const macro = behavior.system.macro ? await fromUuid(behavior.system.macro) : null;
   if ( macro?.documentName !== "Macro" ) return ui.notifications.warn(loc("Zone.NoMacro"));
+  // Règle DAS (2026-11-05) : toute action a un retour sonore.
+  playForAll(SOUNDS.use, 0.6);
+  return executeMacro(macro, looter, { behavior, region: behavior.region, looter });
+}
+
+/**
+ * Exécute une macro chez cet utilisateur, sans exiger de droit dessus (voir plus haut) ; `scope` est passé tel quel. Sert aussi aux
+ * mécanismes (runtime/mechanisms.mjs).
+ */
+export async function executeMacro(macro, looter, scope={}) {
   const ChatMessage = foundry.documents.ChatMessage.implementation;
   const speaker = looter ? ChatMessage.getSpeaker({ token: looter }) : ChatMessage.getSpeaker();
   if ( macro.type === "chat" ) return ui.chat.processMessage(macro.command, { speaker });
   const token = looter?.object ?? (canvas.ready ? canvas.tokens.get(speaker.token) : null) ?? null;
   const actor = token?.actor ?? game.actors.get(speaker.actor) ?? null;
-  const scope = { behavior, region: behavior.region, looter };
   const fn = new foundry.utils.AsyncFunction("speaker", "actor", "token", "character", "scope", `{${macro.command}\n}`);
   return fn.call(macro, speaker, actor, token, game.user.character, scope);
 }
@@ -58,6 +70,7 @@ async function runMacro(behavior, looter) {
 async function goToScene(behavior) {
   const scene = behavior.system.targetScene ? await fromUuid(behavior.system.targetScene) : null;
   if ( scene?.documentName !== "Scene" ) return ui.notifications.warn(loc("Zone.NoScene"));
+  playForAll(SOUNDS.use, 0.6);
   if ( behavior.system.activateForAll && game.user.isGM ) return scene.activate();
   if ( scene.isView ) return null;
   return scene.view();
@@ -105,6 +118,7 @@ async function openDocument(behavior, looter) {
     doc = await waitForDocument(uuid);
     if ( !doc ) return ui.notifications.warn(loc("Zone.GrantFailed"));
   }
+  playForAll(SOUNDS.page, 0.6);
   return show(doc);
 }
 

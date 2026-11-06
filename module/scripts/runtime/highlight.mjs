@@ -21,7 +21,7 @@ import { behaviorConcealed, tilesIn } from "../adapter/hidden.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
-import { trappedThings, handleKnown, sourceKnown, allTraps, wallEnds } from "../adapter/trapped.mjs";
+import { trappedThings, handleKnown, sourceKnown, allTraps, wallEnds, clickTrapsOn } from "../adapter/trapped.mjs";
 import { concealed } from "../core/hidden.mjs";
 import { regionSeen, placeSeen, doorSeen } from "../adapter/sight.mjs";
 
@@ -30,6 +30,8 @@ const COLORS = { zone: 0xf2e3b3, found: 0xf0b429, concealed: 0x9d8cd6, trap: 0xe
 
 let layer = null;
 let active = false;
+/** 2026-11-05 : ce que la souris survole (une région, une tuile, un token), dessiné très légèrement ; null : rien. */
+let hovered = null;
 const shapes = new Map();   // contour d'une tuile, par clé (id, image, position, taille, rotation)
 
 const inCombat = () => game.combat?.started === true;
@@ -54,6 +56,13 @@ function zonesToDraw(scene) {
     const hidden = behavior.system.hidden;
     const color = behaviorConcealed(behavior) ? COLORS.concealed : (hidden?.enabled ? COLORS.found : COLORS.zone);
     out.push({ region, color });
+  }
+  // Étape 13 : un levier piégé sans mécanisme (le déclencheur au clic d'un piège) brille comme une zone, tant que son piège n'est pas
+  // repéré (repéré, il est déjà rouge).
+  for ( const region of scene?.regions ?? [] ) {
+    if ( !region.viewed || (region.hidden && !game.user.isGM) || out.some(o => o.region === region) || !regionSeen(region) ) continue;
+    const traps = clickTrapsOn(region).filter(h => !h.trap.disarmed);
+    if ( traps.length && !traps.some(handleKnown) ) out.push({ region, color: COLORS.zone });
   }
   return out;
 }
@@ -159,6 +168,38 @@ function drawOutline(g, points, color) {
   g.endFill();
 }
 
+/** Le survol : un trait fin et pâle, un voile à peine visible. */
+function drawHover(g, place) {
+  if ( place.documentName === "Token" ) {
+    const t = place.object;
+    if ( !t?.visible ) return;
+    g.lineStyle({ width: 2, color: COLORS.zone, alpha: 0.35 });
+    g.beginFill(COLORS.zone, 0.05);
+    g.drawCircle(t.center.x, t.center.y, Math.max(t.w, t.h) / 2);
+    g.endFill();
+    return;
+  }
+  const polygons = (place.documentName === "Tile") ? [tileOutline(place)] : regionPolygons(place);
+  for ( const points of polygons ) {
+    if ( !points || (points.length < 6) ) continue;
+    g.lineStyle({ width: 2, color: COLORS.zone, alpha: 0.35, join: PIXI.LINE_JOIN.ROUND });
+    g.beginFill(COLORS.zone, 0.05);
+    g.drawPolygon(points);
+    g.endFill();
+  }
+}
+
+/**
+ * Ce que la souris survole (runtime/pointer.mjs, seulement ce qui a un curseur : visible, interactif) : redessiné quand il change. Pas
+ * en combat (la souris est au moteur), ni pendant que la touche fait déjà tout briller.
+ */
+export function setHover(place) {
+  const next = (place && !inCombat()) ? place : null;
+  if ( next === hovered ) return;
+  hovered = next;
+  redraw();
+}
+
 function drawCorpse(g, token) {
   const { x, y } = token.center;
   const r = Math.max(token.w, token.h) / 2;
@@ -188,6 +229,8 @@ export function redraw() {
       for ( const h of doorsToDraw(true) ) if ( !handleKnown(h) ) drawDoor(g, h.wall, COLORS.concealed);
     }
     for ( const token of corpsesToDraw() ) drawCorpse(g, token);
+  } else if ( hovered && !inCombat() && !hovered.destroyed ) {
+    try { drawHover(g, hovered); } catch(err) { hovered = null; }
   }
   container.addChild(g);
 }
@@ -206,8 +249,8 @@ export function highlightState() {
 
 export function registerHighlight() {
   route("highlightObjects", "highlight", onHighlight);
-  route("canvasReady", "highlight", () => { layer = null; active = false; shapes.clear(); redraw(); });
-  route("canvasTearDown", "highlight", () => { layer = null; active = false; });
+  route("canvasReady", "highlight", () => { layer = null; active = false; hovered = null; shapes.clear(); redraw(); });
+  route("canvasTearDown", "highlight", () => { layer = null; active = false; hovered = null; });
   // Tant que la touche est tenue : ce qui change sous les yeux (coffre vidé, cachette trouvée, mort, combat).
   for ( const hook of ["updateRegionBehavior", "createRegionBehavior", "deleteRegionBehavior", "createRegion", "deleteRegion", "updateRegion", "updateTile", "updateToken",
     "updateWall", "deleteWall",

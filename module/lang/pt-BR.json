@@ -523,6 +523,10 @@
         "disarmed": {
           "label": "Desarmada",
           "hint": "Desmarque para restaurá-la (marque também \"Armada\")."
+        },
+        "activation": {
+          "label": "Acionamento",
+          "hint": "O que dispara a armadilha: um token que entra no gatilho (uma placa de pressão), um clique no gatilho (uma alavanca ou um botão com armadilha: cursor de mão, ao alcance), ou ambos. Ao clicar, o gatilho continua visível para os jogadores; só a armadilha fica oculta."
         }
       },
       "Rearm": {
@@ -541,7 +545,12 @@
       "ConfirmText": "Tentar desarmar {trap}? {name} fará um teste com ferramentas de ladrão.",
       "ConfirmYes": "Tentar",
       "ConfirmNo": "Desistir",
-      "ThisTrap": "esta armadilha"
+      "ThisTrap": "esta armadilha",
+      "Activation": {
+        "enter": "Quando um token entra",
+        "click": "Ao clicar (alavanca, botão)",
+        "both": "Ambos"
+      }
     },
     "TrapRelay": {
       "Name": "DAS · Gatilho de armadilha",
@@ -692,6 +701,57 @@
         "Disarmed": "Desarmada",
         "HiddenEnabled": "Armadilha oculta"
       }
+    },
+    "MechanismZone": {
+      "Hint": "Uma alavanca, um botão ou uma placa de pressão: ao clicar (ao alcance) ou quando um token entra, o MJ ativo executa as suas ações — abrir ou trancar uma porta, acender uma luz, mostrar um tile, tocar um som, disparar uma armadilha, executar uma macro. Como alavanca de duas posições, cada uso desfaz o anterior.",
+      "Activation": {
+        "click": "Ao clicar",
+        "enter": "Quando um token entra",
+        "both": "Ambos"
+      },
+      "Mode": {
+        "toggle": "Alternar (duas posições)",
+        "once": "Apenas uma vez",
+        "always": "Sempre"
+      },
+      "FIELDS": {
+        "activation": {
+          "label": "Acionamento",
+          "hint": "Ao clicar: uma alavanca, um botão (cursor de mão, ao alcance). Quando um token entra: uma placa de pressão. Ambos: uma placa que também pode ser pressionada à mão."
+        },
+        "minSize": {
+          "label": "Tamanho mínimo",
+          "hint": "Para uma placa de pressão: a menor criatura que a pressiona (um rato não a pressiona)."
+        },
+        "mode": {
+          "label": "Funcionamento",
+          "hint": "Alternar: duas posições, e cada uso inverte as ações (a porta aberta volta a fechar; uma armadilha não dispara de novo). Apenas uma vez: depois, nada acontece. Sempre: as mesmas ações."
+        },
+        "active": {
+          "label": "Acionado",
+          "hint": "A posição da alavanca (alternar). Desmarcar: devolvê-la sem executar as ações."
+        },
+        "used": {
+          "label": "Já usado",
+          "hint": "Para um mecanismo que só funciona uma vez. Desmarcar para que volte a funcionar."
+        },
+        "tile": {
+          "label": "Tile da alavanca",
+          "hint": "O tile que mostra o mecanismo; vazio: o tile colocado na região. A sua imagem segue a posição da alavanca."
+        },
+        "imageOff": {
+          "label": "Imagem em repouso",
+          "hint": "A imagem do tile com a alavanca levantada (vazio: a imagem que o tile tinha no início)."
+        },
+        "imageOn": {
+          "label": "Imagem acionada",
+          "hint": "A imagem do tile com a alavanca abaixada (vazio: o tile não muda)."
+        },
+        "sound": {
+          "label": "Som",
+          "hint": "Tocado para toda a mesa a cada uso (vazio: um som de alavanca)."
+        }
+      }
     }
   },
   "TYPES": {
@@ -701,7 +761,8 @@
       "darsh-loot.scene": "DAS · Ir para cena",
       "darsh-loot.document": "DAS · Abrir documento",
       "darsh-loot.trap": "DAS · Armadilha",
-      "darsh-loot.trapTrigger": "DAS · Gatilho de armadilha"
+      "darsh-loot.trapTrigger": "DAS · Gatilho de armadilha",
+      "darsh-loot.mechanism": "DAS · Mecanismo"
     }
   }
 }

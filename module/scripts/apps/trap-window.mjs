@@ -13,7 +13,8 @@ const esc = text => foundry.utils.escapeHTML(String(text ?? ""));
 /**
  * @param {object} trap
  * @param {string} trap.name
- * @param {{ uuid: string, name: string, img: string|null }[]} trap.targets
+ * @param {{ uuid: string, name: string, img: string|null, surprised?: boolean }[]} trap.targets  `surprised` : pris par surprise
+ *   (2026-11-06 : marqué dans la liste)
  * @param {{ id: string, name: string }[]} trap.activities   Les activités proposées (une par tranche) ; une seule : pas de choix.
  * @param {string|null} trap.activity                         Celle choisie d'office.
  * @param {boolean} trap.attack                               Un piège à jet d'attaque (la faveur est inversée sur son jet).
@@ -23,7 +24,8 @@ export async function askTrapResolution({ name, targets, activities, activity, a
   const modeRow = (t, i) => `
     <tr>
       <td><input type="checkbox" name="use.${i}" checked></td>
-      <td class="dlo-trap-who">${t.img ? `<img src="${esc(t.img)}" alt="">` : ""}<span>${esc(t.name)}</span></td>
+      <td class="dlo-trap-who">${t.img ? `<img src="${esc(t.img)}" alt="">` : ""}<span>${esc(t.name)}</span>${t.surprised
+        ? ` <span class="dlo-trap-surprised" data-tooltip="${esc(loc("TrapWindow.SurprisedHint"))}"><i class="fa-solid fa-exclamation" inert></i> ${esc(loc("TrapWindow.Surprised"))}</span>` : ""}</td>
       <td><select name="mode.${i}">
         <option value="advantage">${esc(loc("TrapWindow.Advantage"))}</option>
         <option value="" selected>${esc(loc("TrapWindow.Normal"))}</option>

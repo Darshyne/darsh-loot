@@ -12,6 +12,7 @@ import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
 import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
+import { registerMechanismsInit, actuate, resetMechanism } from "./runtime/mechanisms.mjs";
 import { registerTileZone, tileToZone } from "./runtime/tile-zone.mjs";
 import { registerHiddenInit, registerHidden, requestSearch } from "./runtime/hidden.mjs";
 import { registerHighlight } from "./runtime/highlight.mjs";
@@ -49,6 +50,7 @@ Hooks.once("init", () => {
   registerTreasure();
   registerContainersInit();
   registerZonesInit();
+  registerMechanismsInit();
   registerHiddenInit();
   registerTrapsInit();
   registerTheft();
@@ -142,6 +144,13 @@ Hooks.once("ready", () => {
     search: token => requestSearch(doc(token)),
     /** Se servir d'une zone « DAS · … » (macro, scène, document) comme par un clic, pour un personnage (token) ou personne. */
     useZone: (behavior, looter=null) => runZone(behavior, doc(looter)),
+    /**
+     * Actionner une région (étape 13) comme d'un clic, pour un personnage (token) : ses « DAS · Mécanisme » réglés pour le clic et les
+     * pièges dont elle est le déclencheur au clic (un levier piégé). Un piège repéré demande d'abord.
+     */
+    actuate: (region, looter=null) => actuate(region?.region ?? region, doc(looter)),
+    /** MJ : remettre un mécanisme dans sa première position, sans faire ses actions. */
+    resetMechanism: behavior => (game.user.isGM ? resetMechanism(behavior) : null),
     /** MJ : créer une zone de la forme d'une tuile — `{ kind: "container"|"macro"|"scene"|"document", name, system }`. */
     tileToZone: (tile, options) => tileToZone(doc(tile), { openSheet: false, ...options }),
     /** Ouvre un conteneur (le comportement de région « Conteneur »). */

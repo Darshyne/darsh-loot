@@ -11,11 +11,15 @@ import { MODULE_ID, loc, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { CONTAINER_TYPE } from "../adapter/container-behavior.mjs";
+import { MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
+import { pointSegmentDistance } from "../core/hidden.mjs";
 
 /** Les champs qui désignent un endroit, par type de comportement : nom du champ → types de documents acceptés. */
 const PICKS = {
   [TRAP_ZONE]: { "system.triggerRegion": ["Region"], "system.source.uuid": ["Region", "Tile"] },
-  [CONTAINER_TYPE]: { "system.trap.effectRegion": ["Region"], "system.trap.source.uuid": ["Region", "Tile"] }
+  [CONTAINER_TYPE]: { "system.trap.effectRegion": ["Region"], "system.trap.source.uuid": ["Region", "Tile"] },
+  // Étape 13 : la tuile qui montre le levier (les cibles de ses actions ont leurs propres boutons, apps/mechanism-config.mjs).
+  [MECHANISM_ZONE]: { "system.tile": ["Tile"] }
 };
 
 /** Les champs d'une porte piégée (runtime/traps.mjs, fenêtre du mur). */
@@ -27,9 +31,36 @@ export const DOOR_PICKS = {
 /** L'aire d'une région ou d'une tuile, pour préférer la plus petite (la dalle plutôt que la salle qui la contient). */
 const area = doc => ((doc.documentName === "Tile") ? (doc.width * doc.height) : (doc.bounds.width * doc.bounds.height));
 
-/** Ce qui est sous ce point de la scène affichée, parmi ces types : la plus petite région du niveau affiché ou tuile. */
+/** Une porte, une lumière, un token sous ce point (étape 13 : cibles des actions d'un mécanisme), ou null. */
+function objectAt(point, types) {
+  const scene = canvas.scene;
+  const near = 0.4 * scene.grid.size;
+  if ( types.includes("Wall") ) {
+    let best = null, bestD = near;
+    for ( const wall of scene.walls ) {
+      if ( !(Number(wall.door) > 0) ) continue;
+      const [ax, ay, bx, by] = wall.c;
+      const d = pointSegmentDistance(point, { x: ax, y: ay }, { x: bx, y: by });
+      if ( d < bestD ) { best = wall; bestD = d; }
+    }
+    if ( best ) return best;
+  }
+  if ( types.includes("AmbientLight") ) {
+    const light = scene.lights.find(l => Math.hypot(l.x - point.x, l.y - point.y) <= near);
+    if ( light ) return light;
+  }
+  if ( types.includes("Token") ) {
+    const token = (canvas.tokens?.placeables ?? []).find(t => t.bounds.contains(point.x, point.y));
+    if ( token ) return token.document;
+  }
+  return null;
+}
+
+/** Ce qui est sous ce point de la scène affichée, parmi ces types : une porte, une lumière, un token ; sinon la plus petite région du niveau affiché ou tuile. */
 function placeAt(point, types) {
   const scene = canvas.scene;
+  const object = objectAt(point, types);
+  if ( object ) return object;
   const found = [];
   if ( types.includes("Region") ) {
     for ( const region of scene.regions ) if ( region.viewed && region.polygonTree.testPoint(point) ) found.push(region);
@@ -53,7 +84,9 @@ export function pickOnMap(types, app=null) {
   return new Promise(resolve => {
     const view = canvas.app.view;
     app?.minimize?.();
-    ui.notifications.info(loc(types.includes("Tile") ? "Pick.PromptTile" : "Pick.PromptRegion"));
+    const prompt = types.includes("Wall") ? "Pick.PromptDoor" : types.includes("AmbientLight") ? "Pick.PromptLight"
+      : types.includes("Token") ? "Pick.PromptTrap" : types.includes("Tile") ? "Pick.PromptTile" : "Pick.PromptRegion";
+    ui.notifications.info(loc(prompt));
     // Sur `window`, en capture : avant les écouteurs du document (la souris du moteur, la nôtre), qui prendraient le clic pour eux.
     const done = uuid => {
       window.removeEventListener("pointerdown", onDown, true);

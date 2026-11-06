@@ -11,15 +11,20 @@ import { openSource, visitSource } from "./open.mjs";
 import { setting, sceneSetting, loc } from "../shared.mjs";
 import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
-import { corpseSource, containerSource, merchantSource, zoneSource, trapSource } from "../adapter/sources.mjs";
+import { corpseSource, containerSource, merchantSource, zoneSource, trapSource, leverSource } from "../adapter/sources.mjs";
 import { knownTrapPlaces, requestDisarm, gmTrapEntries } from "./traps.mjs";
 import { trapHandle, anyKnown, allTraps, isTrapToken } from "../adapter/trapped.mjs";
 import { merchantToken } from "../adapter/shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { CLAIM_CLICK_HOOK, TOKEN_MENU_HOOK, GROUND_MENU_HOOK, TARGETING_HOOK, engineTargeting } from "../adapter/engine.mjs";
 import { sceneContainers } from "../adapter/container-behavior.mjs";
-import { sceneZones } from "../adapter/zone-behaviors.mjs";
+import { sceneZones, MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
+import { behaviorConcealed } from "../adapter/hidden.mjs";
+import { clickTrapsOn } from "../adapter/trapped.mjs";
+import { activatesOn } from "../core/mechanisms.mjs";
 import { runZone } from "./zones.mjs";
+import { actuate, mechanismsOn, actuatedName, gmMechanismEntries } from "./mechanisms.mjs";
+import { setHover } from "./highlight.mjs";
 import { pointSeen, regionFloor } from "../adapter/sight.mjs";
 
 const inCombat = () => game.combat?.started === true;
@@ -50,8 +55,26 @@ function containerAt(point) {
 
 /** La zone « DAS · … » sous ce point (SPEC §3.12), mêmes règles qu'un conteneur. */
 function zoneAt(point) {
-  return regionAt(sceneZones(canvas.scene), point);
+  // Étape 13 : une dalle (mécanisme qui ne part qu'à l'entrée) ne se clique pas.
+  const zones = sceneZones(canvas.scene).filter(b => (b.type !== MECHANISM_ZONE) || activatesOn(b.system.activation, "click"));
+  return regionAt(zones, point);
 }
+
+/**
+ * Étape 13 (issue darsh-loot#4) : la région sous ce point qui est le déclencheur au clic d'un piège (un levier, un bouton piégé), sans
+ * « DAS · Mécanisme » (celui-ci passe par `zoneAt`). Chez un joueur : seulement ce qu'il voit, pas une région cachée.
+ */
+function leverAt(point) {
+  for ( const region of canvas.scene?.regions ?? [] ) {
+    if ( !region.viewed || (region.hidden && !game.user.isGM) || !region.polygonTree.testPoint(point) ) continue;
+    if ( !pointSeen(point, regionFloor(region)) ) continue;
+    if ( clickTrapsOn(region).length ) return region;
+  }
+  return null;
+}
+
+/** Le MJ sans token sélectionné garde son clic d'édition sur un levier ou un mécanisme (rien ne part en préparant la carte). */
+const gmPreparing = () => game.user.isGM && !gmToken();
 
 function regionAt(behaviors, point) {
   for ( const behavior of behaviors ) {
@@ -84,7 +107,9 @@ function sourceAt(event) {
   const behavior = containerAt(point);
   if ( behavior ) return containerSource(behavior);
   const zone = zoneAt(point);
-  if ( zone ) return zoneSource(zone);
+  if ( zone && !((zone.type === MECHANISM_ZONE) && gmPreparing()) ) return zoneSource(zone);
+  const lever = leverAt(point);
+  if ( lever && !gmPreparing() ) return leverSource(lever);
   // Un piège repéré se désamorce d'un clic (SPEC §3.12) : son déclencheur, ou (0.17.0) sa source.
   const trap = trapPlaceAt(point);
   return trap ? trapSource(trap.h.doc, trap.place) : null;
@@ -120,6 +145,7 @@ function cursorFor(source) {
   const actor = source.actor;
   if ( source.kind === "zone" ) return zoneCursor(source);
   if ( source.kind === "trap" ) return trapCursor(source);
+  if ( source.kind === "lever" ) return zoneCursor({ ...source, doc: { system: { reach: true } } });
   if ( source.kind === "merchant" ) {
     const me = actingToken();
     if ( me && (source.distance(me) <= sceneSetting("reach", me.parent)) ) return "shop";
@@ -175,14 +201,14 @@ function clickMode() {
 /** Le curseur au survol. */
 export function shownCursor(source) {
   const cursor = cursorFor(source);
-  if ( !cursor || (source.kind === "zone") ) return cursor;
+  if ( !cursor || ["zone", "lever"].includes(source.kind) ) return cursor;
   return ((cursor === "go") && (clickMode() !== "walk")) ? "far" : cursor;
 }
 
 /** Ce que le clic gauche fera sur cette source : le curseur du survol si le réglage le permet, sinon null (clic laissé au cœur). */
 export function clickCursor(source) {
   const cursor = shownCursor(source);
-  if ( !cursor || (source.kind === "zone") ) return cursor;
+  if ( !cursor || ["zone", "lever"].includes(source.kind) ) return cursor;
   const mode = clickMode();
   if ( (mode === "walk") || (mode === "reach") ) return cursor;
   return (game.user.isGM && !gmToken()) ? cursor : null;
@@ -204,16 +230,34 @@ function tooFar(me) {
 
 let lastMove = null;
 
+/**
+ * 2026-11-05 (demande de l'utilisateur) : survoler un élément interactif visible met sa région (ou son token, son contour de tuile) en
+ * très légère surbrillance (runtime/highlight.mjs), en plus du curseur.
+ */
+function hoverPlace(source) {
+  if ( !source ) return null;
+  if ( source.place ) return source.place;
+  const doc = source.doc;
+  if ( doc?.documentName === "RegionBehavior" ) return doc.region;
+  return (doc?.documentName === "Token") ? doc : null;
+}
+
+function showSource(source) {
+  const cursor = shownCursor(source);
+  setCursor(cursor);
+  setHover(cursor ? hoverPlace(source) : null);
+}
+
 function onPointerMove(event) {
   lastMove = event;
-  if ( !onBoard(event) ) return setCursor(null);
-  setCursor(shownCursor(sourceAt(event)));
+  if ( !onBoard(event) ) return showSource(null);
+  showSource(sourceAt(event));
 }
 
 /** Survol d'un token : le curseur change aussi sans bouger la souris (token qui meurt sous le pointeur). */
 function onHoverToken(token, hovered) {
-  if ( !hovered ) return setCursor(null);
-  setCursor(shownCursor(corpseToken(token.document) ? corpseSource(token.document) : null));
+  if ( !hovered ) return showSource(null);
+  showSource(corpseToken(token.document) ? corpseSource(token.document) : null);
 }
 
 /* ---- clic ---- */
@@ -263,6 +307,7 @@ function onPointerUp(event) {
 function activate(source, looter) {
   if ( source.kind === "zone" ) return runZone(source.doc, looter);
   if ( source.kind === "trap" ) return requestDisarm(source.doc, looter);
+  if ( source.kind === "lever" ) return actuate(source.doc, looter);
   return openSource(source, looter);
 }
 
@@ -277,7 +322,7 @@ async function goThenOpen(source, looter) {
 
 /** Recalcule le curseur sous la souris après un changement (coffre vidé, serrure ouverte, combat commencé). */
 function recheck() {
-  if ( lastMove && canvas.ready ) setCursor(onBoard(lastMove) ? shownCursor(sourceAt(lastMove)) : null);
+  if ( lastMove && canvas.ready ) showSource(onBoard(lastMove) ? sourceAt(lastMove) : null);
 }
 
 /** « Fouiller le corps » au menu contextuel d'un cadavre (menu du moteur), hors combat, pour le personnage en main. */
@@ -299,6 +344,8 @@ function onGroundMenu(entries, { token, point }) {
   if ( !token?.actor || !point ) return;
   // 0.17.0 : un piège sur cette case (en combat aussi) — le désamorcer s'il est repéré et vu, les gestes du MJ.
   trapGroundEntries(entries, token, point);
+  // Étape 13 : « Actionner » un levier, un bouton (en combat aussi : l'action Utiliser), et les gestes du MJ sur ses mécanismes.
+  mechanismGroundEntries(entries, token, point);
   if ( inCombat() ) return;
   const behavior = containerAt(point);
   if ( !behavior ) return;
@@ -314,6 +361,22 @@ function onGroundMenu(entries, { token, point }) {
   if ( trap ) entries.push(...gmTrapEntries(trap));   // 0.17.0
   entries.push({ icon: "fa-solid fa-box-open", label: loc("Window.SearchContainer"),
     run: () => visitSource(containerSource(behavior), token) });
+}
+
+/** Les leviers et mécanismes d'une case : « Actionner » pour le personnage en main, et pour le MJ réinitialiser et régler. */
+function mechanismGroundEntries(entries, token, point) {
+  const looter = token.document ?? token;
+  for ( const region of canvas.scene?.regions ?? [] ) {
+    if ( !region.viewed || !region.polygonTree.testPoint(point) ) continue;
+    if ( !game.user.isGM && (region.hidden || !pointSeen(point, regionFloor(region))) ) continue;
+    const usable = mechanismsOn(region, "click").some(b => game.user.isGM || !behaviorConcealed(b)) || (clickTrapsOn(region).length > 0);
+    if ( usable ) entries.push({ icon: "fa-solid fa-hand", label: loc("Mechanism.Use", { name: actuatedName(region) }), run: async () => {
+      const source = leverSource(region);
+      if ( canApproach() && (source.distance(looter) > sceneSetting("reach", looter.parent)) && !(await approachSource(source, looter)) ) return;
+      await actuate(region, looter);
+    } });
+    entries.push(...gmMechanismEntries(region));
+  }
 }
 
 /** « Désamorcer le piège » : on y va d'abord s'il est hors de portée (moteur), puis le test d'outils de voleur. */
