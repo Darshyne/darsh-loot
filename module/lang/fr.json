@@ -30,7 +30,9 @@
     "Chat": {
       "Took": "{looter} prend sur {corpse} : {what}.",
       "Stole": "{looter} vole à {corpse} : {what}.",
-      "Caught": "{thief} a tenté de voler {victim} et s'est fait prendre (Escamotage {total} contre DD {dc})."
+      "Caught": "{thief} a tenté de voler {victim} et s'est fait prendre (Escamotage {total} contre DD {dc}).",
+      "NpcStole": "{thief} vole à {victim} : {what} (Escamotage {total} contre DD {dc}). Le joueur n'a rien vu.",
+      "NpcCaught": "{thief} a tenté de voler {what} à {victim} et s'est fait prendre (Escamotage {total} contre DD {dc})."
     },
     "Settings": {
       "Reach": {
@@ -118,6 +120,17 @@
       "TrapPause": {
         "Name": "Pause quand un piège part",
         "Hint": "Mode piège avancé, hors combat : le jeu se met en pause quand un piège part. Éteint : pas de pause, seuls les déplacements s'arrêtent, et le combat du piège commence."
+      },
+      "Pickpocket": {
+        "Name": "Vol à la tire",
+        "Hint": "Les joueurs peuvent-ils faire les poches des PNJ ? Coupé : l'entrée « Voler » disparaît et le MJ refuse toute tentative. Accord du MJ : chaque visite des poches attend son accord. Les vols des PNJ du MJ ne dépendent pas de ce réglage.",
+        "On": "Activé",
+        "Off": "Coupé",
+        "Approval": "Accord du MJ"
+      },
+      "NpcTheftNotice": {
+        "Name": "Le joueur s'aperçoit d'un vol réussi",
+        "Hint": "Quand un PNJ réussit à voler un personnage, son joueur reçoit un message privé. Sinon, seul le MJ est prévenu."
       }
     },
     "SettingsWindow": {
@@ -244,6 +257,7 @@
       "By": "Voleur : {name}",
       "Purse": "Bourse",
       "Worn": "Porté — impossible à voler",
+      "Heavy": "Trop lourd — impossible à voler",
       "Tried": "Déjà tenté",
       "Difficulty": {
         "easy": "Facile",
@@ -262,7 +276,29 @@
       "Menu": "Voler",
       "CaughtCard": "{victim} prend {thief} la main dans le sac !",
       "FloatCaught": "Pris !",
-      "FloatStolen": "Volé"
+      "FloatStolen": "Volé",
+      "Disabled": "Le vol à la tire est désactivé dans ce monde.",
+      "NeedApproval": "Le MJ doit d'abord donner son accord.",
+      "MenuCombat": "{label} (hors combat)",
+      "MenuNpc": "Voler à {name}",
+      "ApprovalTitle": "Vol à la tire",
+      "ApprovalAsk": "{user} veut que {thief} fasse les poches de {victim}. Accepter ?",
+      "ApprovalYes": "Accepter",
+      "ApprovalNo": "Refuser",
+      "ApprovalWait": "Demande envoyée au MJ…",
+      "ApprovalRefused": "Le MJ refuse ce vol.",
+      "NpcTitle": "Voler à {name}",
+      "Passive": "Perception passive {value}",
+      "Dc": "DD {dc}",
+      "TriedNpc": "Déjà tenté par ce PNJ",
+      "PurseHandful": "Bourse (une poignée : 10 à 40 %)",
+      "Random": "Au hasard",
+      "NpcHint": "Jet caché. Réussi : le joueur n'en sait rien. Raté : toute la table le voit.",
+      "NothingLeft": "Plus rien à tenter dans ces poches.",
+      "AlreadyTriedNpc": "Ce PNJ a déjà tenté sa chance pour cet objet.",
+      "NpcCaughtCard": "{victim} surprend {thief} la main dans ses poches !",
+      "FloatNoticed": "Hé !",
+      "NoticeVictim": "Tu sens qu'une main a fouillé tes poches : {what}."
     },
     "Necro": {
       "Hud": "Relever le mort",

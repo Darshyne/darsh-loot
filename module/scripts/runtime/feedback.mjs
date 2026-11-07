@@ -83,13 +83,19 @@ export async function channel(token, { seconds=0, label="", timerLabel=label, so
  * @param {string} text            Texte de la carte et du texte flottant (déjà traduit, sans HTML).
  * @param {{kind?: string, icon?: string, sound?: string|null, float?: string}} [options]  `kind` : gain / refused…
  */
-export async function feedbackCard(token, text, { kind="gain", icon="fa-solid fa-screwdriver-wrench", sound=null, float=text }={}) {
+export async function feedbackCard(token, text, { kind="gain", icon="fa-solid fa-screwdriver-wrench", sound=null, float=text, ping=false,
+  also=[] }={}) {
   if ( !token || !text ) return null;
   if ( sound ) playForAll(sound);
+  // 0.21.0 (issue #5) : `ping` — un ping vu de tous autour de chaque token nommé ; `also` — d'autres textes flottants
+  // (`{ token, text, kind }`), dessinés chez tous avec celui de la carte (la victime d'un vol raté).
+  const others = also.filter(o => o?.token && o.text);
+  if ( ping ) for ( const t of [token, ...others.map(o => o.token)] ) pingAt(t);
   return ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ token, actor: token.actor }),
     content: `<p><i class="${icon}"></i> ${foundry.utils.escapeHTML(text)}</p>`,
-    flags: { [MODULE_ID]: { feedback: { token: token.uuid, text: float, kind } } }
+    flags: { [MODULE_ID]: { feedback: { token: token.uuid, text: float, kind,
+      also: others.map(o => ({ token: o.token.uuid ?? o.token, text: o.text, kind: o.kind ?? kind })) } } }
   });
 }
 
@@ -97,6 +103,7 @@ function onCreateMessage(message) {
   const f = message.getFlag?.(MODULE_ID, "feedback");
   if ( !f?.token || !canvas?.ready || ((Date.now() - (message.timestamp ?? 0)) > FRESH_MS) ) return;
   engineNotice(f.token, f.text, f.kind);
+  for ( const o of f.also ?? [] ) engineNotice(o.token, o.text, o.kind);
 }
 
 export function registerFeedback() {

@@ -24,6 +24,28 @@ fouille, trésor tiré, poches des humanoïdes, annonce de ce qui est pris) et l
 | **Durée d'une fouille** | 10 s | Secondes réelles que dure « Fouiller les environs » hors combat (0 : aussitôt). |
 | **Délai entre deux fouilles** | 1 min | Avant qu'un même personnage puisse refouiller, hors combat (temps du monde ou temps réel, le premier écoulé). |
 
+## Vol à la tire
+
+**Voler un PNJ (joueur).** Sélectionner son personnage (un seul token, le sien), puis **clic droit sur le PNJ** → **« Voler »**. Le
+personnage s'approche s'il est trop loin, puis la fenêtre des poches s'ouvre : chaque objet avec sa difficulté (jamais le DD), ce qui
+est porté grisé. Un clic sur un objet lance l'Escamotage. Un seul essai par objet ; un échec se voit et s'entend de toute la table.
+L'entrée n'existe pas sur un PNJ mort (« Fouiller » à la place) ni sur une invocation ; **en combat**, elle reste visible avec la
+mention « (hors combat) » et ne fait que rappeler la règle.
+
+**Faire voler un personnage par un PNJ (MJ).** Sélectionner le token du PNJ, puis **clic droit sur le personnage** → **« Voler à … »**.
+Le PNJ s'approche s'il est trop loin, puis la fenêtre du MJ montre les poches du personnage avec le **DD exact** de chaque objet (sa
+Perception passive, majorée par la valeur et le poids), ce qui est porté grisé, et un bouton **« Au hasard »**. La bourse donne une
+poignée (10 à 40 % de chaque pièce). L'Escamotage du PNJ est un **jet caché** : réussi, l'objet passe au PNJ marqué « volé à … », le
+MJ seul reçoit le bilan et le joueur n'apprend rien (sauf réglage) ; raté, toute la table voit la carte, le texte flottant au-dessus
+des deux tokens, le ping, et entend le son. Un objet volé repris au PNJ (sur son cadavre, en le volant à son tour) redevient
+honnête. Pour une macro ou un module voisin : `game.modules.get("darsh-loot").api.npcSteal(pnj, personnage, idObjet | "coins" | "random")`.
+
+| Réglage | Par défaut | Ce qu'il fait |
+|---|---|---|
+| **Vol à la tire** | Activé | **Activé** : les joueurs volent librement. **Coupé** : l'entrée « Voler » disparaît, et le MJ refuse toute tentative (même par macro). **Accord du MJ** : chaque visite des poches attend l'accord du MJ (une minute pour répondre, sans réponse c'est non). Les vols des PNJ du MJ ne dépendent pas de ce réglage. |
+| **Le joueur s'aperçoit d'un vol réussi** | Non | Quand un PNJ réussit à voler un personnage, son joueur reçoit un message privé. Sinon, seul le MJ est prévenu. |
+| **Un voleur pris se fait des ennemis** | Non | Un vol raté par un joueur rend le PNJ hostile, au lieu de seulement méfiant. |
+
 ## Conteneurs
 
 | Réglage | Par défaut | Ce qu'il fait |

@@ -8,7 +8,7 @@ import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { ZONE_TYPES } from "./zone-behaviors.mjs";
 import { TRAP_ZONE } from "./trap-behavior.mjs";
 import { trapHandle, placeDistance, clickTrapsOn } from "./trapped.mjs";
-import { livingNPC } from "./theft.mjs";
+import { livingNPC, livingPC } from "./theft.mjs";
 import { merchantToken, merchantAlive } from "./shop.mjs";
 
 /** Emprise d'un token, en cases (positions de `_source`). */
@@ -192,6 +192,26 @@ export function merchantSource(token) {
     get name() { return token.name; },
     get img() { return token.actor?.img || token.texture?.src; },
     exists: () => !!token.parent?.tokens.get(token.id) && merchantToken(token),
+    locked: () => false,
+    box: () => tokenBox(token),
+    distance: looter => ((looter.parent === token.parent) ? tokenDistance(looter, token) : Infinity)
+  };
+}
+
+/**
+ * 0.21.0 (issue #5) : les poches d'un personnage, quand un PNJ du MJ le vole. Jouée chez le MJ seul (pas de requête : `resolveSource`
+ * ne la connaît pas) ; sert à la fenêtre du MJ et à la marche d'approche du voleur.
+ * @param {TokenDocument} token
+ */
+export function victimSource(token) {
+  return {
+    kind: "victim",
+    uuid: token.uuid,
+    key: `victim-${token.id}`,
+    doc: token,
+    get actor() { return token.actor; },
+    get name() { return token.name; },
+    exists: () => !!token.parent?.tokens.get(token.id) && livingPC(token),
     locked: () => false,
     box: () => tokenBox(token),
     distance: looter => ((looter.parent === token.parent) ? tokenDistance(looter, token) : Infinity)

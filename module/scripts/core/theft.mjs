@@ -64,3 +64,60 @@ export function purseInGp(currency, conversions) {
 export function stolenFlag({ from, fromUuid, place, time }) {
   return { from, fromUuid: fromUuid ?? null, place: place ?? null, time: time ?? null };
 }
+
+/* ---- 0.21.0 (issue #5) : réglage du vol à la tire, vol par un PNJ ---- */
+
+/** Réglage de monde `pickpocket` : activé, coupé, ou chaque visite des poches demande l'accord du MJ. */
+export const PICKPOCKET_MODES = Object.freeze(["on", "off", "approval"]);
+
+/** Un mode de réglage valide (un monde ancien ou une valeur inconnue : activé). */
+export function pickpocketMode(value) {
+  return PICKPOCKET_MODES.includes(value) ? value : "on";
+}
+
+/**
+ * L'entrée « Voler » du menu : absente (`hidden`), offerte (`ok`), ou visible mais sans effet avec sa raison (`combat`) — 2026-11-07,
+ * issue #5 : un joueur ne trouvait pas l'entrée, cachée en combat.
+ */
+export function stealMenuState({ mode, inCombat }) {
+  if ( pickpocketMode(mode) === "off" ) return "hidden";
+  return inCombat ? "combat" : "ok";
+}
+
+/**
+ * La poignée prise dans une bourse par un PNJ voleur : `percent` % de chaque pièce, arrondi à l'unité inférieure (jamais toute la bourse
+ * d'un personnage). @returns {Record<string, number>} les pièces prises (valeurs positives seulement).
+ */
+export function purseHandful(currency, percent) {
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  const taken = {};
+  for ( const [key, n] of Object.entries(currency ?? {}) ) {
+    const v = Math.floor(((Number(n) || 0) * p) / 100);
+    if ( v > 0 ) taken[key] = v;
+  }
+  return taken;
+}
+
+/**
+ * « Au hasard » : un objet possible et pas encore tenté, la bourse comprise (`id: "coins"`). `random` : un nombre dans [0, 1[.
+ * @param {{ id: string, possible: boolean, tried: boolean }[]} entries
+ * @returns {string|null}
+ */
+export function pickRandom(entries, random=Math.random()) {
+  const open = (entries ?? []).filter(e => e && e.possible && !e.tried);
+  if ( !open.length ) return null;
+  return open[Math.min(open.length - 1, Math.floor(random * open.length))].id;
+}
+
+/**
+ * La marque à poser sur un objet qui change de mains : un objet qui revient à celui à qui il a été volé redevient honnête (sa marque
+ * saute, même si on le reprend en volant) ; sinon la nouvelle marque, ou l'ancienne.
+ * @param {object|null} previous  marque `stolen` que l'objet portait
+ * @param {object|null} stolen    marque du transfert (un vol, un coffre qui a un propriétaire)
+ * @param {string} recipientUuid  UUID de l'acteur qui reçoit
+ * @returns {object|null}
+ */
+export function nextStolenMark(previous, stolen, recipientUuid) {
+  if ( previous?.fromUuid && (previous.fromUuid === recipientUuid) ) return null;
+  return stolen ?? previous ?? null;
+}

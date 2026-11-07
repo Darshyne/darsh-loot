@@ -59,7 +59,7 @@ export class StealWindow extends ApplicationV2 {
     root.className = "dlo-body";
     const slot = e => {
       const state = !e.possible ? "worn" : e.tried ? "tried" : "open";
-      const label = !e.possible ? loc("Steal.Worn") : e.tried ? loc("Steal.Tried") : loc(`Steal.Difficulty.${e.difficulty}`);
+      const label = !e.possible ? loc(e.equipped ? "Steal.Worn" : "Steal.Heavy") : e.tried ? loc("Steal.Tried") : loc(`Steal.Difficulty.${e.difficulty}`);
       return `<li class="dlo-slot dlo-steal-${state} dlo-diff-${e.difficulty ?? "none"}" ${state === "open" ? `data-action="steal"` : ""}
         data-item-id="${e.id}" data-tooltip="${escape(e.name)} — ${escape(label)}">
         <img src="${e.img}" alt="" draggable="false">

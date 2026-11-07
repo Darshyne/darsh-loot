@@ -21,6 +21,9 @@ import { engineAvoids } from "../adapter/engine.mjs";
 import { concealedThings, passiveScore } from "../adapter/hidden.mjs";
 import { requestGroundDrop } from "./drop.mjs";
 import { selftest } from "./selftest.mjs";
+import { npcSteal, visitVictim } from "./theft.mjs";
+import { victimView, pocketView } from "../adapter/theft.mjs";
+import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 
 function tokenOf(tokenId) {
   if ( !game.user.isGM ) throw new Error("GM only");
@@ -297,6 +300,41 @@ async function doorSet({ wallId, ds }) {
   return trappedState({ wallId });
 }
 
-export const testApi = Object.freeze({ trappedState, trappedSet, trappedSpring, trappedDisarm, doorSet, status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
+
+/* ---- 0.21.0 (issue #5) : vol à la tire ---- */
+
+/** Les entrées que darsh-loot ajoute au menu de `targetId` pour le token `tokenId` (sans le moteur : le hook seul), vues de ce client. */
+function theftMenu({ tokenId, targetId }) {
+  const entries = [];
+  Hooks.callAll(TOKEN_MENU_HOOK, entries, { token: tokenOf(tokenId), target: tokenOf(targetId), aggressive: false });
+  return entries.map(e => e.label);
+}
+
+/** Les poches d'un token : d'un personnage avec les DD (vol par un PNJ), d'un PNJ comme les voit le voleur. */
+function theftState({ victimId, thiefId }) {
+  const victim = tokenOf(victimId);
+  const thief = tokenOf(thiefId);
+  const view = (victim.actor.type === "character") ? victimView(victim.actor, thief.actor.id) : pocketView(victim.actor, thief.actor.id);
+  const tell = e => ({ id: e.id, name: e.name ?? "coins", possible: e.possible, tried: e.tried, equipped: !!e.equipped, dc: e.dc ?? null,
+    difficulty: e.difficulty ?? null });
+  return { entries: view.entries.map(tell), purse: view.purse ? tell(view.purse) : null, perception: view.perception ?? null,
+    currency: victim.actor.system.currency };
+}
+
+/** Un vol de PNJ sur un personnage, avec un total imposé (`total`) ou un vrai jet caché. */
+/** Ouvrir la fenêtre du MJ « Voler à … » (le PNJ s'approche s'il est trop loin) ; rend son titre et ses cases. */
+async function theftOpen({ thiefId, victimId }) {
+  const app = await visitVictim(tokenOf(victimId), tokenOf(thiefId));
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const el = app?.element;
+  return { id: app?.id ?? null, title: app?.title ?? null,
+    slots: [...(el?.querySelectorAll(".dlo-slot") ?? [])].map(s => `${s.dataset.itemId} ${s.dataset.tooltip}`),
+    random: !!el?.querySelector('button[data-item-id="random"]:not([disabled])') };
+}
+
+const theftNpc = ({ thiefId, victimId, itemId="random", total=null, allowCombat=false }) =>
+  npcSteal({ thief: tokenOf(thiefId), victim: tokenOf(victimId), itemId, total, allowCombat });
+
+export const testApi = Object.freeze({ theftMenu, theftState, theftNpc, theftOpen, trappedState, trappedSet, trappedSpring, trappedDisarm, doorSet, status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,
   zoneShape, zoneFromTile, zoneState, zoneUse, removeTestZones, hiddenState, hiddenSearch, hiddenPassive, hiddenSet, highlightState,
   trapState, trapFire, trapDisarm, trapSet, trapRecheck, groundDrop, selftest });

@@ -52,3 +52,48 @@ describe("valeurs", () => {
     expect(stolenFlag({ from: "Bandit", place: "Keep", time: 5 })).toEqual({ from: "Bandit", fromUuid: null, place: "Keep", time: 5 });
   });
 });
+
+import { pickpocketMode, stealMenuState, purseHandful, pickRandom, nextStolenMark } from "../module/scripts/core/theft.mjs";
+
+describe("réglage du vol à la tire (issue #5)", () => {
+  it("mode : une valeur inconnue vaut « activé »", () => {
+    expect(pickpocketMode("off")).toBe("off");
+    expect(pickpocketMode("approval")).toBe("approval");
+    expect(pickpocketMode(undefined)).toBe("on");
+    expect(pickpocketMode("n'importe quoi")).toBe("on");
+  });
+  it("entrée du menu : coupé = absente, en combat = visible avec sa raison", () => {
+    expect(stealMenuState({ mode: "off", inCombat: false })).toBe("hidden");
+    expect(stealMenuState({ mode: "off", inCombat: true })).toBe("hidden");
+    expect(stealMenuState({ mode: "on", inCombat: true })).toBe("combat");
+    expect(stealMenuState({ mode: "approval", inCombat: false })).toBe("ok");
+    expect(stealMenuState({ mode: "on", inCombat: false })).toBe("ok");
+  });
+});
+
+describe("vol par un PNJ (issue #5)", () => {
+  it("poignée : un pourcentage de chaque pièce, arrondi en dessous", () => {
+    expect(purseHandful({ gp: 25, sp: 9, cp: 0 }, 20)).toEqual({ gp: 5, sp: 1 });
+    expect(purseHandful({ gp: 3 }, 10)).toEqual({});
+    expect(purseHandful({ gp: 10 }, 150)).toEqual({ gp: 10 });
+    expect(purseHandful(null, 40)).toEqual({});
+  });
+  it("au hasard : seulement un objet possible et pas encore tenté", () => {
+    const entries = [{ id: "a", possible: false, tried: false }, { id: "b", possible: true, tried: true },
+      { id: "c", possible: true, tried: false }, { id: "coins", possible: true, tried: false }];
+    expect(pickRandom(entries, 0)).toBe("c");
+    expect(pickRandom(entries, 0.99)).toBe("coins");
+    expect(pickRandom(entries.slice(0, 2), 0.5)).toBeNull();
+    expect(pickRandom([], 0.5)).toBeNull();
+  });
+  it("marque : un objet rendu à sa victime redevient honnête, même repris en volant", () => {
+    const mine = { from: "Clerc", fromUuid: "Actor.clerc" };
+    const thief = { from: "Bandit", fromUuid: "Actor.bandit" };
+    expect(nextStolenMark(mine, null, "Actor.clerc")).toBeNull();
+    expect(nextStolenMark(mine, thief, "Actor.clerc")).toBeNull();
+    expect(nextStolenMark(mine, null, "Actor.autre")).toEqual(mine);
+    expect(nextStolenMark(null, thief, "Actor.clerc")).toEqual(thief);
+    expect(nextStolenMark(mine, thief, "Actor.autre")).toEqual(thief);
+    expect(nextStolenMark(null, null, "Actor.clerc")).toBeNull();
+  });
+});

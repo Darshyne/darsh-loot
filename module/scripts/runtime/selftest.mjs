@@ -22,6 +22,9 @@ import { testActuate, clickable } from "./mechanisms.mjs";
 import { MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
 import { regionHiddenByTraps } from "../adapter/trapped.mjs";
 import { SOUNDS } from "./feedback.mjs";
+import { npcSteal } from "./theft.mjs";
+import { victimView } from "../adapter/theft.mjs";
+import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 
 const TEST = { [MODULE_ID]: { test: true } };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -689,10 +692,89 @@ async function mechanism(b) {
   }
 }
 
+
+/**
+ * Vol par un PNJ (0.21.0, issue #5) : entrée du MJ (hors combat, puis en combat avec sa raison), objet porté impossible, échec vu de tous
+ * (carte, texte flottant sur les deux tokens, son), un seul essai, réussite secrète (objet marqué volé chez le PNJ, bilan chuchoté au MJ),
+ * poignée de la bourse, vrai jet caché, et l'objet repris sur le cadavre du voleur redevient honnête.
+ */
+async function npcTheft(b) {
+  const pc = await b.token(await b.actor({ name: "Essai volé", type: "character", img: "icons/svg/mystery-man.svg",
+    system: { abilities: { wis: { value: 10 } }, attributes: { hp: { value: 30, max: 30 } }, currency: { gp: 100 } },
+    items: [
+      { name: "Essai gemme", type: "loot", system: { quantity: 1, weight: { value: 0, units: "lb" }, price: { value: 5, denomination: "gp" } } },
+      { name: "Essai fiole", type: "consumable", system: { quantity: 1, weight: { value: 1, units: "lb" }, price: { value: 1, denomination: "gp" } } },
+      { name: "Essai bague", type: "loot", system: { quantity: 1, weight: { value: 0, units: "lb" }, price: { value: 1, denomination: "sp" } } },
+      { name: "Essai épée portée", type: "weapon", system: { quantity: 1, equipped: true, type: { value: "martialM", baseItem: "longsword" } } }
+    ], prototypeToken: { actorLink: true, disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY } }), 0, 0);
+  const thief = await b.token(await testCreature(b, "Essai voleur"), 1, 0);
+  const item = name => pc.actor.items.find(i => i.name === name);
+
+  const labels = () => { const e = []; Hooks.callAll(TOKEN_MENU_HOOK, e, { token: thief, target: pc, aggressive: false }); return e.map(x => x.label); };
+  b.expect(labels().some(l => l.includes(pc.name) && !l.includes("(")), `menu du MJ hors combat : ${labels().join(" | ")}`);
+  const combat = await Combat.implementation.create({ scene: b.scene.id, active: true });
+  b.created.combats.push(combat.id);
+  await combat.createEmbeddedDocuments("Combatant", [{ tokenId: thief.id, sceneId: b.scene.id }]);
+  await combat.startCombat();
+  await sleep(300);
+  b.expect(labels().some(l => l.includes(pc.name) && l.includes("(")), `menu du MJ en combat, avec sa raison : ${labels().join(" | ")}`);
+  const refused = await npcSteal({ thief, victim: pc, itemId: item("Essai gemme").id, total: 99 });
+  b.expect(refused.ok === null, "en combat : vol refusé (sans `allowCombat`)");
+  await combat.delete();
+  await sleep(300);
+
+  const view = victimView(pc.actor, thief.actor.id);
+  const sword = view.entries.find(e => e.name === "Essai épée portée");
+  b.expect(sword && !sword.possible, "un objet porté ne se vole pas");
+  b.expect(view.entries.find(e => e.name === "Essai gemme")?.dc >= 10, `DD affiché au MJ (${view.entries.find(e => e.name === "Essai gemme")?.dc})`);
+
+  // Échec : tout le monde le voit et l'entend.
+  let since = Date.now() - 1;
+  const fail = await npcSteal({ thief, victim: pc, itemId: item("Essai gemme").id, total: 1 });
+  await sleep(500);
+  b.expect(fail.ok === false && !!item("Essai gemme"), `échec (1 contre DD ${fail.dc}) : la gemme reste au personnage`);
+  const card = feedbackAfter(since)[0];
+  b.expect(card && !card.whisper.length && (card.getFlag(MODULE_ID, "feedback").also ?? []).some(o => o.token === pc.uuid),
+    "échec : carte publique, texte flottant sur le voleur et sur la victime");
+  b.expect(b.sounds.some(x => (x.src === SOUNDS.failure) && x.broadcast), "échec : son diffusé à tous");
+  const again = await npcSteal({ thief, victim: pc, itemId: item("Essai gemme").id, total: 99 });
+  b.expect(again.ok === null, "un seul essai par objet et par voleur");
+
+  // Réussite : secret, l'objet passe marqué volé.
+  since = Date.now() - 1;
+  const win = await npcSteal({ thief, victim: pc, itemId: item("Essai fiole").id, total: 99 });
+  await sleep(500);
+  const got = thief.actor.items.find(i => i.name === "Essai fiole");
+  b.expect(win.ok === true && !item("Essai fiole") && !!got, `réussite (99 contre DD ${win.dc}) : la fiole passe au voleur`);
+  b.expect(got?.getFlag(MODULE_ID, "stolen")?.fromUuid === pc.actor.uuid, "elle porte la marque « volé à » le personnage");
+  b.expect(got?.system.properties?.has("gear"), "elle est de l'équipement du PNJ (fouillable, volable)");
+  const after = messagesAfter(since);
+  b.expect(!feedbackAfter(since).length && after.some(m => m.getFlag(MODULE_ID, "npcStole") && m.whisper.length),
+    "réussite : aucune carte publique, bilan chuchoté au MJ");
+
+  // Bourse : une poignée (10 à 40 %).
+  const coins = await npcSteal({ thief, victim: pc, itemId: "coins", total: 99 });
+  const left = pc.actor.system.currency.gp;
+  b.expect(coins.ok === true && (left >= 60) && (left <= 90), `bourse : une poignée prise (il reste ${left} po sur 100)`);
+  b.expect((coins.what ?? []).join() === `${100 - left} ${CONFIG.DND5E.currencies.gp?.abbreviation ?? "gp"}`, `bourse : le bilan dit ce qui est pris (${(coins.what ?? []).join(", ")})`);
+
+  // Un vrai jet caché : le verdict suit le total et le DD.
+  const real = await npcSteal({ thief, victim: pc, itemId: item("Essai bague").id });
+  b.expect((real.ok === true) === (real.total >= real.dc), `vrai jet : ${real.total} contre DD ${real.dc} → ${real.ok ? "réussi" : "raté"}`);
+
+  // L'objet repris sur le cadavre du voleur redevient honnête.
+  await thief.actor.toggleStatusEffect("dead", { active: true, overlay: true });
+  await sleep(500);
+  await requestTake(corpseSource(thief), pc, { itemIds: [got.id] });
+  await sleep(500);
+  const back = item("Essai fiole");
+  b.expect(back && !back.getFlag(MODULE_ID, "stolen"), "la fiole reprise au cadavre du voleur n'est plus marquée volée");
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
-  mecanisme: [mechanism, 9, 4] };
+  mecanisme: [mechanism, 9, 4], vol: [npcTheft, 4, 2] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

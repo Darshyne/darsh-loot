@@ -19,7 +19,7 @@ import { registerHighlight } from "./runtime/highlight.mjs";
 import { registerTrapsInit, registerTraps, fireTrap } from "./runtime/traps.mjs";
 import { registerFeedback } from "./runtime/feedback.mjs";
 import { registerPick } from "./runtime/pick.mjs";
-import { registerTheft, registerTheftMenu, requestSteal } from "./runtime/theft.mjs";
+import { registerTheft, registerTheftMenu, requestSteal, npcSteal, visitVictim } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
 import { registerDropInit, registerDrop, requestDrop, dropEnabled } from "./runtime/drop.mjs";
@@ -129,6 +129,14 @@ Hooks.once("ready", () => {
     openPockets: (token, thief) => openSource(pocketSource(doc(token)), doc(thief)),
     /** Tenter un vol sans fenêtre (tests) : un id d'objet, ou "coins" pour la bourse. */
     steal: (token, thief, itemId) => requestSteal(pocketSource(doc(token)), doc(thief), itemId),
+    /**
+     * MJ (0.21.0, issue #5) : un PNJ (token) tente de voler un personnage (token) — jet caché d'Escamotage contre sa Perception passive.
+     * `itemId` : id d'un objet du personnage, "coins" (une poignée de la bourse) ou "random" (défaut). `options` : `{ allowCombat, total }`
+     * (un module voisin qui joue un PNJ voleur en combat, un jet déjà fait). Rend `{ ok, itemId, dc, total, what }` ; `ok: null` = refusé.
+     */
+    npcSteal: (thief, victim, itemId="random", options={}) => npcSteal({ thief: doc(thief), victim: doc(victim), itemId, ...options }),
+    /** MJ : ouvrir les poches d'un personnage pour un PNJ voleur (le PNJ y va d'abord s'il est trop loin). */
+    openVictimPockets: (victim, thief) => (game.user.isGM ? visitVictim(doc(victim), doc(thief)) : null),
     /** Objet volé ? Renvoie le drapeau { from, fromUuid, place, time } ou null. */
     stolen: item => item?.getFlag(MODULE_ID, "stolen") ?? null,
     /** Mettre un PNJ sur ses gardes (jet de Perception au lieu de la passive), ou l'en retirer. */

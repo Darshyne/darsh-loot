@@ -4,6 +4,7 @@
 import { MODULE_ID } from "../shared.mjs";
 import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, COINS } from "../core/loot.mjs";
 import { sizeOfSpan } from "../core/traps.mjs";
+import { nextStolenMark } from "../core/theft.mjs";
 
 /** Le token (document) est-il un cadavre fouillable ? */
 export function corpseToken(tokenDoc) {
@@ -142,7 +143,12 @@ export async function transfer(corpse, recipient, { itemIds=[], coins=false, sto
       else toUpdate.push({ _id: stackOn, "system.quantity": (current.system.quantity ?? 0) + item.system.quantity });
     } else {
       const created = await Item5e.createWithContents([gear]);
-      if ( stolen ) for ( const data of created ) foundry.utils.setProperty(data, `flags.${MODULE_ID}.stolen`, stolen);
+      // 0.21.0 (issue #5) : un objet qui revient à celui à qui il a été volé perd sa marque, même repris en volant.
+      for ( const data of created ) {
+        const mark = nextStolenMark(foundry.utils.getProperty(data, `flags.${MODULE_ID}.stolen`) ?? null, stolen, recipient.uuid);
+        if ( mark ) foundry.utils.setProperty(data, `flags.${MODULE_ID}.stolen`, mark);
+        else if ( data.flags?.[MODULE_ID] ) delete data.flags[MODULE_ID].stolen;
+      }
       toCreate.push(...created);
     }
     taken.names.push(item.system.quantity > 1 ? `${gear.name} (${item.system.quantity})` : gear.name);

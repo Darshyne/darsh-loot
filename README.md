@@ -36,7 +36,9 @@ Baldur's Gate 3-style interface:
   previous one, and the lever's tile can change image with its position. Hovering over anything you can interact with
   lightly highlights it, and every action is heard by the whole table;
 - **items dropped on the ground** (drag an item from a sheet onto the map), with a throw animation and sounds;
-- **pickpocketing** (Sleight of Hand against passive Perception), stolen items are flagged;
+- **pickpocketing** (right-click an NPC → "Pickpocket", with your character selected; Sleight of Hand against passive Perception),
+  stolen items are flagged; a setting turns it off or asks for the GM's approval, and the GM's NPCs can steal from characters too
+  (hidden roll, secret success, failure seen by the whole table);
 - **necromancy**: a dead humanoid becomes a controlled skeleton or zombie;
 - **merchants**: barter window, restocking, shops without a token; a macro converts Item Piles merchants.
 

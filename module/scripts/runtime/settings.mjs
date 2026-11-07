@@ -108,6 +108,18 @@ export function registerSettings() {
     name: "DLO.Settings.Pockets.Name", hint: "DLO.Settings.Pockets.Hint",
     scope: "world", config: true, type: Boolean, default: true
   });
+  // 0.21.0 (issue #5) : le vol à la tire des joueurs — activé, coupé (aucune entrée, toute demande refusée chez le MJ), ou accord du MJ
+  // à chaque visite des poches.
+  game.settings.register(MODULE_ID, "pickpocket", {
+    name: "DLO.Settings.Pickpocket.Name", hint: "DLO.Settings.Pickpocket.Hint",
+    scope: "world", config: true, type: String, default: "on",
+    choices: { on: "DLO.Settings.Pickpocket.On", off: "DLO.Settings.Pickpocket.Off", approval: "DLO.Settings.Pickpocket.Approval" }
+  });
+  // 0.21.0 (issue #5) : un vol réussi par un PNJ reste secret (le MJ seul est prévenu), sauf si ce réglage prévient le joueur.
+  game.settings.register(MODULE_ID, "npcTheftNotice", {
+    name: "DLO.Settings.NpcTheftNotice.Name", hint: "DLO.Settings.NpcTheftNotice.Hint",
+    scope: "world", config: true, type: Boolean, default: false
+  });
   game.settings.register(MODULE_ID, "theftHostile", {
     name: "DLO.Settings.TheftHostile.Name", hint: "DLO.Settings.TheftHostile.Hint",
     scope: "world", config: true, type: Boolean, default: false

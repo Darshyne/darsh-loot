@@ -23,6 +23,27 @@ treasure, humanoid pockets, announcing what is taken) and pickpocketing.
 | **Search duration** | 10 s | Real seconds "Search the surroundings" takes out of combat (0: at once). |
 | **Delay between searches** | 1 min | Before the same character can search again, out of combat (world time or real time, whichever runs out first). |
 
+## Pickpocketing
+
+**Stealing from an NPC (player).** Select your character (one token, your own), then **right-click the NPC** → **"Pickpocket"**. The
+character walks up if too far, then the pockets window opens: each item with its difficulty (never the DC), worn items greyed out.
+Clicking an item rolls Sleight of Hand. One try per item; a failure is seen and heard by the whole table. The entry is not offered on
+a dead NPC ("Search" instead) or on a summon; **in combat** it stays visible with "(out of combat)" and only reminds the rule.
+
+**Having an NPC steal from a character (GM).** Select the NPC's token, then **right-click the character** → **"Steal from …"**. The NPC
+walks up if too far, then the GM window shows the character's pockets with the **exact DC** of each item (passive Perception, raised by
+value and weight), worn items greyed out, and an **"At random"** button. The purse gives a handful (10 to 40% of each coin). The NPC's
+Sleight of Hand is a **hidden roll**: on a success the item goes to the NPC flagged "stolen from …", only the GM gets the summary and the
+player learns nothing (unless the setting says so); on a failure the whole table sees the card, the floating text over both tokens, the
+ping, and hears the sound. A stolen item taken back from the NPC (from its corpse, or by pickpocketing it in turn) is clean again. For a
+macro or another module: `game.modules.get("darsh-loot").api.npcSteal(npc, character, itemId | "coins" | "random")`.
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Pickpocketing** | On | **On**: players pickpocket freely. **Off**: the "Pickpocket" entry disappears and the GM refuses any attempt (even by macro). **GM approval**: each visit to the pockets waits for the GM's approval (one minute to answer; no answer means no). Thefts by the GM's NPCs do not depend on this setting. |
+| **The player notices a successful theft** | No | When an NPC steals from a character, its player gets a private message. Otherwise only the GM is told. |
+| **Caught thieves make enemies** | No | A player's failed theft makes the NPC hostile instead of merely wary. |
+
 ## Containers
 
 | Setting | Default | What it does |

@@ -235,3 +235,12 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-mechanism-actions [data-dlo-add] { width: auto; align-self: flex-start; }
 /* 2026-11-06 : un personnage pris par surprise, dans la fenêtre du MJ d'un piège. */
 .dlo-trap-window .dlo-trap-surprised { color: #e0a030; font-weight: 600; font-size: var(--font-size-12, 12px); white-space: nowrap; }
+
+/* 0.21.0 (issue #5) : fenêtre du MJ quand un PNJ vole un personnage — le DD exact sur chaque objet, « Au hasard ». */
+.dlo-npc-steal .dlo-dc {
+  position: absolute; left: 2px; top: 1px;
+  font-size: 0.7rem; font-weight: bold; color: var(--dlo-gold);
+  text-shadow: 0 0 2px #000, 0 0 2px #000;
+}
+.dlo-npc-steal .dlo-actions { display: flex; justify-content: center; margin: 0.4rem 0; }
+.dlo-npc-steal .dlo-actions button { flex: 0 0 auto; }

@@ -30,7 +30,9 @@
     "Chat": {
       "Took": "{looter} takes from {corpse}: {what}.",
       "Stole": "{looter} steals from {corpse}: {what}.",
-      "Caught": "{thief} tried to rob {victim} and was caught (Sleight of Hand {total} vs DC {dc})."
+      "Caught": "{thief} tried to rob {victim} and was caught (Sleight of Hand {total} vs DC {dc}).",
+      "NpcStole": "{thief} steals from {victim}: {what} (Sleight of Hand {total} vs DC {dc}). The player saw nothing.",
+      "NpcCaught": "{thief} tried to steal {what} from {victim} and was caught (Sleight of Hand {total} vs DC {dc})."
     },
     "Settings": {
       "Reach": {
@@ -118,6 +120,17 @@
       "TrapPause": {
         "Name": "Pause when a trap goes off",
         "Hint": "Advanced trap mode, out of combat: the game pauses when a trap goes off. Off: no pause, only movement stops, and the trap's combat starts."
+      },
+      "Pickpocket": {
+        "Name": "Pickpocketing",
+        "Hint": "Can players pick NPCs' pockets? Off: the « Pickpocket » entry disappears and the GM refuses any attempt. GM approval: each visit to the pockets waits for the GM's approval. Thefts by the GM's NPCs do not depend on this setting.",
+        "On": "On",
+        "Off": "Off",
+        "Approval": "GM approval"
+      },
+      "NpcTheftNotice": {
+        "Name": "The player notices a successful theft",
+        "Hint": "When an NPC steals from a character, its player gets a private message. Otherwise only the GM is told."
       }
     },
     "SettingsWindow": {
@@ -244,6 +257,7 @@
       "By": "Thief: {name}",
       "Purse": "Purse",
       "Worn": "Worn — cannot be stolen",
+      "Heavy": "Too heavy — cannot be stolen",
       "Tried": "Already tried",
       "Difficulty": {
         "easy": "Easy",
@@ -262,7 +276,29 @@
       "Menu": "Pickpocket",
       "CaughtCard": "{victim} catches {thief} red-handed!",
       "FloatCaught": "Caught!",
-      "FloatStolen": "Stolen"
+      "FloatStolen": "Stolen",
+      "Disabled": "Pickpocketing is turned off in this world.",
+      "NeedApproval": "The GM must approve first.",
+      "MenuCombat": "{label} (out of combat)",
+      "MenuNpc": "Steal from {name}",
+      "ApprovalTitle": "Pickpocketing",
+      "ApprovalAsk": "{user} wants {thief} to pick {victim}'s pockets. Allow?",
+      "ApprovalYes": "Allow",
+      "ApprovalNo": "Refuse",
+      "ApprovalWait": "Request sent to the GM…",
+      "ApprovalRefused": "The GM refuses this theft.",
+      "NpcTitle": "Steal from {name}",
+      "Passive": "Passive Perception {value}",
+      "Dc": "DC {dc}",
+      "TriedNpc": "Already tried by this NPC",
+      "PurseHandful": "Purse (a handful: 10 to 40%)",
+      "Random": "At random",
+      "NpcHint": "Hidden roll. Success: the player knows nothing. Failure: the whole table sees it.",
+      "NothingLeft": "Nothing left to try in these pockets.",
+      "AlreadyTriedNpc": "This NPC already tried for that item.",
+      "NpcCaughtCard": "{victim} catches {thief} with a hand in their pockets!",
+      "FloatNoticed": "Hey!",
+      "NoticeVictim": "You feel your pockets were picked: {what}."
     },
     "Necro": {
       "Hud": "Raise the dead",

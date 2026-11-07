@@ -22,3 +22,15 @@ export async function waitForDice(message, maxMs=DICE_WAIT_MAX_MS) {
   const late = await Promise.race([pending.then(() => false), new Promise(resolve => setTimeout(() => resolve(true), maxMs))]);
   if ( late ) log.info(`3D dice: continuing without waiting (over ${maxMs} ms)`);
 }
+
+/**
+ * 0.21.0 (issue #5) : un jet secret sans message de chat (le cœur montre aux joueurs qu'un jet caché a eu lieu : « X lance des dés
+ * en privé » trahirait un vol). Les dés 3D roulent chez ce client seul (`showForRoll`, sans synchroniser), au plus `maxMs`.
+ */
+export async function showDiceLocally(roll, maxMs=DICE_WAIT_MAX_MS) {
+  if ( !roll || !game.modules.get("dice-so-nice")?.active || !game.dice3d?.showForRoll ) return;
+  if ( document.hidden ) return log.info("3D dice: continuing without waiting (window in the background)");
+  const shown = Promise.resolve(game.dice3d.showForRoll(roll, game.user, false)).catch(() => {});
+  const late = await Promise.race([shown.then(() => false), new Promise(resolve => setTimeout(() => resolve(true), maxMs))]);
+  if ( late ) log.info(`3D dice: continuing without waiting (over ${maxMs} ms)`);
+}

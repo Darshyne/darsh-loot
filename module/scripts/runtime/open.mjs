@@ -10,6 +10,7 @@ import { requestSteal, preparePocket } from "./theft.mjs";
 import { actingToken } from "../adapter/dnd5e.mjs";
 import { LootWindow } from "../apps/loot-window.mjs";
 import { StealWindow } from "../apps/steal-window.mjs";
+import { NpcStealWindow } from "../apps/npc-steal-window.mjs";
 import { ShopWindow } from "../apps/shop-window.mjs";
 import { SHOP_ACTIONS } from "./shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
@@ -59,7 +60,7 @@ export async function visitSource(source, looter=actingToken()) {
 
 /* ---- fenêtres ouvertes ---- */
 
-const openWindows = () => [...LootWindow.open.values(), ...StealWindow.open.values(), ...ShopWindow.open.values()];
+const openWindows = () => [...LootWindow.open.values(), ...StealWindow.open.values(), ...NpcStealWindow.open.values(), ...ShopWindow.open.values()];
 const looterOf = app => app.looter ?? app.thief;
 /** Le personnage d'une fenêtre : celui de son token, ou l'acteur lui-même (boutique sans token, §3.7). */
 const looterActor = app => { const l = looterOf(app); return (l instanceof Actor) ? l : (l?.actor ?? null); };
@@ -95,6 +96,6 @@ export function registerWindows() {
   });
   // Un combat qui commence ferme la porte au vol à la tire.
   for ( const hook of ["updateCombat", "deleteCombat"] ) {
-    route(hook, "pickpocket windows", () => { for ( const app of StealWindow.open.values() ) app.refresh(); });
+    route(hook, "pickpocket windows", () => { for ( const app of [...StealWindow.open.values(), ...NpcStealWindow.open.values()] ) app.refresh(); });
   }
 }
