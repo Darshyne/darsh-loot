@@ -1,0 +1,23 @@
+{
+  "i18n": {
+    "namespaces": ["DLO"],
+    "sources": ["module/scripts", "tools/macros"],
+    "calls": [{ "fn": "loc", "prefix": "DLO." }],
+    "fileHelpers": [{ "define": "const L = key => [^\\n]*`(?:DLO\\.)?([\\w.]+)\\.\\$\\{key\\}`", "call": "L", "prefix": "DLO." }],
+    "minKeys": 400
+  },
+  "manifest": {
+    "packSources": { "outils": "tools/macros" }
+  },
+  "layers": {
+    "imports": {
+      "core": [".", "adapter", "apps", "runtime"],
+      "adapter": ["apps", "runtime"],
+      "apps": ["runtime"]
+    },
+    "pure": { "folders": ["core"] },
+    "router": "runtime/router.mjs",
+    "names": [{ "name": "dnd5e-combat", "only": ["adapter/engine.mjs"], "why": "seul adapter/engine.mjs connaît le moteur (ARCHITECTURE §0-4)" }],
+    "forbid": [{ "name": "fichiers-voisins", "pattern": "(?:\\bfrom|\\bimport)\\s*\\(?\\s*[\"'][^\"']*(?:dnd5e-combat|darsh-dnd-ui)", "why": "aucun import des fichiers du moteur ni de darsh-dnd-ui" }]
+  }
+}
