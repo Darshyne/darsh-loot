@@ -45,3 +45,26 @@ describe("nécromancie par le sort (moteur §118)", () => {
     expect(undeadKindOf("fireball", { name: "Zombie" })).toBeNull();
   });
 });
+
+describe("identifiant d'un sort : celui que le moteur reconnaît", () => {
+  const withEngine = async api => {
+    globalThis.game = { modules: { get: id => ((id === "dnd5e-combat") ? api : null) } };
+    return (await import("../module/scripts/adapter/engine.mjs")).engineIdentifier;
+  };
+  const handMade = { system: { identifier: "animation-des-morts" } };
+
+  it("le moteur actif répond : un sort créé à la main en français est reconnu", async () => {
+    const identify = await withEngine({ active: true, api: { content: { identifierOf: () => ({ id: "animate-dead", from: "compendium" }) } } });
+    expect(identify(handMade)).toBe("animate-dead");
+    expect(RAISING_SPELLS[identify(handMade)]).toBeTruthy();
+  });
+
+  it("sans moteur, moteur inactif, API absente ou qui échoue : l'identifiant de l'item", async () => {
+    expect((await withEngine(null))(handMade)).toBe("animation-des-morts");
+    expect((await withEngine({ active: false, api: { content: { identifierOf: () => ({ id: "x" }) } } }))(handMade)).toBe("animation-des-morts");
+    expect((await withEngine({ active: true, api: {} }))(handMade)).toBe("animation-des-morts");
+    expect((await withEngine({ active: true, api: { content: { identifierOf: () => { throw new Error("boom"); } } } }))(handMade)).toBe("animation-des-morts");
+    expect((await withEngine({ active: true, api: { content: { identifierOf: () => null } } }))(handMade)).toBe("animation-des-morts");
+    expect((await withEngine(null))(null)).toBe("");
+  });
+});

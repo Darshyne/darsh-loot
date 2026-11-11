@@ -124,6 +124,18 @@ function engineApi() {
 }
 
 /**
+ * L'identifiant sous lequel un item est reconnu : celui que le moteur lui donne (`api.content.identifierOf` — il connaît les
+ * alias du SRD, la source de compendium, le nom d'origine d'un item traduit, le sort d'un parchemin), sinon le sien. Un sort
+ * créé à la main ou importé garde un `system.identifier` tiré de son nom affiché : le comparer directement à « animate-dead »
+ * le manquerait. Sans moteur, ou s'il échoue : `system.identifier`.
+ */
+export function engineIdentifier(item) {
+  const own = item?.system?.identifier ?? "";
+  try { return engineApi()?.content?.identifierOf?.(item)?.id ?? own; }
+  catch { return own; }
+}
+
+/**
  * La marche du moteur vers des cases (SPEC §4, demandée le 2026-09-30, pas encore écrite côté moteur) :
  * `api.approach(tokenDocument, { cells: [{ i, j }], level? }) → Promise<{ arrived: boolean, reason?: string }>`.
  * null tant que le moteur ne l'expose pas : la fouille à distance reste alors « Trop loin ».

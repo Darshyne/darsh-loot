@@ -22,7 +22,7 @@ import { corpseToken, tokenDistance, transfer, lootView } from "../adapter/dnd5e
 import { createPile, pileAt, MIXED_PILE_IMG } from "../adapter/drop.mjs";
 import { pileSpot } from "../core/drop.mjs";
 import { UNDEAD, SPELL_RANGE_FT, RAISING_SPELLS, canAnimate, undeadKindOf, feetToSceneUnits } from "../core/necromancy.mjs";
-import { SUMMON_ON_TARGETS_HOOK } from "../adapter/engine.mjs";
+import { SUMMON_ON_TARGETS_HOOK, engineIdentifier } from "../adapter/engine.mjs";
 
 const ANIMATE_QUERY = `${MODULE_ID}.animate`;
 const MM_ACTORS = "dnd-monster-manual.actors";
@@ -54,7 +54,7 @@ async function handleAnimate({ corpse: corpseUuid, caster: casterUuid, kind, spe
   if ( !user.isGM ) {
     if ( !caster?.actor?.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
     // Un sort nommé doit être sur la fiche du lanceur : un joueur ne choisit pas la portée de Doigt de mort sans le connaître.
-    if ( spell && !caster.actor.items.some(i => i.system?.identifier === spell) ) throw new Error(loc("Refus.PasAToi"));
+    if ( spell && !caster.actor.items.some(i => engineIdentifier(i) === spell) ) throw new Error(loc("Refus.PasAToi"));
     const rangeFt = rules ? rules.rangeFt : SPELL_RANGE_FT;
     if ( caster.parent !== corpse.parent ) throw new Error(loc("Refus.Loin"));
     if ( (rangeFt !== null) && (tokenDistance(caster, corpse) > feetToSceneUnits(rangeFt, corpse.parent.grid.units)) ) throw new Error(loc("Refus.Loin"));
@@ -174,7 +174,8 @@ export function registerNecromancyInit() {
  * qui ne dit pas quel mort-vivant : on rend la main (faux), dnd5e pose son invocation.
  */
 function onSummonOnTargets(takers, { activity, caster, targets }) {
-  const spell = activity?.item?.system?.identifier ?? "";
+  // L'identifiant que le moteur reconnaît, pas `system.identifier` nu : un sort traduit, importé ou lu sur un parchemin compte aussi.
+  const spell = engineIdentifier(activity?.item);
   if ( !RAISING_SPELLS[spell] ) return;
   const corpses = (targets ?? []).filter(t => raisable(t, spell));
   if ( !corpses.length ) return;
