@@ -298,7 +298,7 @@ async function judgeTrap(h, triggerer, turn) {
     const answer = await askTrapResolution({
       name: h.name || proposed?.item?.name || loc("TrapZone.ThisTrap"),
       // 2026-11-06 (demande de l'utilisateur) : ceux qui ont été surpris par le piège sont marqués dans la liste.
-      targets: targets.map(t => ({ uuid: t.uuid, name: t.name, img: t.texture?.src ?? t.actor?.img ?? null,
+      targets: targets.map(t => ({ uuid: t.uuid, name: t.name, img: stillTokenImg(t),
         surprised: !!t.actor && (turn?.surprised ?? []).includes(t.actor.uuid) })),
       activities: (proposed?.item.system.activities.contents ?? []).map(a => ({ id: a.id, name: a.name || a.item.name })),
       activity: proposed?.id ?? null,
@@ -1025,4 +1025,15 @@ export function registerTraps() {
   route("renderPrototypeTokenConfig", "trap token settings", onRenderTokenConfig);
   route(EVENT_TURN_HOOK, "advanced trap: its turn", onEventTurn);
   route("renderWallConfig", "trapped door settings", onRenderWallConfig);
+}
+
+/**
+ * 2026-11-13 : l'image d'un token pour une balise `<img>`. Une texture vidéo (`.webm` de JB2A posé par DAS · Animations sur une
+ * invocation, ou par un MJ) s'y affiche cassée : l'image de l'acteur à sa place. Test du cœur : `VideoHelper.hasVideoExtension`
+ * (client/helpers/media/video-helper.mjs:100).
+ */
+function stillTokenImg(token) {
+  const src = token.texture?.src ?? null;
+  if ( src && !foundry.helpers.media.VideoHelper.hasVideoExtension(src) ) return src;
+  return token.actor?.img ?? null;
 }
