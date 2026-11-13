@@ -30,7 +30,9 @@
     "Chat": {
       "Took": "{looter} pega de {corpse}: {what}.",
       "Stole": "{looter} rouba de {corpse}: {what}.",
-      "Caught": "{thief} tentou furtar {victim} e foi descoberto (Prestidigitação {total} contra CD {dc})."
+      "Caught": "{thief} tentou furtar {victim} e foi descoberto (Prestidigitação {total} contra CD {dc}).",
+      "NpcStole": "{thief} furta de {victim}: {what} (Prestidigitação {total} contra CD {dc}). O jogador não percebeu nada.",
+      "NpcCaught": "{thief} tentou furtar {what} de {victim} e foi descoberto (Prestidigitação {total} contra CD {dc})."
     },
     "Settings": {
       "Reach": {
@@ -118,6 +120,17 @@
       "ObjectSize": {
         "Name": "Tamanho dos objetos colocados (%)",
         "Hint": "Baús, pilhas e armadilhas colocados pelo módulo são desenhados ocupando, no máximo, essa porcentagem de suas casas, deixando espaço ao redor. Apenas visual: a área de revista ou acionamento mantém suas casas. Tiles do mapa convertidos em zona não são alterados."
+      },
+      "Pickpocket": {
+        "Name": "Bater carteira",
+        "Hint": "Os jogadores podem bater a carteira dos PNJs? Desativado: a opção « Bater carteira » desaparece e o mestre recusa qualquer tentativa. Aprovação do mestre: cada acesso aos bolsos aguarda a aprovação do mestre. Os furtos cometidos pelos PNJs do mestre independem desta configuração.",
+        "On": "Ativado",
+        "Off": "Desativado",
+        "Approval": "Aprovação do mestre"
+      },
+      "NpcTheftNotice": {
+        "Name": "O jogador percebe um furto bem-sucedido",
+        "Hint": "Quando um PNJ furta algo de um personagem, o jogador que o controla recebe uma mensagem privada. Caso contrário, somente o mestre é informado."
       }
     },
     "Lock": {
@@ -241,7 +254,30 @@
       "Menu": "Bater carteira",
       "CaughtCard": "{victim} pega {thief} em flagrante!",
       "FloatCaught": "Pego em flagrante!",
-      "FloatStolen": "Roubado"
+      "FloatStolen": "Roubado",
+      "Heavy": "Pesado demais — não pode ser roubado",
+      "Disabled": "A ação de bater carteira está desativada neste mundo.",
+      "NeedApproval": "O mestre precisa aprovar primeiro.",
+      "MenuCombat": "{label} (fora de combate)",
+      "MenuNpc": "Furtar de {name}",
+      "ApprovalTitle": "Bater carteira",
+      "ApprovalAsk": "{user} quer que {thief} bata a carteira de {victim}. Permitir?",
+      "ApprovalYes": "Permitir",
+      "ApprovalNo": "Recusar",
+      "ApprovalWait": "Pedido enviado ao mestre…",
+      "ApprovalRefused": "O mestre recusa este furto.",
+      "NpcTitle": "Furtar de {name}",
+      "Passive": "Percepção passiva {value}",
+      "Dc": "CD {dc}",
+      "TriedNpc": "Tentativa já realizada por este PNJ",
+      "PurseHandful": "Bolsa (um punhado: 10 a 40%)",
+      "Random": "Ao acaso",
+      "NpcHint": "Rolagem oculta. Sucesso: o jogador não fica sabendo. Falha: toda a mesa vê.",
+      "NothingLeft": "Não há mais nada para tentar pegar nesses bolsos.",
+      "AlreadyTriedNpc": "Este PNJ já tentou pegar esse item.",
+      "NpcCaughtCard": "{victim} pega {thief} com a mão em seus bolsos!",
+      "FloatNoticed": "Ei!",
+      "NoticeVictim": "Você percebe que foi alvo de um furto: {what}."
     },
     "Necro": {
       "Hud": "Reanimar morto",
