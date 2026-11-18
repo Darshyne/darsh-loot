@@ -106,10 +106,10 @@ La fenêtre de réglages est rangée en sections : **Piège**, **Zone d'effet**,
 | **Taille minimale** | La plus petite créature qui le fait partir. **Petite** par défaut : un rat ou un familier Très petit passe dessus. |
 | **Hauteur** | Au-dessus du sol, un token ne déclenche pas : une créature qui vole plus haut passe. 0 : seulement ce qui touche le sol. |
 | **Armé** | Décoché : le piège ne part pas. Recochez pour le réarmer à la main. |
-| **Réarmement** | **Jamais**, **À la main (MJ)** ou **Après un délai** (en minutes de temps du monde). |
+| **Réarmement** | **Jamais**, **À la main (MJ)** ou **Après un délai** (en minutes de temps du monde). **Jamais** : une fois parti, le piège est coché « Désamorcé » — plus de surbrillance, plus rien à désamorcer. |
 | **DD de désamorçage** | Le test d'outils de voleur pour le désamorcer (15 par défaut). |
 | **Échec du désamorçage** | **Rien**, ou **Le piège se déclenche** (par défaut). |
-| **Désamorcé** | Coché après un désamorçage réussi. Décochez (et cochez « Armé ») pour le remettre en état. |
+| **Désamorcé** | Coché après un désamorçage réussi, ou quand un piège qui ne se réarme jamais est parti. Décochez (et cochez « Armé ») pour le remettre en état. |
 | **Déclencheur caché** / **Source cachée** | Comment se trouve chaque partie : compétence (Perception ou Investigation), DD, distance passive, rayon de fouille, « Trouvé », texte de découverte. |
 
 Les distances sont en pieds, converties toutes seules sur une scène en mètres.

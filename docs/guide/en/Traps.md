@@ -102,10 +102,10 @@ The settings window is split into sections: **Trap**, **Area**, **Source**, **Tr
 | **Minimum size** | The smallest creature that sets it off. **Small** by default: a rat or a Tiny familiar walks over it. |
 | **Height** | Above the floor, a token doesn't trigger it: a creature flying higher passes. 0: only what touches the floor. |
 | **Armed** | Unticked: the trap doesn't go off. Tick it again to re-arm it by hand. |
-| **Re-arming** | **Never**, **By hand (GM)** or **After a delay** (in minutes of world time). |
+| **Re-arming** | **Never**, **By hand (GM)** or **After a delay** (in minutes of world time). **Never**: once it has gone off, the trap is ticked "Disarmed" — no highlight left, nothing to disarm. |
 | **Disarm DC** | The thieves' tools check to disarm it (15 by default). |
 | **Failed disarm** | **Nothing**, or **The trap goes off** (default). |
-| **Disarmed** | Ticked after a successful disarm. Untick it (and tick "Armed") to set it again. |
+| **Disarmed** | Ticked after a successful disarm, or once a trap that never re-arms has gone off. Untick it (and tick "Armed") to set it again. |
 | **Hidden trigger** / **Hidden source** | How each part is found: skill (Perception or Investigation), DC, passive distance, search radius, "Found", discovery text. |
 
 Distances are in feet, converted automatically on a metric scene.

@@ -143,6 +143,16 @@ export function armedAt(trap, now) {
   return (trap.rearm === "time") && Number.isFinite(trap.triggeredAt) && (now >= trap.triggeredAt + (trap.delay * 60));
 }
 
+/**
+ * Ce qu'un piège écrit sur lui-même en partant, à cet instant (temps du monde, secondes) : désarmé, avec l'heure — celle d'un
+ * réarmement par délai. Sans réarmement (« jamais »), il ne repartira plus : il est aussi noté désamorcé, sinon il resterait en
+ * surbrillance, à éviter et à désamorcer pour rien (issue #6). « Remettre en état » ou les cases du MJ le réarment.
+ */
+export function firedUpdate(trap, now) {
+  const spent = !["gm", "time"].includes(trap?.rearm);
+  return { armed: false, triggeredAt: now, ...(spent ? { disarmed: true } : {}) };
+}
+
 /* ---- pièges v2 (étape 11) ---- */
 
 /** Les tailles dnd5e, de la plus petite à la plus grande (`CONFIG.DND5E.actorSizes`), recopiées pour rester pur. */

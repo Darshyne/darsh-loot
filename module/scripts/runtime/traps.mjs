@@ -28,8 +28,8 @@ import { TRAP_ZONE, TRAP_RELAY, TrapZoneType, TrapRelayType, registerTrapBehavio
 import { trapLevelOf, creatureSize } from "../adapter/dnd5e.mjs";
 import { trapHandle, handleKnown, sourceKnown, anyKnown, handleDistance, trapDistance, trappedThings, allTraps, isDoorWall,
   isTrapActor, isTrapToken, sceneTrapTokens, autoRegionOf, enterActivated } from "../adapter/trapped.mjs";
-import { trapChecks, pickTier, targetsLevel, armedAt, triggersOn, normalizeTrap, bigEnough, migrateZoneTrap, SIZES, objectImmunities }
-  from "../core/traps.mjs";
+import { trapChecks, pickTier, targetsLevel, armedAt, firedUpdate, triggersOn, normalizeTrap, bigEnough, migrateZoneTrap, SIZES,
+  objectImmunities } from "../core/traps.mjs";
 import { normalizeHidden, concealed } from "../core/hidden.mjs";
 import { addPickButtons, DOOR_PICKS } from "./pick.mjs";
 import { askTrapResolution } from "../apps/trap-window.mjs";
@@ -146,10 +146,11 @@ async function snapToCell(token) {
 const firing = new Set();
 
 /**
- * Chez le MJ actif : le piège part (zone, coffre ou porte). Il est repéré, désarmé (heure notée pour un réarmement), tout
- * s'arrête. En mode simple, l'acteur piège utilise aussitôt son activité sur les cibles, par le moteur. En mode avancé (0.17.0,
- * réglage `advancedTraps`) : hors combat, pause, combat avec la scène, le piège à son initiative ; en combat, la fenêtre du MJ tout
- * de suite. Rend true si le piège est parti (ou attend son tour).
+ * Chez le MJ actif : le piège part (zone, coffre ou porte). Il est repéré, désarmé (heure notée pour un réarmement) — et désamorcé
+ * s'il ne se réarme jamais (core/traps.mjs `firedUpdate`) —, tout s'arrête. En mode simple, l'acteur piège utilise aussitôt son
+ * activité sur les cibles, par le moteur. En mode avancé (0.17.0, réglage `advancedTraps`) : hors combat, pause, combat avec la
+ * scène, le piège à son initiative ; en combat, la fenêtre du MJ tout de suite. Rend true si le piège est parti (ou attend son
+ * tour).
  */
 export async function fireTrap(target, triggerer=null) {
   const h = asHandle(target);
@@ -160,7 +161,7 @@ export async function fireTrap(target, triggerer=null) {
     // Une zone : le déclencheur y a mis le pied, on le recale sur sa case. Un coffre, une porte : il est déjà arrêté devant.
     if ( triggerer && ["zone", "token"].includes(h.kind) ) snapToCell(triggerer);
     const known = anyKnown(h);
-    await h.update({ armed: false, triggeredAt: game.time.worldTime, "hidden.found": true, "source.hidden.found": true });
+    await h.update({ ...firedUpdate(h.trap, game.time.worldTime), "hidden.found": true, "source.hidden.found": true });
     if ( setting("advancedTraps") && engineCombatEvents() ) return await springAdvanced(h, triggerer, { surprise: !known });
     return await resolveTrap(h, triggerer);
   } catch(err) {
