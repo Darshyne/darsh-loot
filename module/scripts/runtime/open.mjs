@@ -14,7 +14,7 @@ import { NpcStealWindow } from "../apps/npc-steal-window.mjs";
 import { ShopWindow } from "../apps/shop-window.mjs";
 import { SHOP_ACTIONS } from "./shop.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
-import { setting, sceneSetting } from "../shared.mjs";
+import { setting, sceneSetting, loc } from "../shared.mjs";
 import { playForAll, SOUNDS } from "./feedback.mjs";
 import { containerSounds } from "../adapter/container-behavior.mjs";
 
@@ -25,7 +25,11 @@ const HANDLERS = { onTake: requestTake, onUnlock: requestUnlock };
  * vol à la tire (poches d'un PNJ vivant) ou boutique (marchand).
  */
 export async function openSource(source, looter=actingToken()) {
-  if ( !source?.exists() ) return null;
+  if ( !source?.exists() ) {
+    // Un marchand mort ou à 0 PV : le dire au lieu de ne rien faire (Discord, 2026-11-19).
+    if ( (source?.kind === "merchant") && source.actor ) ui.notifications.warn(loc("Shop.NotAlive", { name: source.name }));
+    return null;
+  }
   if ( source.kind === "pocket" ) {
     await preparePocket(source);
     return StealWindow.show(source, looter, requestSteal);

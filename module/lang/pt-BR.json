@@ -357,6 +357,7 @@
       "Hidden": "Oculto dos jogadores.",
       "EndlessCoins": "Caixa ilimitado",
       "Gone": "Comerciante ou personagem não encontrado.",
+      "NotAlive": "{name} não pode manter a loja: morto, ou com 0 pontos de vida. Dê pontos de vida ao comerciante (ou remova a condição Morto) para abrir a loja.",
       "Changed": "O estoque ou seu inventário mudou: confira a negociação.",
       "Nothing": "Nada para negociar.",
       "Restocked": "{name}: estoque reabastecido ({count} item(ns) sorteado(s)).",

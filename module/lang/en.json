@@ -378,6 +378,7 @@
       "Hidden": "Hidden from players.",
       "EndlessCoins": "Bottomless till",
       "Gone": "Merchant or character not found.",
+      "NotAlive": "{name} cannot keep shop: dead, or at 0 hit points. Give the merchant some hit points (or remove the Dead status) to open the shop.",
       "Changed": "The stock or your inventory changed: check the trade.",
       "Nothing": "Nothing to trade.",
       "Restocked": "{name}: restocked ({count} item(s) drawn).",

@@ -378,6 +378,7 @@
       "Hidden": "Nascosto ai giocatori.",
       "EndlessCoins": "Cassa senza fondo",
       "Gone": "Mercante o personaggio non trovato.",
+      "NotAlive": "{name} non può tenere bottega: morto, o a 0 punti ferita. Dai al mercante dei punti ferita (o togli la condizione Morto) per aprire la bottega.",
       "Changed": "Le scorte o il tuo inventario sono cambiati: controlla il baratto.",
       "Nothing": "Niente da scambiare.",
       "Restocked": "{name}: rifornimento fatto ({count} oggetto/i estratto/i).",

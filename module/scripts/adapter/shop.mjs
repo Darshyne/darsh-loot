@@ -24,10 +24,15 @@ export function isMerchant(actor) {
   return (actor?.type === "npc") && (actor.getFlag(MODULE_ID, "merchant")?.enabled === true);
 }
 
-/** Un marchand vivant (acteur). */
+/**
+ * Un marchand vivant (acteur) : pas l'état « mort », et des PV au-dessus de 0 — sauf s'il n'a pas de PV maximum (PNJ créé sans
+ * points de vie : dnd5e lui met 0 PV, il n'est pas mort pour autant ; signalé sur le Discord le 2026-11-19).
+ */
 export function merchantAlive(actor) {
   if ( !isMerchant(actor) || actor.statuses.has("dead") ) return false;
-  return (actor.system.attributes?.hp?.value ?? 1) > 0;
+  const hp = actor.system.attributes?.hp;
+  if ( !(Number(hp?.max) > 0) ) return true;
+  return (hp.value ?? 1) > 0;
 }
 
 /** Un token de marchand vivant, sur sa scène. */

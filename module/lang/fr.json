@@ -378,6 +378,7 @@
       "Hidden": "Caché des joueurs.",
       "EndlessCoins": "Caisse sans fond",
       "Gone": "Marchand ou personnage introuvable.",
+      "NotAlive": "{name} ne peut pas tenir boutique : mort, ou à 0 point de vie. Donne-lui des points de vie (ou retire l’état « mort ») pour ouvrir la boutique.",
       "Changed": "Le stock ou votre inventaire a changé : vérifiez le troc.",
       "Nothing": "Rien à échanger.",
       "Restocked": "{name} : réassort fait ({count} objet(s) tirés).",
