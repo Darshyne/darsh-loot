@@ -13,6 +13,7 @@ import { PHYSICAL_TYPES, canLeaveOwner } from "../core/loot.mjs";
 import { FLIGHT_MS, clampDrop, outsideRect, soundKind, pileSpot } from "../core/drop.mjs";
 import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, createPlacedContainer, fillWithContents, MIXED_PILE_IMG } from "../adapter/drop.mjs";
 import { DROP_ITEMS_HOOK } from "../adapter/engine.mjs";
+import { levelBase } from "../adapter/sight.mjs";
 
 export { clearIfEmpty } from "../adapter/drop.mjs";
 
@@ -72,7 +73,8 @@ async function handleDrop(payload, { user }) {
   let scene = game.scenes.get(payload.scene);
   let point = { x: payload.x, y: payload.y };
   let level = payload.level;
-  let elevation = 0;
+  // A GM drop lands on the floor of the level it was dropped on (V14 levels), not at 0, which is under an upper floor.
+  let elevation = levelBase(scene, level) ?? 0;
   let from = point;
 
   if ( owner ) {
@@ -96,7 +98,7 @@ async function handleDrop(payload, { user }) {
   // 0.15.5 : un sac du monde ou d'un compendium devient un conteneur posé, au centre de la case, qui porte son contenu.
   if ( !owner && (item.type === "container") ) {
     const center = scene.grid.getCenterPoint(point);
-    const region = await createPlacedContainer(scene, center, item, { level });
+    const region = await createPlacedContainer(scene, center, item, { level, elevation });
     await fillWithContents(await ensureStore(region.behaviors.contents[0]), item);
     return { region: region.uuid, quantity: 1 };
   }

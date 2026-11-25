@@ -6,11 +6,36 @@
  *
  * Le MJ voit tout.
  */
+import { MODULE_ID } from "../shared.mjs";
 
-/** L'altitude du sol d'une région (son bas, 0 s'il est ouvert). */
+/**
+ * The floor elevation of a V14 level (`elevation.base`, client/documents/level.mjs:62-68), or null when the scene has no such
+ * level.
+ */
+export function levelBase(scene, levelId) {
+  const base = levelId ? scene?.levels?.get?.(levelId)?.elevation?.base : undefined;
+  return Number.isFinite(base) ? base : null;
+}
+
+/**
+ * The floor elevation of a region: its bottom when it has one; otherwise the elevation of the tile it is bound to (a pile, a
+ * placed container); otherwise the floor of its level (the viewed level when it belongs to it, else its first level; the viewed
+ * level when it has none); 0 without levels. Before 2026-11-25 an open region was always at 0, so on an upper floor every pile,
+ * lever or trap stood under the floor above and no player could ever see it (Discord, Gack, levels).
+ */
 export function regionFloor(region) {
   const bottom = region?.elevation?.bottom;
-  return Number.isFinite(bottom) ? bottom : 0;
+  if ( Number.isFinite(bottom) ) return bottom;
+  const scene = region?.parent;
+  const flags = region?.flags?.[MODULE_ID];
+  const tileId = flags?.pile?.tile ?? flags?.tile;
+  const tileElevation = tileId ? scene?.tiles?.get?.(tileId)?.elevation : undefined;
+  if ( Number.isFinite(tileElevation) ) return tileElevation;
+  const view = globalThis.canvas?.level ?? null;
+  const levels = region?.levels;
+  let levelId = view?.id ?? null;
+  if ( levels?.size && !(levelId && levels.has(levelId)) ) levelId = levels.first?.() ?? [...levels][0];
+  return levelBase(scene, levelId) ?? 0;
 }
 
 /**

@@ -6,7 +6,8 @@
 import { MODULE_ID, loc } from "../shared.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { stackTarget, canLeaveOwner } from "../core/loot.mjs";
-import { PILE_FRACTION, pileSpot } from "../core/drop.mjs";
+import { PILE_FRACTION, pileSpot, pileLevelFix } from "../core/drop.mjs";
+import { levelBase } from "./sight.mjs";
 import { inTurn } from "./ledger.mjs";
 
 /** Icône d'un tas de plusieurs objets différents. */
@@ -36,7 +37,8 @@ export function pileCenter(region) {
 /**
  * Chez le MJ, au chargement : les tas posés par une version antérieure (tuile décalée avant la 0.7.1, tas centré sur
  * sa case en 0.7.1–0.7.2) sont remis à leur place, le **quart haut-gauche** de la case où ils sont (0.7.3) : région et
- * tuile. Et un tas resté transparent (révélation manquée) est révélé.
+ * tuile. Et un tas resté transparent (révélation manquée) est révélé. Since 2026-11-25, on a V14 upper floor: the region takes its
+ * tile's levels and a tile under the floor of its level is raised onto it (`pileLevelFix`).
  */
 export async function realignPiles() {
   for ( const scene of game.scenes ) {
@@ -45,6 +47,8 @@ export async function realignPiles() {
     const tiles = [];
     const regions = [];
     const unseen = [];
+    const levelSync = [];
+    const floors = [];
     for ( const region of scene.regions ) {
       if ( !isPileRegion(region) ) continue;
       const spot = pileSpot(scene.grid.getTopLeftPoint(pileCenter(region)), size);
@@ -61,10 +65,21 @@ export async function realignPiles() {
       // Un tas naît transparent et n'est révélé qu'à la fin du vol, par le MJ : s'il a rechargé ou s'est déconnecté
       // entre-temps, le tas est resté invisible pour tout le monde.
       if ( tile?.alpha === 0 ) unseen.push({ _id: tile.id, alpha: 1 });
+      // V14 levels: the region follows its tile's floor, and a tile left under the floor of its level is raised onto it.
+      if ( tile ) {
+        const tileSource = tile._source ?? tile;
+        const tileLevels = [...(tileSource.levels ?? [])];
+        const fix = pileLevelFix({ tileLevels, regionLevels: [...((region._source ?? region).levels ?? [])],
+          elevation: tileSource.elevation ?? 0, base: levelBase(scene, tileLevels[0]) });
+        if ( fix.levels ) levelSync.push({ _id: region.id, levels: fix.levels });
+        if ( Number.isFinite(fix.elevation) ) floors.push({ _id: tile.id, elevation: fix.elevation });
+      }
     }
     if ( regions.length ) await scene.updateEmbeddedDocuments("Region", regions);
+    if ( levelSync.length ) await scene.updateEmbeddedDocuments("Region", levelSync);
     if ( tiles.length ) await scene.updateEmbeddedDocuments("Tile", tiles);
     if ( unseen.length ) await scene.updateEmbeddedDocuments("Tile", unseen);
+    if ( floors.length ) await scene.updateEmbeddedDocuments("Tile", floors);
   }
 }
 

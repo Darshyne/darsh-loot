@@ -99,3 +99,18 @@ export function flight(from, to, t) {
   const squash = land > 0 ? Math.sin(land * Math.PI) * 0.25 : 0;
   return { x, y, rotation, scaleX: 1 + squash, scaleY: 1 - squash };
 }
+
+/**
+ * 2026-11-25 (V14 levels): what a pile left by an older version needs on an upper floor. The region follows its tile's levels (a GM
+ * who moved only the tile to the right floor left the region on the old one, so no player there could reach it), and a tile that
+ * stands below the floor of its only level is raised onto it (a GM drop used to create it at 0, under that floor).
+ * @param {{ tileLevels: string[], regionLevels: string[], elevation: number, base: number|null }} pile
+ * @returns {{ levels?: string[], elevation?: number }}  Only what must change.
+ */
+export function pileLevelFix({ tileLevels=[], regionLevels=[], elevation=0, base=null }) {
+  const fix = {};
+  const sorted = a => [...a].sort().join("|");
+  if ( tileLevels.length && (sorted(tileLevels) !== sorted(regionLevels)) ) fix.levels = [...tileLevels];
+  if ( (tileLevels.length === 1) && Number.isFinite(base) && (elevation < base) ) fix.elevation = base;
+  return fix;
+}
