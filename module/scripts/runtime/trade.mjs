@@ -14,7 +14,9 @@ import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 import { moveItemNow } from "../adapter/drop.mjs";
 import { inTurn, operation } from "../adapter/ledger.mjs";
 import { addCoins, COINS } from "../core/loot.mjs";
-import { newTrade, setOffer, accept, unaccept, ready, clampOffer, withoutContained, other } from "../core/trade.mjs";
+import {
+  newTrade, setOffer, accept, unaccept, ready, clampOffer, withoutContained, other, staleTrades, TRADE_MAX_OPEN
+} from "../core/trade.mjs";
 import { TradeWindow } from "../apps/trade-window.mjs";
 
 const Q = {
@@ -22,10 +24,20 @@ const Q = {
   update: `${MODULE_ID}.tradeUpdate`,
   accept: `${MODULE_ID}.tradeAccept`,
   cancel: `${MODULE_ID}.tradeCancel`,
-  state: `${MODULE_ID}.tradeState`
+  state: `${MODULE_ID}.tradeState`,
+  reset: `${MODULE_ID}.tradeReset`
 };
 
-/** Les échanges en cours, chez le MJ actif. */
+/**
+ * The trades in progress, at the active GM — in memory only. A reload of that client, or another GM becoming the active one,
+ * loses them: instead of leaving both players with a window whose every button answers « this trade is over », the trade is then
+ * **cancelled cleanly on both sides, with a message** (lot 0, audit of 2026-11-26, defect 8):
+ *  - each state carries `gm`, the user id of the GM client holding it; a player client that sees this GM disconnect, or another
+ *    GM become the active one, closes its window (`onUserConnected`);
+ *  - a GM client that becomes ready holds no trade: it tells every connected player so (`tradeReset`), which closes the windows a
+ *    missed disconnection would have left.
+ * Nothing has been written at that point (a trade writes only once both sides have agreed, in one operation — adapter/ledger.mjs).
+ */
 const trades = new Map();
 
 /** Les échanges que le MJ est en train d'exécuter (objets et pièces en route) : plus aucun geste n'y est reçu. */
@@ -73,9 +85,51 @@ function handleState(trade) {
   return true;
 }
 
+/** The GM client that held my trades is gone (or is no longer the active one): they are cancelled here, with the reason. */
+function onUserConnected(user, connected) {
+  if ( !user?.isGM ) return;
+  const active = game.users.activeGM?.id ?? null;
+  TradeWindow.cancelWhere(trade => !!trade.gm && ((trade.gm !== active) || ((trade.gm === user.id) && !connected)), loc("Trade.GMLeft"));
+}
+
+/** A GM client that has just loaded holds no trade: every window still open here belongs to a trade it lost. Only a GM may say so. */
+function handleReset(_payload, { user }={}) {
+  if ( !user?.isGM ) return false;
+  TradeWindow.cancelWhere(() => true, loc("Trade.GMLeft"));
+  return true;
+}
+
 /* -------------------------------------------- */
 /*  Chez le MJ                                  */
 /* -------------------------------------------- */
+
+/** Active GM, at load: tell the connected players that no trade survived (see `trades`). */
+function announceReset() {
+  if ( game.users.activeGM?.isSelf !== true ) return;
+  for ( const user of game.users.filter(u => u.active && !u.isGM) ) {
+    user.query(Q.reset, {}, { timeout: 10000 }).catch(err => log.warn("trade reset not delivered:", err.message));
+  }
+}
+
+/**
+ * Abandoned trades are cancelled, with a message to both sides (lot 0, defect 9): they used to stay in memory for ever. Looked
+ * at whenever a trade is opened.
+ */
+async function purgeStale() {
+  for ( const id of staleTrades(trades.values(), Date.now()) ) {
+    const trade = trades.get(id);
+    if ( !trade || executing.has(id) ) continue;
+    trades.delete(id);
+    await broadcast({ ...trade, cancelled: true, reason: loc("Trade.Expired") });
+  }
+}
+
+/** Stores the trade as just touched. */
+function keep(trade) {
+  const next = { ...trade, touched: Date.now() };
+  trades.set(next.id, next);
+  return next;
+}
 
 /**
  * Le joueur qui tient ce personnage face à `requester` : un joueur connecté qui le **possède** (son joueur attitré
@@ -135,10 +189,17 @@ async function handleOpen({ from, to, item, quantity }, { user }) {
   if ( !a.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
   const holder = holderOf(b, user);
   if ( !holder ) throw new Error(loc("Trade.NobodyThere", { name: b.name }));
+  await purgeStale();
+  // The same two characters already trading: that trade is shown again instead of a second one.
+  const open = [...trades.values()].filter(t => !t.done && !t.cancelled && (t.a.user === user.id));
+  const same = open.find(t => (t.a.actor === a.uuid) && (t.b.actor === b.uuid));
+  if ( same ) { await broadcast(same); return { id: same.id }; }
+  if ( !user.isGM && (open.length >= TRADE_MAX_OPEN) ) throw new Error(loc("Trade.TooMany"));
   let trade = newTrade({ id: foundry.utils.randomID(), a: { actor: a.uuid, name: a.name, user: user.id },
     b: { actor: b.uuid, name: b.name, user: holder.id } });
+  trade.gm = game.user.id;
   if ( item && a.items.get(item) ) trade = setOffer(trade, "a", { items: [{ id: item, quantity }] });
-  trades.set(trade.id, trade);
+  trade = keep(trade);
   await broadcast(trade);
   return { id: trade.id };
 }
@@ -160,8 +221,7 @@ async function handleUpdate({ id, offer }, { user }) {
   const side = sideOf(trade, user);
   if ( !side ) throw new Error(loc("Refus.PasAToi"));
   const actor = fromUuidSync(trade[side].actor, { strict: false });
-  const next = setOffer(trade, side, possibleOffer({ items: offer.items ?? [], coins: offer.coins ?? {} }, actor));
-  trades.set(id, next);
+  const next = keep(setOffer(trade, side, possibleOffer({ items: offer.items ?? [], coins: offer.coins ?? {} }, actor)));
   await broadcast(next);
   return true;
 }
@@ -172,8 +232,7 @@ async function handleAccept({ id, value }, { user }) {
   let trade = findTrade(id);
   const side = sideOf(trade, user);
   if ( !side ) throw new Error(loc("Refus.PasAToi"));
-  trade = value ? accept(trade, side) : unaccept(trade, side);
-  trades.set(id, trade);
+  trade = keep(value ? accept(trade, side) : unaccept(trade, side));
   if ( ready(trade) ) {
     // Noté avant la première attente : l'échange accepté des deux côtés reste dans `trades` tant qu'il s'exécute.
     executing.add(id);
@@ -262,8 +321,11 @@ export function registerTradeInit() {
   CONFIG.queries[Q.accept] = handleAccept;
   CONFIG.queries[Q.cancel] = handleCancel;
   CONFIG.queries[Q.state] = handleState;
+  CONFIG.queries[Q.reset] = handleReset;
 }
 
 export function registerTrade() {
   route(TOKEN_MENU_HOOK, "menu: Trade", onTokenMenu);
+  route("userConnected", "trades of a GM who left", onUserConnected);
+  announceReset();
 }

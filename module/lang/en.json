@@ -346,7 +346,10 @@
       "Chat": "Trade between {a} and {b} — {a} gives: {gaveA}; {b} gives: {gaveB}.",
       "Menu": "Trade",
       "Impossible": "You can only trade with another player character.",
-      "WindowFailed": "The trade window could not open: {reason}"
+      "WindowFailed": "The trade window could not open: {reason}",
+      "GMLeft": "Trade cancelled: the GM's game was reloaded or changed hands. Nothing was exchanged — start the trade again.",
+      "Expired": "Trade cancelled: nobody touched it for half an hour.",
+      "TooMany": "You already have several trade proposals open: finish or cancel one first."
     },
     "Shop": {
       "Title": "Shop: {name}",

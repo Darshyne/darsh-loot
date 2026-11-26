@@ -203,11 +203,17 @@ export function installFakeFoundry() {
   faults.clear();
   chat.length = 0;
   const stored = {};
+  const hooks = {};
   const users = Object.assign([], { get(id) { return this.find(u => u.id === id); }, activeGM: null });
   Object.assign(globalThis, {
     Actor: FakeActor,
     foundry: anything(),
-    Hooks: { on() {}, once() {}, call() {}, callAll() {} },
+    Hooks: {
+      on(name, fn) { (hooks[name] ??= []).push(fn); },
+      once() {},
+      call(name, ...args) { for ( const fn of hooks[name] ?? [] ) if ( fn(...args) === false ) return false; return true; },
+      callAll(name, ...args) { for ( const fn of hooks[name] ?? [] ) fn(...args); return true; }
+    },
     canvas: {},
     ui: { notifications: { info() {}, warn() {}, error() {} } },
     CONFIG: { queries: {}, Item: { documentClass: FakeItem5e }, DND5E: { currencies: { gp: { conversion: 1 } } } },

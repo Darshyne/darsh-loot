@@ -13,6 +13,22 @@ export function newTrade({ id, a, b }) {
   return { id, a: side(a), b: side(b), done: false, cancelled: false };
 }
 
+/** A trade nobody has touched for this long is abandoned (ms): the GM client cancels it (lot 0, defect 9). */
+export const TRADE_MAX_IDLE_MS = 30 * 60000;
+
+/** How many trades one player may have proposed and left open at the same time. */
+export const TRADE_MAX_OPEN = 3;
+
+/**
+ * The trades to cancel because nobody touched them for too long.
+ * @param {Iterable<{ id: string, touched?: number }>} trades
+ * @param {number} now
+ * @returns {string[]}  Their ids.
+ */
+export function staleTrades(trades, now, maxIdle=TRADE_MAX_IDLE_MS) {
+  return [...trades].filter(t => (now - (t.touched ?? now)) > maxIdle).map(t => t.id);
+}
+
 /** L'autre côté. */
 export const other = side => (side === "a" ? "b" : "a");
 

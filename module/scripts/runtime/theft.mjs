@@ -55,6 +55,14 @@ export async function requestSteal(source, thief, itemId) {
   if ( game.combat?.started ) return ui.notifications.warn(loc("Steal.InCombat"));
   // 0.21.0 : coupé, le joueur ne lance même pas son dé (le MJ refuserait de toute façon).
   if ( !game.user.isGM && (pickpocketMode(setting("pickpocket")) === "off") ) return ui.notifications.warn(loc("Steal.Disabled"));
+  // Lot 0 (audit of 2026-11-26, defect 8): the GM's agreements live in the memory of the GM client. One lost since the pockets
+  // were opened (the GM reloaded, another GM took over, the ten minutes ran out) used to refuse the theft **after** the dice had
+  // rolled. It is asked again here, before the roll: a GM who still remembers answers at once, one who forgot is asked anew.
+  if ( !game.user.isGM && (pickpocketMode(setting("pickpocket")) === "approval") ) {
+    const answer = await askGM(APPROVAL_QUERY, handleApproval, { source: sourceRef(source), looter: thief.uuid }, { timeout: APPROVAL_MS + 15000 });
+    if ( !answer ) return null;
+    if ( !answer.ok ) return refuse(thief, loc("Steal.ApprovalRefused"));
+  }
   const known = new Set(game.messages.keys());
   const rolls = await thief.actor.rollSkill({ skill: "slt" }, { configure: false });
   const total = rolls?.[0]?.total;
@@ -146,6 +154,8 @@ async function handleApproval(payload, { user }) {
   const source = checkSourceForApproval(payload, user);
   const thief = fromUuidSync(payload.looter, { strict: false });
   if ( user.isGM || (pickpocketMode(setting("pickpocket")) !== "approval") ) return { ok: true };
+  // Still agreed (asked again before each roll, see `requestSteal`): no second window for the GM.
+  if ( approved(thief.actor.id, source.doc.uuid) ) return { ok: true };
   const ok = await askApproval(loc("Steal.ApprovalAsk", { user: user.name, thief: thief.name, victim: source.doc.name }));
   if ( ok ) approvals.set(approvalKey(thief.actor.id, source.doc.uuid), Date.now() + APPROVAL_VALID_MS);
   return { ok };

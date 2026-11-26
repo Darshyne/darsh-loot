@@ -34,7 +34,8 @@ export class TradeWindow extends ApplicationV2 {
   static show(state, actions) {
     let app = TradeWindow.open.get(state.id);
     if ( state.cancelled ) {
-      ui.notifications.info(loc("Trade.Cancelled", { name: state.cancelledBy ?? "" }));
+      // `reason`: cancelled by something else than a player (the GM client left, the trade was abandoned) — lot 0, defect 8.
+      if ( app || !state.reason ) ui.notifications.info(state.reason ?? loc("Trade.Cancelled", { name: state.cancelledBy ?? "" }));
       if ( app ) app.trade = state;   // déjà annulé : la fermeture ne renvoie pas d'annulation
       return app?.close();
     }
@@ -49,6 +50,16 @@ export class TradeWindow extends ApplicationV2 {
       setTimeout(() => app.close(), 1500);
     }
     return app;
+  }
+
+  /**
+   * Closes every open trade window that matches, as cancelled for this reason, without sending a cancellation back (the GM
+   * client that held the trade is gone). Returns how many were closed.
+   */
+  static cancelWhere(match, reason) {
+    const hit = [...TradeWindow.open.values()].filter(app => !app.trade.done && !app.trade.cancelled && match(app.trade));
+    for ( const app of hit ) TradeWindow.show({ ...app.trade, cancelled: true, reason });
+    return hit.length;
   }
 
   /** Mon côté : celui que je tiens (le MJ peut tenir l'un ou l'autre). */

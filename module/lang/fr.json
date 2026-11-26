@@ -346,7 +346,10 @@
       "Chat": "Échange entre {a} et {b} — {a} donne : {gaveA} ; {b} donne : {gaveB}.",
       "Menu": "Échanger",
       "Impossible": "On ne peut échanger qu'avec le personnage d'un autre joueur.",
-      "WindowFailed": "La fenêtre d'échange n'a pas pu s'ouvrir : {reason}"
+      "WindowFailed": "La fenêtre d'échange n'a pas pu s'ouvrir : {reason}",
+      "GMLeft": "Échange annulé : le jeu du MJ a été rechargé ou a changé de main. Rien n'a été échangé — relancez l'échange.",
+      "Expired": "Échange annulé : personne n'y a touché depuis une demi-heure.",
+      "TooMany": "Vous avez déjà plusieurs propositions d'échange ouvertes : terminez-en ou annulez-en une d'abord."
     },
     "Shop": {
       "Title": "Boutique : {name}",
