@@ -279,9 +279,20 @@ async function setSurprised(actors, active) {
 function onEventTurn({ combat, combatant, data }={}) {
   if ( !isActiveGM() || !data?.trap ) return;
   const h = trapHandle(fromUuidSync(data.trap, { strict: false }));
-  if ( !h ) { log.warn(`trap ${data.trap}: gone, its turn is skipped`); combat?.nextTurn(); return; }
+  if ( !h ) { log.warn(`trap ${data.trap}: gone, its turn is skipped`); passTurn(combat, combatant); return; }
   const triggerer = data.triggerer ? fromUuidSync(data.triggerer, { strict: false }) : null;
   judgeTrap(h, triggerer, { combat, combatant, surprised: data.surprised ?? [] });
+}
+
+/**
+ * The trap's turn is over: the next one — if the combat is still there and it is still the trap's turn. A GM who ends the combat
+ * while the trap's window is open, then closes the window, used to make the turn pass on a combat that no longer exists (a
+ * console error; seen on the bench, part « piege-avance » of the selftest, 2026-11-26). Never throws.
+ */
+async function passTurn(combat, combatant) {
+  if ( !combat || !game.combats.get(combat.id) || (combat.combatant?.id !== combatant?.id) ) return;
+  try { await combat.nextTurn(); }
+  catch(err) { log.warn("trap: its turn could not be passed —", err.message); }
 }
 
 const judging = new Set();
@@ -315,7 +326,7 @@ async function judgeTrap(h, triggerer, turn) {
     log.warn("trap:", err.message);
   } finally {
     judging.delete(h.uuid);
-    if ( turn?.combat && (turn.combat.combatant?.id === turn.combatant?.id) ) await turn.combat.nextTurn();
+    if ( turn ) await passTurn(turn.combat, turn.combatant);
   }
 }
 

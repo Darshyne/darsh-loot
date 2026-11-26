@@ -314,8 +314,15 @@ async function advancedTrap(b) {
       // Laisser le combat commencer pour de bon (le tour du piège) avant de le retirer : supprimé trop tôt, dnd5e et le moteur
       // écrivent encore sur un combat parti (erreurs du test, pas du jeu).
       await sleep(3000);
+      // Closing the trap's window passes its turn (runtime/traps.mjs `passTurn`): the combat is removed only once that write has
+      // landed — deleted in between, the turn change reached a combat that was gone (a console error of the test, 2026-11-26).
+      const trapTurn = combat?.combatant?.id ?? null;
+      const wasTrap = !!combat?.combatant && !combat.combatant.token;
       await closeNew(windows);
+      if ( combat && wasTrap ) await until(() => combat.combatant?.id !== trapTurn, 5000);
+      await sleep(800);
       if ( combat ) await combat.delete().catch(() => {});
+      await sleep(500);
     }
   } finally {
     for ( const t of surprised ) await t.actor?.toggleStatusEffect("surprised", { active: false }).catch(() => {});
