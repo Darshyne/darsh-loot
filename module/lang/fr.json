@@ -25,7 +25,9 @@
     },
     "Notice": {
       "NoGM": "Aucun MJ connecté : la fouille a besoin d'un MJ actif.",
-      "Refused": "Impossible : {reason}"
+      "Refused": "Impossible : {reason}",
+      "StillWaiting": "Le jeu du MJ n'a pas encore répondu : attente en cours…",
+      "NoAnswer": "Aucune réponse du jeu du MJ. L'action a peut-être été faite quand même : vérifiez avant de recommencer."
     },
     "Chat": {
       "Took": "{looter} prend sur {corpse} : {what}.",
@@ -313,7 +315,8 @@
       "Chat": "{caster} relève {corpse} : {undead} se dresse.",
       "Someone": "Quelqu'un",
       "NotRaisable": "Seul le cadavre d'un humanoïde de taille Petite ou Moyenne peut être relevé.",
-      "NeedMM": "Ni le Monster Manual ni le compendium de créatures du SRD de dnd5e n'ont ce mort-vivant."
+      "NeedMM": "Ni le Monster Manual ni le compendium de créatures du SRD de dnd5e n'ont ce mort-vivant.",
+      "Busy": "Ce cadavre est déjà en train d'être relevé."
     },
     "Drop": {
       "QuantityTitle": "Poser : {name}",
@@ -388,7 +391,9 @@
       "ChatPaid": "Paie {price}.",
       "ChatEarned": "Reçoit {price}.",
       "Show": "Montrer aux joueurs",
-      "Shown": "{name} : boutique montrée à {count} joueur(s)."
+      "Shown": "{name} : boutique montrée à {count} joueur(s).",
+      "Stuck": "{name} ne peut pas être vendu : il n'est pas marqué comme équipement sur la fiche du marchand. Rien n'a été payé.",
+      "StuckNote": "Invendable : pas marqué comme équipement (propriété « Équipement » de l'objet)."
     },
     "Merchant": {
       "Title": "Marchand : {name}",
@@ -1136,6 +1141,35 @@
       "Reset": "Réinitialiser : {name}",
       "Configure": "Réglages : {name}",
       "ResetDone": "{name} est revenu dans sa première position."
+    },
+    "Op": {
+      "Failed": "Butin et commerce — cette opération a échoué : {label}",
+      "Error": "Erreur : {error}",
+      "Written": "Ce qui avait déjà été écrit :",
+      "AllUndone": "Tout a été remis comme avant. Rien à corriger.",
+      "NotUndone": "N'a pas pu être remis — à corriger à la main :",
+      "FailedUndone": "L'opération a échoué ; tout a été remis comme avant (le MJ a le détail).",
+      "FailedPartly": "L'opération a échoué, et une partie n'a pas pu être remise : le MJ a le détail.",
+      "Interrupted": "Butin et commerce — interrompu par un rechargement : {label}",
+      "Planned": "Ce qu'elle allait écrire :",
+      "Check": "Une partie a pu être faite et le reste non : vérifiez les fiches concernées.",
+      "Take": "{to} prend à {from}",
+      "Move": "{from} → {to}",
+      "Trade": "échange entre {a} et {b}",
+      "Gives": "{who} donne : {what}",
+      "Raise": "relève de {corpse}",
+      "RaisePlan": "{corpse} ({scene}) est remplacé par un mort-vivant ; ses affaires tombent au sol.",
+      "BelongingsStay": "elles restent dans le tas au sol",
+      "Step": {
+        "Received": "{who} a reçu : {what}",
+        "Removed": "retiré de {who} : {what}",
+        "CoinsIn": "pièces ajoutées à {who}",
+        "CoinsOut": "pièces retirées à {who}",
+        "Purse": "bourse de {who} réécrite",
+        "Created": "acteur créé : {what}",
+        "Placed": "token posé : {what}",
+        "Belongings": "affaires de {who} tombées au sol"
+      }
     }
   },
   "TYPES": {

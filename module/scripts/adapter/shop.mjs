@@ -8,13 +8,14 @@
  * un joueur).
  */
 import { MODULE_ID } from "../shared.mjs";
-import { COINS } from "../core/loot.mjs";
+import { COINS, canLeaveOwner } from "../core/loot.mjs";
 import {
   normalizeMerchant, toCp, modifiersFor, buyPrice, sellPrice, goodsOf, wares, stolenVerdict, settle, cleanCart,
   restockPlan, coinsFor, purseValue, fromItemPiles
 } from "../core/shop.mjs";
 import { drawItems } from "./treasure.mjs";
 import { moveItemNow } from "./drop.mjs";
+import { loc } from "../shared.mjs";
 
 /** La configuration (normalisée) du marchand que serait cet acteur. */
 export const merchantOf = actor => normalizeMerchant(actor?.getFlag(MODULE_ID, "merchant"));
@@ -78,7 +79,9 @@ function plainItems(actor) {
       baseCp: baseCpOf(i, actor),
       hidden: shop.hidden === true, notForSale: shop.notForSale === true,
       base: Number.isFinite(shop.base) ? shop.base : null, rolled: shop.rolled === true, bought: shop.bought === true,
-      stolen: i.getFlag(MODULE_ID, "stolen") ?? null
+      stolen: i.getFlag(MODULE_ID, "stolen") ?? null,
+      // Lot 0 (defect 1): what this actor cannot hand over (an NPC item that is not gear).
+      stuck: !canLeaveOwner({ fromNpc: actor.type === "npc", properties: i.system.properties })
     };
   });
 }
@@ -149,25 +152,48 @@ export function quote(actor, token, buyer, cart={}) {
 /**
  * Exécute un troc dont le devis est bon — chez le MJ : les objets vendus rejoignent l'étal (empilés, marque de vol
  * ôtée, notés « rachetés »), les objets achetés passent au personnage (le stock infini ne baisse pas), les bourses
- * prennent leur valeur d'après solde. Le devis donne les bourses d'arrivée : il doit avoir été fait dans le même tour
+ * prennent leur valeur d'après solde. `op` : the operation that undoes it all when a write fails (adapter/ledger.mjs). Le devis donne les bourses d'arrivée : il doit avoir été fait dans le même tour
  * (`inTurn`, adapter/ledger.mjs) que cet appel, sur le marchand et le personnage — sinon une bourse qui a bougé entre
  * les deux serait écrasée.
  */
-export async function executeDeal(actor, buyer, deal) {
+export async function executeDeal(actor, buyer, deal, op) {
   const merchant = merchantOf(actor);
   const names = { bought: [], sold: [] };
   const label = m => (m.quantity > 1 ? `${m.name} (${m.quantity})` : m.name);
   for ( const line of deal.sell ) {
-    names.sold.push(label(await moveItemNow(buyer, actor, line.id, line.quantity, { anyType: true, launder: true, shop: { bought: true } })));
+    names.sold.push(label(await moveItemNow(buyer, actor, line.id, line.quantity, { anyType: true, launder: true, shop: { bought: true }, op })));
   }
   for ( const line of deal.buy ) {
-    names.bought.push(label(await moveItemNow(actor, buyer, line.id, line.quantity, { copy: merchant.infiniteStock })));
+    const moved = await moveItemNow(actor, buyer, line.id, line.quantity, { copy: merchant.infiniteStock, op });
+    // Checked before the first write by the caller (`unsellable`); if it happens anyway, the deal stops and is undone.
+    if ( moved.kept ) throw new Error(loc("Shop.Stuck", { name: moved.name }));
+    names.bought.push(label(moved));
   }
   if ( deal.net !== 0 ) {
+    // The purses are written inside the turn held on both actors: putting back the value read here is exact.
+    const before = { buyer: { ...buyer.system.currency }, merchant: { ...actor.system.currency } };
     await buyer.update({ "system.currency": deal.player });
-    if ( !merchant.infiniteCoins ) await actor.update({ "system.currency": deal.merchant });
+    op.did(loc("Op.Step.Purse", { who: buyer.name }), () => buyer.update({ "system.currency": before.buyer }));
+    if ( !merchant.infiniteCoins ) {
+      await actor.update({ "system.currency": deal.merchant });
+      op.did(loc("Op.Step.Purse", { who: actor.name }), () => actor.update({ "system.currency": before.merchant }));
+    }
   }
   return names;
+}
+
+/**
+ * Lot 0 (audit of 2026-11-26, defect 1): the first wanted item this merchant cannot hand over — an NPC item without the `gear`
+ * property (imported merchant, item older than dnd5e 6.0). Asked before the first write: such an item was shown, priced and
+ * paid for, and nothing was delivered.
+ * @returns {string|null}  Its name, or null when everything can change hands.
+ */
+export function unsellable(actor, wanted=[]) {
+  for ( const { id } of wanted ) {
+    const item = actor.items.get(id);
+    if ( item && !canLeaveOwner({ fromNpc: actor.type === "npc", properties: item.system.properties }) ) return item.name;
+  }
+  return null;
 }
 
 /* -------------------------------------------- */

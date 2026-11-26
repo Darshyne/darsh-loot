@@ -130,7 +130,9 @@ export function goodsOf(items, { gm=false, infiniteStock=false }={}) {
   const ids = new Set(physical.map(i => i.id));
   return physical
     .filter(i => !i.container || !ids.has(i.container))
-    .filter(i => gm || (!i.hidden && (i.baseCp > 0) && (infiniteStock || (i.quantity > 0))))
+    // `stuck` (lot 0, defect 1): an item the merchant cannot hand over (an NPC item without the `gear` property) is never
+    // offered to a player — it used to be priced, paid for, and never delivered. The GM still sees it, marked.
+    .filter(i => gm || (!i.hidden && !i.stuck && (i.baseCp > 0) && (infiniteStock || (i.quantity > 0))))
     .map(i => ({ ...i, contents: (i.type === "container") ? items.filter(x => x.container === i.id).length : 0 }));
 }
 

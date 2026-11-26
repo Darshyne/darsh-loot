@@ -62,6 +62,28 @@ export function ready(trade) {
 }
 
 /**
+ * An offer without the items stored inside a bag that is itself offered (lot 0, audit of 2026-11-26, defect 2): the bag leaves
+ * with its contents, so an item inside it must not be moved a second time — it no longer exists once the bag is gone, and the
+ * trade used to break half-way.
+ * @param {{id: string, quantity: number}[]} items
+ * @param {Record<string, string|null>} containerOf  For each item id of the sheet, the id of the bag it is stored in.
+ * @returns {{ items: {id: string, quantity: number}[], changed: boolean }}
+ */
+export function withoutContained(items, containerOf={}) {
+  const offered = new Set(items.map(i => i.id));
+  const insideOffered = id => {
+    const seen = new Set();
+    for ( let parent = containerOf[id]; parent && !seen.has(parent); parent = containerOf[parent] ) {
+      if ( offered.has(parent) ) return true;
+      seen.add(parent);
+    }
+    return false;
+  };
+  const kept = items.filter(i => !insideOffered(i.id));
+  return { items: kept, changed: kept.length !== items.length };
+}
+
+/**
  * Ce qu'un côté peut vraiment donner, confronté à ce qu'il possède : quantités plafonnées, objets disparus retirés,
  * pièces plafonnées à la bourse. `owned` : `{ [id]: quantity }` ; `purse` : sa bourse.
  * @returns {{ items: {id: string, quantity: number}[], coins: object, changed: boolean }}

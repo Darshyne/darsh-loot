@@ -51,6 +51,16 @@ const rollTotal = async formula => (await new Roll(formula).evaluate({ allowInte
 const itemUuid = (pack, id) => `Compendium.${pack}.Item.${id}`;
 const tableUuid = (pack, id) => `Compendium.${pack}.RollTable.${id}`;
 
+/**
+ * One roll at a time per corpse or chest (lot 0, audit of 2026-11-26, defect 5): a second request that arrives while the first
+ * is still drawing gets the same result instead of drawing again — the « rolled » flag used to be written last, after the items.
+ */
+const rolling = new Map();
+function once(key, run) {
+  if ( !rolling.has(key) ) rolling.set(key, run().finally(() => rolling.delete(key)));
+  return rolling.get(key);
+}
+
 /** Le cadavre a-t-il déjà été tiré ? */
 export function isRolled(actor) {
   return !!actor.getFlag(MODULE_ID, "rolled");
@@ -132,7 +142,12 @@ async function itemFromResult(result) {
  * poches d'un humanoïde, table propre au PNJ (`flags.darsh-loot.table`, une UUID de table). À appeler chez le MJ.
  * @returns {Promise<{ items: object[], coins: object }>}  Ce qui a été ajouté (pour les journaux et les tests).
  */
-export async function rollTreasure(actor, { pockets=true, individual=true }={}) {
+export function rollTreasure(actor, options={}) {
+  if ( isRolled(actor) ) return Promise.resolve({ items: [], coins: {}, already: true });
+  return once(actor.uuid, () => rollTreasureNow(actor, options));
+}
+
+async function rollTreasureNow(actor, { pockets=true, individual=true }={}) {
   const details = actor.system.details ?? {};
   const preferences = details.treasure?.value ?? [];
   const items = [];
@@ -167,10 +182,20 @@ export async function rollTreasure(actor, { pockets=true, individual=true }={}) 
   const own = actor.getFlag(MODULE_ID, "table");
   if ( own ) items.push(...await drawItems(own, 1));
 
-  if ( items.length ) await actor.createEmbeddedDocuments("Item", items);
+  // The flag (and the coins) first, the items next: nothing is drawn twice if another request arrives in between. Items that
+  // cannot be created take the flag back, so the corpse is not left « rolled » and empty.
+  const before = { ...actor.system.currency };
   const update = { [`flags.${MODULE_ID}.rolled`]: true };
-  if ( Object.keys(coins).length ) update["system.currency"] = addCoins(actor.system.currency, coins);
+  if ( Object.keys(coins).length ) update["system.currency"] = addCoins(before, coins);
   await actor.update(update);
+  try {
+    if ( items.length ) await actor.createEmbeddedDocuments("Item", items);
+  } catch(err) {
+    const back = { [`flags.${MODULE_ID}.rolled`]: false };
+    if ( Object.keys(coins).length ) back["system.currency"] = before;
+    await actor.update(back).catch(() => {});
+    throw err;
+  }
   return { items: items.map(i => i.name), coins };
 }
 
@@ -243,7 +268,12 @@ async function magicItem(band, theme) {
  * @param {RegionBehavior} behavior
  * @param {Actor} actor  L'acteur Groupe du coffre.
  */
-export async function rollContainer(behavior, actor) {
+export function rollContainer(behavior, actor) {
+  if ( behavior.system.rolled ) return Promise.resolve({ items: [], coins: {}, already: true });
+  return once(behavior.uuid, () => rollContainerNow(behavior, actor));
+}
+
+async function rollContainerNow(behavior, actor) {
   const { table, draws, hoard, theme } = behavior.system;
   const items = [];
   let coins = {};
@@ -267,8 +297,14 @@ export async function rollContainer(behavior, actor) {
     }
   }
 
-  if ( items.length ) await actor.createEmbeddedDocuments("Item", items);
-  if ( Object.keys(coins).length ) await actor.update({ "system.currency": addCoins(actor.system.currency, coins) });
+  // Marked first (see `rollTreasure`); a chest whose items cannot be created is not left « rolled » and empty.
   await behavior.update({ "system.rolled": true });
+  try {
+    if ( items.length ) await actor.createEmbeddedDocuments("Item", items);
+  } catch(err) {
+    await behavior.update({ "system.rolled": false }).catch(() => {});
+    throw err;
+  }
+  if ( Object.keys(coins).length ) await actor.update({ "system.currency": addCoins(actor.system.currency, coins) });
   return { items: items.map(i => i.name), coins };
 }

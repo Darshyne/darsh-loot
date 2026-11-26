@@ -16,6 +16,7 @@
 import { MODULE_ID, loc, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
+import { operation } from "../adapter/ledger.mjs";
 import { ensureRolled } from "./treasure.mjs";
 import { ensureStore } from "./containers.mjs";
 import { corpseToken, tokenDistance, transfer, lootView } from "../adapter/dnd5e.mjs";
@@ -29,6 +30,9 @@ const ANIMATE_QUERY = `${MODULE_ID}.animate`;
 const MM_ACTORS = "dnd-monster-manual.actors";
 const SRD_ACTORS = "dnd5e.actors24";
 const FOLDER_FLAG = "undead";
+
+/** Corpses being raised right now, at the GM (lot 0, audit of 2026-11-26, defect 6): a second request on the same one is refused. */
+const raising = new Set();
 
 /** Ce cadavre peut-il être relevé (par ce sort, identifiant dnd5e, s'il est donné) ? */
 export function raisable(tokenDoc, spell=null) {
@@ -64,15 +68,35 @@ async function handleAnimate({ corpse: corpseUuid, caster: casterUuid, kind, spe
   const pack = [MM_ACTORS, SRD_ACTORS].map(id => game.packs.get(id)).find(pk => pk?.index?.has(UNDEAD[kind]));
   if ( !pack ) throw new Error(loc("Necro.NeedMM"));
 
-  const remains = await dropBelongings(corpse);
-  const undead = await createUndead(pack, kind, corpse, caster);
+  // Two requests on the same corpse (two casters, a double click): the second used to create a second undead without a token.
+  if ( raising.has(corpseUuid) ) throw new Error(loc("Necro.Busy"));
+  raising.add(corpseUuid);
+  try { return await raise({ corpse, caster, kind, pack }); }
+  finally { raising.delete(corpseUuid); }
+}
+
+/**
+ * The raising itself, as one operation (lot 0, defect 3): the undead and its token exist **before** the corpse leaves, so a
+ * write that fails takes them back and the corpse is still there — before, the corpse was deleted first and a failure left
+ * neither corpse nor undead. Belongings already dropped stay in their pile at the feet of the corpse (the trace says so).
+ */
+async function raise({ corpse, caster, kind, pack }) {
   const place = { x: corpse._source.x, y: corpse._source.y, elevation: corpse._source.elevation, level: corpse._source.level };
   const disposition = caster?.disposition ?? CONST.TOKEN_DISPOSITIONS.FRIENDLY;
   const scene = corpse.parent;
   const corpseName = corpse.name;
-  await corpse.delete();
-  const tokenData = (await undead.getTokenDocument({ ...place, actorLink: true, disposition })).toObject();
-  const [token] = await scene.createEmbeddedDocuments("Token", [tokenData]);
+  const { undead, token, remains } = await operation({ label: loc("Op.Raise", { corpse: corpseName }),
+    plan: [loc("Op.RaisePlan", { corpse: corpseName, scene: scene.name ?? "" })] }, async op => {
+    const undead = await createUndead(pack, kind, corpse, caster);
+    op.did(loc("Op.Step.Created", { what: undead.name }), () => undead.delete());
+    const tokenData = (await undead.getTokenDocument({ ...place, actorLink: true, disposition })).toObject();
+    const [token] = await scene.createEmbeddedDocuments("Token", [tokenData]);
+    op.did(loc("Op.Step.Placed", { what: undead.name }), () => token.delete());
+    const remains = await dropBelongings(corpse);
+    if ( remains ) op.did(loc("Op.Step.Belongings", { who: corpseName }), async () => { throw new Error(loc("Op.BelongingsStay")); });
+    await corpse.delete();
+    return { undead, token, remains };
+  });
 
   ChatMessage.implementation.create({
     content: `<p>${loc("Necro.Chat", { caster: caster?.name ?? loc("Necro.Someone"), corpse: corpseName, undead: undead.name })}</p>`,

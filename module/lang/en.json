@@ -25,7 +25,9 @@
     },
     "Notice": {
       "NoGM": "No GM connected: searching needs an active GM.",
-      "Refused": "Not possible: {reason}"
+      "Refused": "Not possible: {reason}",
+      "StillWaiting": "The GM's game has not answered yet: still waiting…",
+      "NoAnswer": "No answer from the GM's game. The action may still have been done: check before trying again."
     },
     "Chat": {
       "Took": "{looter} takes from {corpse}: {what}.",
@@ -313,7 +315,8 @@
       "Chat": "{caster} raises {corpse}: {undead} rises.",
       "Someone": "Someone",
       "NotRaisable": "Only the corpse of a Small or Medium humanoid can be raised.",
-      "NeedMM": "Neither the Monster Manual nor the dnd5e SRD creatures compendium has this undead."
+      "NeedMM": "Neither the Monster Manual nor the dnd5e SRD creatures compendium has this undead.",
+      "Busy": "This corpse is already being raised."
     },
     "Drop": {
       "QuantityTitle": "Drop: {name}",
@@ -388,7 +391,9 @@
       "ChatPaid": "Pays {price}.",
       "ChatEarned": "Receives {price}.",
       "Show": "Show to players",
-      "Shown": "{name}: shop shown to {count} player(s)."
+      "Shown": "{name}: shop shown to {count} player(s).",
+      "Stuck": "{name} cannot be sold: it is not marked as equipment on the merchant's sheet. Nothing was charged.",
+      "StuckNote": "Cannot be sold: not marked as equipment (« Gear » property of the item)."
     },
     "Merchant": {
       "Title": "Merchant: {name}",
@@ -1136,6 +1141,35 @@
       "Reset": "Reset: {name}",
       "Configure": "Settings: {name}",
       "ResetDone": "{name} is back in its first position."
+    },
+    "Op": {
+      "Failed": "Loot & Trade — this did not go through: {label}",
+      "Error": "Error: {error}",
+      "Written": "What had already been written:",
+      "AllUndone": "Everything was put back as it was. Nothing to fix.",
+      "NotUndone": "Could not be put back — to fix by hand:",
+      "FailedUndone": "It did not go through; everything was put back as it was (the GM has the details).",
+      "FailedPartly": "It did not go through, and part of it could not be put back: the GM has the details.",
+      "Interrupted": "Loot & Trade — interrupted by a reload: {label}",
+      "Planned": "What it was about to write:",
+      "Check": "Part of it may be done and the rest not: check the sheets involved.",
+      "Take": "{to} takes from {from}",
+      "Move": "{from} → {to}",
+      "Trade": "trade between {a} and {b}",
+      "Gives": "{who} gives: {what}",
+      "Raise": "raising {corpse}",
+      "RaisePlan": "{corpse} ({scene}) is replaced by an undead; its belongings fall to the ground.",
+      "BelongingsStay": "they stay in the pile on the ground",
+      "Step": {
+        "Received": "{who} received: {what}",
+        "Removed": "removed from {who}: {what}",
+        "CoinsIn": "coins added to {who}",
+        "CoinsOut": "coins removed from {who}",
+        "Purse": "purse of {who} rewritten",
+        "Created": "actor created: {what}",
+        "Placed": "token placed: {what}",
+        "Belongings": "belongings of {who} dropped to the ground"
+      }
     }
   },
   "TYPES": {

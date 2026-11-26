@@ -121,7 +121,7 @@ export class ShopWindow extends ApplicationV2 {
       const taken = this.cart[side].get(e.id) ?? 0;
       const left = Number.isFinite(e.available) ? Math.max(0, e.quantity - taken) : null;
       const refused = (side === "sell") && (e.verdict === "refuse");
-      const kept = (side === "buy") && e.notForSale;
+      const kept = (side === "buy") && (e.notForSale || e.stuck);
       const classes = ["dlo-slot", "dlo-shop-slot"];
       if ( refused || kept ) classes.push("dlo-shop-no");
       if ( left === 0 ) classes.push("dlo-shop-out");
@@ -129,7 +129,7 @@ export class ShopWindow extends ApplicationV2 {
       const notes = [];
       if ( refused ) notes.push(loc("Shop.Refused"));
       if ( (side === "sell") && (e.verdict === "fence") ) notes.push(loc("Shop.Fenced"));
-      if ( kept ) notes.push(loc("Shop.NotForSale"));
+      if ( kept ) notes.push(loc(e.stuck ? "Shop.StuckNote" : "Shop.NotForSale"));
       if ( e.hidden ) notes.push(loc("Shop.Hidden"));
       const tip = `${escape(e.name)} — ${formatPrice(e.unit)}${notes.length ? `<br>${notes.join("<br>")}` : ""}`;
       const action = (refused || kept || (left === 0)) ? "" : `data-action="add"`;

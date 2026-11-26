@@ -27,13 +27,37 @@ export const sourceRef = source => ({ kind: source.kind, uuid: source.uuid });
 export async function askGM(name, handler, payload, { timeout=15000 }={}) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Notice.NoGM")); return null; }
-  try {
-    return gm.isSelf ? await handler(payload, { user: game.user }) : await gm.query(name, payload, { timeout });
-  } catch(err) {
-    log.warn(`${name} refused:`, err.message);
-    ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
-    return null;
+  if ( gm.isSelf ) {
+    try { return await handler(payload, { user: game.user }); }
+    catch(err) { return refused(name, err); }
   }
+  // Lot 0 (audit of 2026-11-26, defect 7): the query used to give up after `timeout` and say « refused » while the GM client,
+  // merely slow (a compendium to load, a queue of gestures), carried it out anyway. Now: after `timeout` the player is told the
+  // GM has not answered yet, and the wait goes on until the real answer — up to `GM_PATIENCE_MS`, after which the message says
+  // the truth: no answer, the gesture may still be done.
+  let waiting = null;
+  const slow = setTimeout(() => { waiting = ui.notifications.info(loc("Notice.StillWaiting"), { permanent: true }); }, timeout);
+  try {
+    return await gm.query(name, payload, { timeout: Math.max(timeout, GM_PATIENCE_MS) });
+  } catch(err) {
+    if ( !/timed? ?out/i.test(err.message) ) return refused(name, err);
+    log.warn(`${name}: no answer from the GM client`, err.message);
+    ui.notifications.warn(loc("Notice.NoAnswer"));
+    return null;
+  } finally {
+    clearTimeout(slow);
+    if ( waiting ) ui.notifications.remove?.(waiting);
+  }
+}
+
+/** How long a request waits for the GM client before saying it got no answer (ms). */
+const GM_PATIENCE_MS = 90000;
+
+/** A refusal: the reason the GM client gave, as a warning — never a console error (the Core scenarios count them). */
+function refused(name, err) {
+  log.warn(`${name} refused:`, err.message);
+  ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
+  return null;
 }
 
 /**

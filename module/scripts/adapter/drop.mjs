@@ -8,7 +8,8 @@ import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { stackTarget, canLeaveOwner } from "../core/loot.mjs";
 import { PILE_FRACTION, pileSpot, pileLevelFix } from "../core/drop.mjs";
 import { levelBase } from "./sight.mjs";
-import { inTurn } from "./ledger.mjs";
+import { inTurn, operation } from "./ledger.mjs";
+import { snapshotWithContents, clearAttunement } from "./dnd5e.mjs";
 
 /** Icône d'un tas de plusieurs objets différents. */
 export const MIXED_PILE_IMG = "icons/containers/bags/sack-cloth-stitched-brown.webp";
@@ -225,52 +226,92 @@ export function moveItem(from, to, itemId, quantity, options={}) {
 }
 
 /**
- * Le déplacement lui-même, pour un geste qui tient déjà son tour sur ces deux acteurs (`inTurn`, adapter/ledger.mjs : un
- * échange, un troc). Ce que le donneur tient et la pile du receveur se lisent ici, le tour venu.
+ * The move itself, for a gesture that already holds its turn on both actors (`inTurn`, adapter/ledger.mjs: a trade, a deal).
+ * What the giver holds and the taker's stack are read here, once the turn has come.
+ * Lot 0 (audit of 2026-11-26, defects 3–4): each write registers its undo with `op` (the caller's operation: a trade, a deal);
+ * without `op` the move is its own operation — a source that cannot be reduced takes back what the taker received.
  */
-export async function moveItemNow(from, to, itemId, quantity, { anyType=false, launder=false, shop=null, copy=false }={}) {
+export function moveItemNow(from, to, itemId, quantity, options={}) {
+  if ( options.op ) return moveItemSteps(from, to, itemId, quantity, options);
+  // Checked here too, so that a missing item stays a plain refusal, outside any operation.
+  if ( !from.items.get(itemId) ) return Promise.reject(new Error(loc("Refus.Introuvable")));
+  return operation({ label: loc("Op.Move", { from: from.name, to: to.name }), journal: false },
+    op => moveItemSteps(from, to, itemId, quantity, { ...options, op }));
+}
+
+/**
+ * Can this item of `from` be handed over at all? An NPC only gives its gear (core/loot.mjs `canLeaveOwner`). To ask **before**
+ * the first write of a gesture that charges for it (lot 0, defect 1).
+ */
+export function canHandOver(from, itemId) {
+  const held = from.items.get(itemId);
+  return !!held && canLeaveOwner({ fromNpc: from.type === "npc", properties: held.system.properties });
+}
+
+async function moveItemSteps(from, to, itemId, quantity, { anyType=false, launder=false, shop=null, copy=false, op }) {
   const Item5e = CONFIG.Item.documentClass;
   const held = from.items.get(itemId);
-  // Parti pendant l'attente (le même objet posé ou donné deux fois de suite) : un refus, rien ne bouge.
+  // Gone while waiting (the same item dropped or given twice in a row): a refusal, nothing moves.
   if ( !held ) throw new Error(loc("Refus.Introuvable"));
-  // 0.15.1 : d'un PNJ, seul l'équipement part, et sous sa version « équipement » (`asGear`, data/item/templates/
-  // physical-item.mjs:367 : la Dague du Manuel des joueurs plutôt que la « Dague ombrale » du Familier vampire), comme à la
-  // fouille (adapter/dnd5e.mjs `transfer`). Une attaque de créature ne devient pas un objet : rien ne bouge.
+  // 0.15.1: from an NPC only gear leaves, as its « gear » version (`asGear`, data/item/templates/physical-item.mjs:367: the
+  // Player's Handbook Dagger rather than the Vampire Familiar's « Umbral Dagger »), like a search (adapter/dnd5e.mjs `transfer`).
+  // A creature's attack does not become an item: nothing moves.
   const fromNpc = from.type === "npc";
   if ( !canLeaveOwner({ fromNpc, properties: held.system.properties }) ) return { name: held.name, quantity: 0, kept: true };
   const item = fromNpc ? ((await held.system.asGear?.()) ?? held) : held;
   const available = held.system.quantity ?? 1;
-  // Un stock infini (`copy`) ne plafonne pas à ce qui reste sur la fiche. Toujours un nombre entier d'exemplaires : une quantité
-  // à virgule (macro, `api.drop`) laisserait une demi-flèche de chaque côté.
+  // An infinite stock (`copy`) is not capped by what is left on the sheet. Always a whole number: a fractional quantity (macro,
+  // `api.drop`) would leave half an arrow on each side.
   const moved = copy ? Math.max(1, Math.floor(Number(quantity) || 1))
     : Math.max(1, Math.min(Math.floor(Number(quantity) || available), available));
-  // Prix à l'unité en pc (pour l'empilement à l'étal d'objets sans source de compendium).
+  // Unit price in cp (to stack, on a stall, items without a compendium source).
   const priceOf = i => (Number(i.system.price?.value) || 0) * ({ pp: 1000, gp: 100, ep: 50, sp: 10, cp: 1 }[i.system.price?.denomination] ?? 100);
-  // Un objet dont le contenant n'existe pas sur la fiche (référence orpheline, fréquente à l'étal d'un marchand importé)
-  // est au premier niveau.
+  // An item whose container does not exist on the sheet (orphan reference, common on an imported merchant's stall) is at the
+  // top level.
   const owned = to.items.map(i => ({ id: i.id, type: i.type, name: i.name,
     source: i._stats?.compendiumSource ?? null, container: to.items.has(i.system.container) ? i.system.container : null, price: priceOf(i) }));
   const stolen = !launder && !!item.getFlag(MODULE_ID, "stolen");
   const stackOn = ((item.type !== "container") && !stolen)
     ? stackTarget(owned, { type: item.type, name: item.name, source: item._stats?.compendiumSource ?? null, price: priceOf(item) }, { anyType }) : null;
+  const what = moved > 1 ? `${item.name} (${moved})` : item.name;
   if ( stackOn ) {
     const target = to.items.get(stackOn);
     await target.update({ "system.quantity": (target.system.quantity ?? 0) + moved });
+    op.did(loc("Op.Step.Received", { who: to.name, what }), async () => {
+      const stack = to.items.get(stackOn);
+      if ( stack ) await stack.update({ "system.quantity": Math.max(0, (stack.system.quantity ?? 0) - moved) });
+    });
   } else {
     const data = await Item5e.createWithContents([item]);
-    // La version « équipement » d'un objet de PNJ garde l'id de l'objet du PNJ (`keepId`) : sans conflit chez le receveur.
+    // The « gear » version of an NPC item keeps the id of the NPC's item (`keepId`): no clash at the taker's.
     foundry.utils.setProperty(data[0], "system.quantity", moved);
     if ( foundry.utils.hasProperty(data[0], "system.equipped") ) foundry.utils.setProperty(data[0], "system.equipped", false);
-    // Les drapeaux d'étal (caché, quantité de référence, tiré…) ne suivent pas l'objet ; ceux du receveur sont posés.
+    // Stall flags (hidden, reference quantity, rolled…) do not follow the item; the taker's are set. Nor does attunement
+    // (lot 0, defect 14).
     for ( const d of data ) {
       if ( d.flags?.[MODULE_ID] ) delete d.flags[MODULE_ID].shop;
       if ( launder && d.flags?.[MODULE_ID] ) delete d.flags[MODULE_ID].stolen;
+      clearAttunement(d);
     }
     if ( shop ) foundry.utils.setProperty(data[0], `flags.${MODULE_ID}.shop`, shop);
     await Item5e.createDocuments(data, { keepId: true, parent: to });
+    const top = data[0]._id;
+    op.did(loc("Op.Step.Received", { who: to.name, what }), async () => {
+      if ( to.items.has(top) ) await to.deleteEmbeddedDocuments("Item", [top], { deleteContents: true });
+    });
   }
   if ( copy ) return { name: item.name, quantity: moved };
-  if ( moved >= available ) await held.delete({ deleteContents: true });
-  else await held.update({ "system.quantity": available - moved });
+  if ( moved >= available ) {
+    const snapshot = snapshotWithContents(from, held.id);
+    await held.delete({ deleteContents: true });
+    op.did(loc("Op.Step.Removed", { who: from.name, what }),
+      () => Item5e.createDocuments(snapshot.filter(d => !from.items.has(d._id)), { keepId: true, parent: from }));
+  } else {
+    await held.update({ "system.quantity": available - moved });
+    op.did(loc("Op.Step.Removed", { who: from.name, what }), async () => {
+      const left = from.items.get(held.id);
+      if ( left ) await left.update({ "system.quantity": (left.system.quantity ?? 0) + moved });
+    });
+  }
   return { name: item.name, quantity: moved };
 }

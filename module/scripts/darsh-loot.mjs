@@ -1,11 +1,12 @@
 /**
  * Butin et commerce (darsh-loot) — point d'entrée. Voir SPEC.md.
  */
-import { MODULE_ID } from "./shared.mjs";
+import { MODULE_ID, log } from "./shared.mjs";
 import { registerSettings } from "./runtime/settings.mjs";
 import { registerSettingsWindow } from "./runtime/settings-window.mjs";
 import { registerObjectSize } from "./runtime/object-size.mjs";
 import { registerTake, requestTake } from "./runtime/take.mjs";
+import { registerOperations, reportInterrupted } from "./runtime/operations.mjs";
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
 import { registerContainersInit, registerContainers, ensureContainer, requestUnlock } from "./runtime/containers.mjs";
 import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
@@ -46,6 +47,7 @@ registerObjectSize();
 Hooks.once("init", () => {
   registerSettings();
   registerSettingsWindow();
+  registerOperations();
   registerTake();
   registerTreasure();
   registerContainersInit();
@@ -61,6 +63,8 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", () => {
+  // Active GM: gestures cut short by a reload (a trade, a deal, a corpse being raised) are told to the GMs.
+  if ( game.users.activeGM?.isSelf ) reportInterrupted().catch(err => log.warn("operation journal:", err.message));
   registerWindows();
   registerCorpses();
   registerContainers();

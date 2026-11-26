@@ -142,4 +142,6 @@ export function registerSettings() {
     scope: "world", config: true, type: String, default: "gm",
     choices: { gm: "DLO.Settings.Announce.GM", all: "DLO.Settings.Announce.All", none: "DLO.Settings.Announce.None" }
   });
+  // Lot 0: the journal of multi-write gestures in progress (runtime/operations.mjs), hidden. Empty unless a GM reloaded mid-gesture.
+  game.settings.register(MODULE_ID, "operations", { scope: "world", config: false, type: Object, default: {} });
 }

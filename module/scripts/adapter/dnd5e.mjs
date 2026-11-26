@@ -1,11 +1,11 @@
 /**
  * Ce qui connaît dnd5e et le canevas : lecture d'un cadavre, distance, transfert d'objets (exécuté par le MJ).
  */
-import { MODULE_ID } from "../shared.mjs";
+import { MODULE_ID, loc } from "../shared.mjs";
 import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, COINS } from "../core/loot.mjs";
 import { sizeOfSpan } from "../core/traps.mjs";
 import { nextStolenMark } from "../core/theft.mjs";
-import { inTurn } from "./ledger.mjs";
+import { inTurn, operation } from "./ledger.mjs";
 
 /** Le token (document) est-il un cadavre fouillable ? */
 export function corpseToken(tokenDoc) {
@@ -111,27 +111,52 @@ export function keyItem(actor, keyName) {
 /* -------------------------------------------- */
 
 /**
- * Déplace des objets et/ou les pièces d'un cadavre ou d'un coffre (`corpse` : l'acteur source) vers un acteur.
- * À n'appeler que chez le MJ.
- * Chaque objet passe par sa version « équipement » (`asGear`, comme un glisser depuis la fiche PNJ,
- * base-actor-sheet.mjs:1762) et part avec son contenu (`createWithContents`, documents/item.mjs:1303).
+ * Moves items and/or the coins of a corpse or a chest (`corpse`: the source actor) to an actor. GM only.
+ * Each item goes through its « gear » version (`asGear`, like a drag from the NPC sheet, base-actor-sheet.mjs:1762) and leaves
+ * with its contents (`createWithContents`, documents/item.mjs:1303).
  * @param {Actor} corpse
  * @param {Actor} recipient
  * @param {{ itemIds?: string[], coins?: boolean, stolen?: object|null }} what
- *   stolen : drapeau `flags.darsh-loot.stolen` à poser sur chaque objet créé (contenu compris) ; un objet volé ne
- *   s'empile jamais sur un objet honnête.
- * @returns {Promise<{ names: string[], coins: object[] }>}  Ce qui a été pris.
+ *   stolen: the `flags.darsh-loot.stolen` flag to put on each created item (contents included); a stolen item never stacks on
+ *   an honest one.
+ * @returns {Promise<{ names: string[], coins: object[] }>}  What was taken.
  */
 export function transfer(corpse, recipient, what={}) {
   return inTurn([corpse, recipient], () => transferNow(corpse, recipient, what));
 }
 
+/** An item and everything stored in it (any depth), as creation data that keeps its ids: what puts it back after a failure. */
+export function snapshotWithContents(actor, id) {
+  const item = actor.items.get(id);
+  if ( !item ) return [];
+  const inside = actor.items.filter(i => i.system.container === id).flatMap(i => snapshotWithContents(actor, i.id));
+  return [item.toObject(), ...inside];
+}
+
 /**
- * Le transfert lui-même, pour un geste qui tient déjà son tour sur ces deux acteurs (`inTurn`, adapter/ledger.mjs) : ce qui
- * reste à la source se lit ici, le tour venu — une prise arrivée juste avant a pu tout emporter.
+ * An item that changes hands is no longer attuned (lot 0, defect 14): dnd5e keeps `system.attuned` in the copied data, so a
+ * traded, sold or dropped ring arrived attuned to its new owner. Creation data, changed in place.
  */
-export async function transferNow(corpse, recipient, { itemIds=[], coins=false, stolen=null }={}) {
-  // Un id répété ne crée qu'un objet (journal, 2026-11-18).
+export function clearAttunement(data) {
+  if ( data?.system?.attuned === true ) data.system.attuned = false;
+  return data;
+}
+
+/**
+ * The transfer itself, for a gesture that already holds its turn on both actors (`inTurn`, adapter/ledger.mjs): what is left at
+ * the source is read here, once the turn has come — a take that arrived just before may have emptied it.
+ * Lot 0 (audit of 2026-11-26, defect 4): each write registers its undo. Without `op` the transfer is its own operation: a
+ * failure half-way (the source cannot be emptied) removes what was created and gives the coins back, and the GM gets a trace —
+ * before, the item stayed on both sides. With `op`, the caller's operation undoes it with the rest.
+ */
+export function transferNow(corpse, recipient, what={}) {
+  if ( what.op ) return transferSteps(corpse, recipient, what);
+  return operation({ label: loc("Op.Take", { from: corpse.name, to: recipient.name }), journal: false },
+    op => transferSteps(corpse, recipient, { ...what, op }));
+}
+
+async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stolen=null, op }) {
+  // A repeated id creates one item only (journal, 2026-11-18).
   itemIds = [...new Set(itemIds ?? [])];
   const Item5e = CONFIG.Item.documentClass;
   const available = new Set(gearEntries(plainItems(corpse), requireGear(corpse)).map(e => e.id));
@@ -150,33 +175,54 @@ export async function transferNow(corpse, recipient, { itemIds=[], coins=false, 
     if ( stackOn ) {
       const current = recipient.items.get(stackOn);
       const pending = toUpdate.find(u => u._id === stackOn);
-      if ( pending ) pending["system.quantity"] += item.system.quantity;
-      else toUpdate.push({ _id: stackOn, "system.quantity": (current.system.quantity ?? 0) + item.system.quantity });
+      if ( pending ) { pending.quantity += item.system.quantity; pending.added += item.system.quantity; }
+      else toUpdate.push({ _id: stackOn, quantity: (current.system.quantity ?? 0) + item.system.quantity, added: item.system.quantity });
     } else {
       const created = await Item5e.createWithContents([gear]);
-      // 0.21.0 (issue #5) : un objet qui revient à celui à qui il a été volé perd sa marque, même repris en volant.
+      // 0.21.0 (issue #5): an item that comes back to the one it was stolen from loses its mark, even taken back by stealing.
       for ( const data of created ) {
         const mark = nextStolenMark(foundry.utils.getProperty(data, `flags.${MODULE_ID}.stolen`) ?? null, stolen, recipient.uuid);
         if ( mark ) foundry.utils.setProperty(data, `flags.${MODULE_ID}.stolen`, mark);
         else if ( data.flags?.[MODULE_ID] ) delete data.flags[MODULE_ID].stolen;
+        clearAttunement(data);
       }
-      toCreate.push(...created);
+      toCreate.push({ top: created[0]._id, data: created });
     }
     taken.names.push(item.system.quantity > 1 ? `${gear.name} (${item.system.quantity})` : gear.name);
   }
+  const what = taken.names.join(", ");
 
-  if ( toCreate.length ) await Item5e.createDocuments(toCreate, { keepId: true, parent: recipient });
-  if ( toUpdate.length ) await recipient.updateEmbeddedDocuments("Item", toUpdate);
-  // Retirer du cadavre après la création : en cas d'échec, rien n'est perdu (au pire en double).
+  if ( toCreate.length ) {
+    await Item5e.createDocuments(toCreate.flatMap(c => c.data), { keepId: true, parent: recipient });
+    op.did(loc("Op.Step.Received", { who: recipient.name, what }), async () => {
+      const ids = toCreate.map(c => c.top).filter(id => recipient.items.has(id));
+      if ( ids.length ) await recipient.deleteEmbeddedDocuments("Item", ids, { deleteContents: true });
+    });
+  }
+  if ( toUpdate.length ) {
+    await recipient.updateEmbeddedDocuments("Item", toUpdate.map(u => ({ _id: u._id, "system.quantity": u.quantity })));
+    op.did(loc("Op.Step.Received", { who: recipient.name, what }), () => recipient.updateEmbeddedDocuments("Item", toUpdate
+      .filter(u => recipient.items.has(u._id))
+      .map(u => ({ _id: u._id, "system.quantity": Math.max(0, (recipient.items.get(u._id).system.quantity ?? 0) - u.added) }))));
+  }
+  // Removed from the source after the creation: a failure here is undone above (what was created leaves the recipient).
   const removed = itemIds.filter(id => available.has(id));
-  if ( removed.length ) await corpse.deleteEmbeddedDocuments("Item", removed, { deleteContents: true });
+  if ( removed.length ) {
+    const snapshot = removed.flatMap(id => snapshotWithContents(corpse, id));
+    await corpse.deleteEmbeddedDocuments("Item", removed, { deleteContents: true });
+    op.did(loc("Op.Step.Removed", { who: corpse.name, what }),
+      () => Item5e.createDocuments(snapshot.filter(d => !corpse.items.has(d._id)), { keepId: true, parent: corpse }));
+  }
 
   if ( coins ) {
     const found = coinsOf(corpse.system.currency);
     if ( found.length ) {
       const moved = Object.fromEntries(found.map(c => [c.key, c.value]));
+      const back = Object.fromEntries(found.map(c => [c.key, -c.value]));
       await recipient.update({ "system.currency": addCoins(recipient.system.currency, moved) });
+      op.did(loc("Op.Step.CoinsIn", { who: recipient.name }), () => recipient.update({ "system.currency": addCoins(recipient.system.currency, back) }));
       await corpse.update({ "system.currency": Object.fromEntries(COINS.map(c => [c, 0])) });
+      op.did(loc("Op.Step.CoinsOut", { who: corpse.name }), () => corpse.update({ "system.currency": addCoins(corpse.system.currency, moved) }));
       taken.coins = found;
     }
   }

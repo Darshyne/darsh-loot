@@ -12,9 +12,9 @@ import { askGM } from "./take.mjs";
 import { route } from "./router.mjs";
 import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 import { moveItemNow } from "../adapter/drop.mjs";
-import { inTurn } from "../adapter/ledger.mjs";
+import { inTurn, operation } from "../adapter/ledger.mjs";
 import { addCoins, COINS } from "../core/loot.mjs";
-import { newTrade, setOffer, accept, unaccept, ready, clampOffer, other } from "../core/trade.mjs";
+import { newTrade, setOffer, accept, unaccept, ready, clampOffer, withoutContained, other } from "../core/trade.mjs";
 import { TradeWindow } from "../apps/trade-window.mjs";
 
 const Q = {
@@ -143,14 +143,24 @@ async function handleOpen({ from, to, item, quantity }, { user }) {
   return { id: trade.id };
 }
 
+/**
+ * What this character can really give of an offer: quantities capped to what is owned, missing items and coins removed, and no
+ * item stored in a bag that is itself offered (the bag leaves with its contents).
+ * @returns {{ items: object[], coins: object, changed: boolean }}
+ */
+function possibleOffer(offer, actor) {
+  const owned = Object.fromEntries(actor.items.map(i => [i.id, i.system.quantity ?? 1]));
+  const clamped = clampOffer({ items: offer.items, coins: offer.coins }, owned, actor.system.currency);
+  const loose = withoutContained(clamped.items, Object.fromEntries(actor.items.map(i => [i.id, i.system.container ?? null])));
+  return { items: loose.items, coins: clamped.coins, changed: clamped.changed || loose.changed };
+}
+
 async function handleUpdate({ id, offer }, { user }) {
   const trade = findTrade(id);
   const side = sideOf(trade, user);
   if ( !side ) throw new Error(loc("Refus.PasAToi"));
   const actor = fromUuidSync(trade[side].actor, { strict: false });
-  const owned = Object.fromEntries(actor.items.map(i => [i.id, i.system.quantity ?? 1]));
-  const clamped = clampOffer({ items: offer.items ?? [], coins: offer.coins ?? {} }, owned, actor.system.currency);
-  const next = setOffer(trade, side, clamped);
+  const next = setOffer(trade, side, possibleOffer({ items: offer.items ?? [], coins: offer.coins ?? {} }, actor));
   trades.set(id, next);
   await broadcast(next);
   return true;
@@ -168,6 +178,13 @@ async function handleAccept({ id, value }, { user }) {
     // Noté avant la première attente : l'échange accepté des deux côtés reste dans `trades` tant qu'il s'exécute.
     executing.add(id);
     try { trade = await execute(trade); }
+    catch(err) {
+      // The exchange failed and was undone (adapter/ledger.mjs): both agreements fall, both players see the trade as it was.
+      trade = unaccept(unaccept(trade, "a"), "b");
+      trades.set(id, trade);
+      await broadcast(trade);
+      throw err;
+    }
     finally { executing.delete(id); }
   }
   trades.set(id, trade);
@@ -199,27 +216,37 @@ async function execute(trade) {
 }
 
 async function exchange(trade, actors) {
+  // Everything is checked before the first write (lot 0, defects 2–3): an offer that no longer holds drops both agreements.
   for ( const side of ["a", "b"] ) {
-    const owned = Object.fromEntries(actors[side].items.map(i => [i.id, i.system.quantity ?? 1]));
-    const clamped = clampOffer(trade[side], owned, actors[side].system.currency);
-    if ( clamped.changed ) return setOffer(trade, side, clamped);   // validations retirées
+    const possible = possibleOffer(trade[side], actors[side]);
+    if ( possible.changed ) return setOffer(trade, side, possible);
   }
-  const names = { a: [], b: [] };
-  for ( const side of ["a", "b"] ) {
-    const giver = actors[side];
-    const taker = actors[other(side)];
-    for ( const { id, quantity } of trade[side].items ) {
-      const moved = await moveItemNow(giver, taker, id, quantity);
-      names[side].push(moved.quantity > 1 ? `${moved.name} (${moved.quantity})` : moved.name);
+  const coinLabel = (k, n) => `${n} ${CONFIG.DND5E.currencies[k]?.abbreviation ?? k}`;
+  const plan = ["a", "b"].map(side => loc("Op.Gives", { who: trade[side].name, what: [
+    ...trade[side].items.map(i => { const item = actors[side].items.get(i.id); return i.quantity > 1 ? `${item?.name} (${i.quantity})` : item?.name; }),
+    ...Object.entries(trade[side].coins).map(([k, n]) => coinLabel(k, n))].join(", ") || "—" }));
+  // One operation: a write that fails puts every item and coin back, and the GM reads what happened.
+  const names = await operation({ label: loc("Op.Trade", { a: trade.a.name, b: trade.b.name }), plan }, async op => {
+    const given = { a: [], b: [] };
+    for ( const side of ["a", "b"] ) {
+      const giver = actors[side];
+      const taker = actors[other(side)];
+      for ( const { id, quantity } of trade[side].items ) {
+        const moved = await moveItemNow(giver, taker, id, quantity, { op });
+        given[side].push(moved.quantity > 1 ? `${moved.name} (${moved.quantity})` : moved.name);
+      }
+      const coins = trade[side].coins;
+      if ( Object.keys(coins).length ) {
+        const minus = Object.fromEntries(COINS.map(k => [k, -(coins[k] ?? 0)]));
+        await giver.update({ "system.currency": addCoins(giver.system.currency, minus) });
+        op.did(loc("Op.Step.CoinsOut", { who: giver.name }), () => giver.update({ "system.currency": addCoins(giver.system.currency, coins) }));
+        await taker.update({ "system.currency": addCoins(taker.system.currency, coins) });
+        op.did(loc("Op.Step.CoinsIn", { who: taker.name }), () => taker.update({ "system.currency": addCoins(taker.system.currency, minus) }));
+        for ( const [k, n] of Object.entries(coins) ) given[side].push(coinLabel(k, n));
+      }
     }
-    const coins = trade[side].coins;
-    if ( Object.keys(coins).length ) {
-      const minus = Object.fromEntries(COINS.map(k => [k, -(coins[k] ?? 0)]));
-      await giver.update({ "system.currency": addCoins(giver.system.currency, minus) });
-      await taker.update({ "system.currency": addCoins(taker.system.currency, coins) });
-      for ( const [k, n] of Object.entries(coins) ) names[side].push(`${n} ${CONFIG.DND5E.currencies[k]?.abbreviation ?? k}`);
-    }
-  }
+    return given;
+  });
   const users = [...new Set([trade.a.user, trade.b.user, ...game.users.filter(u => u.isGM).map(u => u.id)])];
   ChatMessage.implementation.create({
     content: `<p>${loc("Trade.Chat", { a: trade.a.name, b: trade.b.name,

@@ -8,9 +8,9 @@ import { route } from "./router.mjs";
 import { askGM, sourceRef } from "./take.mjs";
 import { resolveSource, merchantSource } from "../adapter/sources.mjs";
 import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
-import { inTurn } from "../adapter/ledger.mjs";
+import { inTurn, operation } from "../adapter/ledger.mjs";
 import {
-  merchantOf, merchantToken, isMerchant, quote, executeDeal, restock, memorizeStock, convertItemPiles, formatPrice
+  merchantOf, merchantToken, isMerchant, quote, executeDeal, unsellable, restock, memorizeStock, convertItemPiles, formatPrice
 } from "../adapter/shop.mjs";
 import { MerchantConfig } from "../apps/merchant-config.mjs";
 
@@ -52,12 +52,22 @@ async function handleDeal(payload, { user }) {
 async function deal(source, looter, payload) {
   const actor = source.actor;
   const buyer = actorOf(looter);
+  // Lot 0 (defect 1): everything is checked before the first write — an item the merchant cannot hand over is never charged.
+  const stuck = unsellable(actor, payload.buy ?? []);
+  if ( stuck ) throw new Error(loc("Shop.Stuck", { name: stuck }));
   const q = quote(actor, source.doc, buyer, { buy: payload.buy, sell: payload.sell });
   // Le devis du MJ fait foi : un stock ou un inventaire qui a bougé depuis le panier du joueur annule le troc.
   if ( q.changed ) throw new Error(loc("Shop.Changed"));
   if ( q.empty ) throw new Error(loc("Shop.Nothing"));
   if ( !q.ok ) throw new Error(loc(q.reason === "playerFunds" ? "Shop.NoFunds" : "Shop.MerchantNoFunds"));
-  const names = await executeDeal(actor, buyer, q);
+  // Lot 0 (defect 3): one operation — a write that fails puts back goods and purses, and the GM reads what happened.
+  const line = l => (l.quantity > 1 ? `${l.name} (${l.quantity})` : l.name);
+  const plan = [
+    ...(q.buy.length ? [loc("Shop.ChatBought", { what: q.buy.map(line).join(", "), price: formatPrice(q.buyTotal) })] : []),
+    ...(q.sell.length ? [loc("Shop.ChatSold", { what: q.sell.map(line).join(", "), price: formatPrice(q.sellTotal) })] : [])
+  ];
+  const names = await operation({ label: loc("Shop.Chat", { buyer: buyer.name, merchant: actor.name }), plan },
+    op => executeDeal(actor, buyer, q, op));
   log.info(`trade: ${buyer.name} with ${actor.name} — buys [${names.bought.join(", ")}], sells [${names.sold.join(", ")}], balance ${q.net} cp`);
   announceDeal(looter, source, names, q);
   return { bought: names.bought, sold: names.sold, net: q.net };
