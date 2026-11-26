@@ -23,6 +23,7 @@ import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { trappedThings, handleKnown, sourceKnown, allTraps, wallEnds, clickTrapsOn } from "../adapter/trapped.mjs";
 import { concealed } from "../core/hidden.mjs";
+import { coalesce } from "../core/pace.mjs";
 import { regionSeen, placeSeen, doorSeen } from "../adapter/sight.mjs";
 
 /** Couleurs : neutre pour une zone ou un cadavre, or pour une cachette trouvée, mauve (MJ seulement) pour ce qui est encore caché. */
@@ -247,6 +248,10 @@ export function highlightState() {
     corpses: active ? corpsesToDraw().length : 0, drawn: layer?.children?.[0]?.geometry?.graphicsData?.length ?? 0 };
 }
 
+/** How long a burst of document updates is gathered before the one redraw it gets (ms). */
+const REDRAW_MS = 50;
+const redrawLater = coalesce(() => redraw(), REDRAW_MS);
+
 export function registerHighlight() {
   route("highlightObjects", "highlight", onHighlight);
   route("canvasReady", "highlight", () => { layer = null; active = false; hovered = null; shapes.clear(); redraw(); });
@@ -256,7 +261,9 @@ export function registerHighlight() {
     "updateWall", "deleteWall",
     "updateActor", "createActiveEffect", "deleteActiveEffect", "updateCombat", "deleteCombat", "createCombat"] ) {
     // Les pièges repérés sont dessinés en permanence : on redessine toujours (ce n'est qu'un trait par zone).
-    route(hook, "highlight", () => redraw());
+    // Lot 0 (audit of 2026-11-26, defect 23): but not once per event — `updateToken` and `updateActor` fire for the whole world,
+    // in bursts (a combat round, a movement), and each one redrew every outline. A burst now gives one redraw (core/pace.mjs).
+    route(hook, "highlight", redrawLater);
   }
   // 0.17.0 : ce que voit un joueur change quand ses tokens bougent ou qu'une porte s'ouvre — les pièges repérés suivent sa vue.
   const redrawSoon = foundry.utils.debounce(() => redraw(), 60);

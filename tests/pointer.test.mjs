@@ -2,7 +2,7 @@
  * Le curseur de fouille (runtime/pointer.mjs), sur le faux Foundry de tests/fake-foundry.mjs : en combat ou pendant la visée du
  * moteur, il n'y a jamais de curseur — et l'on ne cherche plus ce qui est sous la souris pour le savoir.
  */
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import { installFakeFoundry, FakeActor, FakeCollection, settings } from "./fake-foundry.mjs";
 
 installFakeFoundry();
@@ -24,9 +24,15 @@ globalThis.PIXI = {
 const { registerPointer } = await import("../module/scripts/runtime/pointer.mjs");
 
 const cursor = () => document.body.dataset.darshLootCursor ?? null;
-const move = () => listeners.pointermove({ target: VIEW, clientX: 150, clientY: 150 });
+/** A mouse move event, as the browser sends it. */
+const moveEvent = () => listeners.pointermove({ target: VIEW, clientX: 150, clientY: 150 });
+/** A mouse move, then the time for its scan: the scan under the mouse is paced (lot 0, defect 22 — core/pace.mjs). */
+const move = () => { moveEvent(); vi.advanceTimersByTime(50); };
+
+afterAll(() => vi.useRealTimers());
 
 beforeAll(() => {
+  vi.useFakeTimers();
   Object.assign(settings, { clickToLoot: "off", autoTreasure: false });
   game.user = { id: "joueur", isGM: false, character: null };
   game.modules.get = id => ((id === "dnd5e-combat") ? { active: true, api: { ui: { targeting: () => engine.targeting } } } : null);
@@ -60,6 +66,13 @@ describe("curseur de fouille au survol", () => {
     expect(cursor()).toBe("far");
     move();
     expect(scans).toEqual({ bounds: 1, coordinates: 1 });
+  });
+
+  it("lot 0, defect 22 — thirty mouse moves in a row scan twice (the first and the last), not thirty times", () => {
+    for ( let i = 0; i < 30; i++ ) moveEvent();
+    vi.advanceTimersByTime(50);
+    expect(cursor()).toBe("far");
+    expect(scans).toEqual({ bounds: 2, coordinates: 2 });
   });
 
   it("en combat : aucun curseur, comme avant — et sans chercher ce qui est sous la souris", () => {

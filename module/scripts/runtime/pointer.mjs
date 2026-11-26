@@ -22,6 +22,7 @@ import { sceneZones, MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
 import { behaviorConcealed } from "../adapter/hidden.mjs";
 import { clickTrapsOn } from "../adapter/trapped.mjs";
 import { activatesOn } from "../core/mechanisms.mjs";
+import { throttleLatest } from "../core/pace.mjs";
 import { runZone } from "./zones.mjs";
 import { actuate, mechanismsOn, actuatedName, gmMechanismEntries } from "./mechanisms.mjs";
 import { setHover } from "./highlight.mjs";
@@ -254,10 +255,22 @@ function showSource(source) {
  */
 const idle = () => inCombat() || engineTargeting();
 
+/**
+ * Lot 0 (audit of 2026-11-26, defect 22): looking for what is under the mouse walks every token, container, zone and spotted trap
+ * of the scene, with collision tests — and ran at **every** mouse move event. It now runs at most every `SCAN_MS` (the latest
+ * position always gets its scan, core/pace.mjs); leaving the map or entering combat still clears the cursor at once.
+ */
+const SCAN_MS = 40;
+const scanUnderMouse = throttleLatest(event => {
+  // The event waited: the mouse may have left the map, or a combat may have started, in between.
+  if ( (lastMove !== event) || !onBoard(event) || idle() ) return;
+  showSource(sourceAt(event));
+}, SCAN_MS);
+
 function onPointerMove(event) {
   lastMove = event;
   if ( !onBoard(event) || idle() ) return showSource(null);
-  showSource(sourceAt(event));
+  scanUnderMouse(event);
 }
 
 /** Survol d'un token : le curseur change aussi sans bouger la souris (token qui meurt sous le pointeur). */
