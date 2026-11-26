@@ -174,7 +174,9 @@
       "Folder": "Butin — conteneurs",
       "ActorName": "Conteneur : {name}",
       "ConvertMenu": "Convertir en conteneur",
-      "Converted": "{name} est maintenant un conteneur (tuile et région)."
+      "Converted": "{name} est maintenant un conteneur (tuile et région).",
+      "StoreMissing": "Le conteneur « {name} » ({scene}) avait perdu l'acteur qui porte son contenu (supprimé, ou non importé avec la scène). Un nouveau, vide, a été créé. Pour le remplir : ouvrez le conteneur et déposez-y des objets, ou décochez « Déjà tiré » dans ses réglages pour retirer sa table.",
+      "StoreShared": "Le conteneur « {name} » ({scene}) partageait son contenu avec un autre conteneur (scène dupliquée). Il a maintenant le sien, avec une copie de ce que l'autre contenait."
     },
     "ContainerBehavior": {
       "Hoard": {

@@ -174,7 +174,9 @@
       "Folder": "Loot — containers",
       "ActorName": "Container: {name}",
       "ConvertMenu": "Convert to container",
-      "Converted": "{name} is now a container (tile and region)."
+      "Converted": "{name} is now a container (tile and region).",
+      "StoreMissing": "The container « {name} » ({scene}) had lost the actor that holds its contents (deleted, or not imported with the scene). A new, empty one was created. To fill it, open the container and drop items in, or untick « Already rolled » in its settings to draw its table again.",
+      "StoreShared": "The container « {name} » ({scene}) shared its contents with another container (duplicated scene). It now has its own, with a copy of what the other held."
     },
     "ContainerBehavior": {
       "Hoard": {

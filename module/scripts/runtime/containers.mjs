@@ -38,18 +38,60 @@ function storeFolder() {
   return folderPending;
 }
 
-/** Chez le MJ : l'acteur du coffre de ce comportement, créé s'il manque. */
+/**
+ * The state of this container's store (lot 0, audit of 2026-11-26, defect 20) — readable on every client:
+ *  - `none`: no store yet; `ok`: its own store;
+ *  - `missing`: it names an actor that does not exist (deleted by hand, or the container came from an adventure or a compendium
+ *    without its actor) — the window used to open empty and every take was refused « not found », without a word;
+ *  - `shared`: the actor is the store of **another** container that still uses it (a duplicated scene: both copies emptied the
+ *    same chest);
+ *  - `adopt`: the actor was made for a container that no longer exists (the scene was moved or re-imported: new UUIDs).
+ */
+export function storeState(behavior) {
+  const uuid = behavior.system.actor;
+  if ( !uuid ) return "none";
+  const actor = fromUuidSync(uuid, { strict: false });
+  if ( !actor ) return "missing";
+  const madeFor = actor.getFlag(MODULE_ID, "containerOf");
+  if ( !madeFor || (madeFor === behavior.uuid) ) return "ok";
+  const first = fromUuidSync(madeFor, { strict: false });
+  return (first?.system?.actor === uuid) ? "shared" : "adopt";
+}
+
+/**
+ * Chez le MJ : l'acteur du coffre de ce comportement, créé s'il manque — and repaired when it is missing or shared (see
+ * `storeState`), with a message to the GMs.
+ */
 export function ensureStore(behavior) {
-  const current = behavior.system.actor ? fromUuidSync(behavior.system.actor, { strict: false }) : null;
-  if ( current ) return Promise.resolve(current);
+  const state = storeState(behavior);
+  if ( state === "ok" ) return Promise.resolve(fromUuidSync(behavior.system.actor, { strict: false }));
   // Un seul coffre par comportement, même si le hook de création et un appel direct arrivent ensemble.
   if ( !pendingStores.has(behavior.uuid) ) {
-    pendingStores.set(behavior.uuid, createStore(behavior).finally(() => pendingStores.delete(behavior.uuid)));
+    pendingStores.set(behavior.uuid, repairStore(behavior, state).finally(() => pendingStores.delete(behavior.uuid)));
   }
   return pendingStores.get(behavior.uuid);
 }
 
 const pendingStores = new Map();
+
+async function repairStore(behavior, state) {
+  if ( state === "none" ) return createStore(behavior);
+  const shared = (state === "missing") ? null : fromUuidSync(behavior.system.actor, { strict: false });
+  if ( state === "adopt" ) {
+    await shared.setFlag(MODULE_ID, "containerOf", behavior.uuid);
+    return shared;
+  }
+  const actor = await createStore(behavior);
+  // The copy of a duplicated scene starts with what the chest held when it is first opened.
+  if ( shared ) await fillFromActor(actor, shared);
+  const names = { name: behavior.system.displayName || behavior.region?.name || "?", scene: behavior.parent?.parent?.name ?? "?" };
+  log.warn(`container store ${state}: a new one was created for`, names.name, "on", names.scene);
+  await ChatMessage.implementation.create({
+    whisper: game.users.filter(u => u.isGM).map(u => u.id), flags: { [MODULE_ID]: { storeRepair: state } },
+    content: `<p><i class="fa-solid fa-box-open"></i> ${foundry.utils.escapeHTML(loc(shared ? "Container.StoreShared" : "Container.StoreMissing", names))}</p>`
+  });
+  return actor;
+}
 
 async function createStore(behavior) {
   const folder = await storeFolder();
@@ -84,7 +126,9 @@ async function handleRoll({ behavior: uuid }, { user=null }={}) {
   if ( behavior?.type !== CONTAINER_TYPE ) return null;
   // D'un joueur : comme ensureContainer — pas un coffre verrouillé déjà là, et une créature à lui sur la scène.
   const scene = behavior.parent?.parent ?? null;
-  if ( user && !user.isSelf && !user.isGM && ((behavior.system.actor && behavior.system.locked) || !scene?.tokens.some(t => t.actor?.testUserPermission(user, "OWNER"))) ) {
+  // A locked chest that is already there has nothing to prepare — unless its store needs a repair (`storeState`).
+  const sound = ["ok"].includes(storeState(behavior));
+  if ( user && !user.isSelf && !user.isGM && ((sound && behavior.system.locked) || !scene?.tokens.some(t => t.actor?.testUserPermission(user, "OWNER"))) ) {
     log.warn(`container roll query from ${user.name} refused`);
     return null;
   }
@@ -95,7 +139,8 @@ async function handleRoll({ behavior: uuid }, { user=null }={}) {
 
 /** Avant d'ouvrir la fenêtre : le coffre existe et, s'il n'est pas verrouillé, son contenu est tiré. Ne lève jamais. */
 export async function ensureContainer(behavior) {
-  if ( behavior.system.actor && (behavior.system.rolled || behavior.system.locked) ) return;
+  // Lot 0 (defect 20): a store that is missing or shared is repaired by the GM client before the window opens.
+  if ( (storeState(behavior) === "ok") && (behavior.system.rolled || behavior.system.locked) ) return;
   const gm = game.users.activeGM;
   if ( !gm ) return;
   try {
