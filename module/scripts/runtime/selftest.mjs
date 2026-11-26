@@ -24,7 +24,13 @@ import { regionHiddenByTraps } from "../adapter/trapped.mjs";
 import { SOUNDS } from "./feedback.mjs";
 import { npcSteal } from "./theft.mjs";
 import { victimView } from "../adapter/theft.mjs";
-import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
+import { TOKEN_MENU_HOOK, RESOLUTION_HOOK } from "../adapter/engine.mjs";
+import { merchantSource } from "../adapter/sources.mjs";
+import { stockView } from "../adapter/shop.mjs";
+import { purseValue } from "../core/shop.mjs";
+import { requestDeal } from "./shop.mjs";
+import { requestAnimate, raisable } from "./necromancy.mjs";
+import { TradeWindow } from "../apps/trade-window.mjs";
 
 const TEST = { [MODULE_ID]: { test: true } };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -771,10 +777,294 @@ async function npcTheft(b) {
   b.expect(back && !back.getFlag(MODULE_ID, "stolen"), "la fiole reprise au cadavre du voleur n'est plus marquée volée");
 }
 
+/* -------------------------------------------- */
+/*  Lot 0 (2026-11-26): shop, trade, necromancy, thrown weapons */
+/* -------------------------------------------- */
+
+/** GM-whispered traces of failed operations written since `since` (adapter/ledger.mjs, runtime/operations.mjs). */
+const tracesAfter = since => messagesAfter(since, m => !!m.getFlag(MODULE_ID, "operation"));
+/** The value of a purse in copper. */
+const inCp = actor => purseValue(actor.system.currency);
+/** Makes the next `update` of this document fail like a server error, once: what a write that breaks half-way looks like. */
+function failNextUpdate(doc) {
+  const real = doc.update;
+  doc.update = async function() { doc.update = real; throw new Error("selftest: simulated server error"); };
+  return () => { doc.update = real; };
+}
+/** A non-GM user to send requests as (the GM client only checks rights for those); null if the world has none. */
+const somePlayer = () => game.users.find(u => !u.isGM) ?? null;
+
+/** Shop: a deal moves goods and coins; an item that cannot be handed over is never charged; a failed write is undone and traced. */
+async function shop(b) {
+  const merchant = await b.token(await b.actor({ name: "Test merchant", type: "npc", img: "icons/svg/mystery-man.svg",
+    system: { attributes: { hp: { value: 20, max: 20 } }, details: { type: { value: "humanoid" } }, currency: { gp: 50 } },
+    flags: { [MODULE_ID]: { test: true, merchant: { enabled: true } } },
+    items: [
+      { name: "Test rope", type: "loot", system: { quantity: 3, price: { value: 10, denomination: "gp" }, properties: ["gear"] } },
+      { name: "Test heirloom", type: "loot", system: { quantity: 1, price: { value: 2, denomination: "gp" } } }
+    ] }), 1, 0);
+  const buyerActor = await testCharacter(b, "Test buyer");
+  await buyerActor.update({ "system.currency.gp": 100 });
+  await buyerActor.createEmbeddedDocuments("Item", [
+    { name: "Test gem", type: "loot", system: { quantity: 1, price: { value: 50, denomination: "gp" } } },
+    { name: "Test ring", type: "equipment", system: { quantity: 1, price: { value: 20, denomination: "gp" }, attunement: "required", attuned: true } }]);
+  const buyer = await b.token(buyerActor, 0, 0);
+  const source = merchantSource(merchant);
+  const stall = name => merchant.actor.items.find(i => i.name === name);
+  const bag = name => buyer.actor.items.find(i => i.name === name);
+
+  // Defect 1: the heirloom has no `gear` property — the merchant (an NPC) cannot hand it over.
+  const seenByPlayer = stockView(merchant.actor, buyer.actor).map(e => e.name);
+  const seenByGM = stockView(merchant.actor, buyer.actor, { gm: true });
+  b.expect(seenByPlayer.includes("Test rope") && !seenByPlayer.includes("Test heirloom"), `a player is not offered what cannot be handed over (${seenByPlayer.join(", ")})`);
+  b.expect(seenByGM.find(e => e.name === "Test heirloom")?.stuck === true, "the GM still sees it, marked");
+  let total = inCp(buyer.actor) + inCp(merchant.actor);
+  const refusedDeal = await requestDeal(source, buyer, { buy: [{ id: stall("Test heirloom").id, quantity: 1 }], sell: [] });
+  b.expect(refusedDeal === null && !bag("Test heirloom") && (inCp(buyer.actor) + inCp(merchant.actor) === total) && (inCp(buyer.actor) === 10000),
+    "buying it is refused before any write: nothing charged, nothing moved");
+
+  // A normal deal: one rope bought, the gem and the attuned ring sold.
+  const done = await requestDeal(source, buyer, { buy: [{ id: stall("Test rope").id, quantity: 1 }],
+    sell: [{ id: bag("Test gem").id, quantity: 1 }, { id: bag("Test ring").id, quantity: 1 }] });
+  await sleep(500);
+  b.expect(!!done && (bag("Test rope")?.system.quantity === 1) && (stall("Test rope")?.system.quantity === 2), `deal done: one rope bought (${JSON.stringify(done)})`);
+  b.expect(!bag("Test gem") && !!stall("Test gem") && (stall("Test gem").getFlag(MODULE_ID, "shop")?.bought === true), "the gem sold is on the stall, marked as bought back");
+  b.expect(inCp(buyer.actor) + inCp(merchant.actor) === total, `no coin created or lost (${inCp(buyer.actor)} + ${inCp(merchant.actor)} cp)`);
+  b.expect(stall("Test ring") && (stall("Test ring").system.attuned === false), "the ring sold is no longer attuned (defect 14)");
+
+  // Defect 3: the buyer's purse cannot be written — goods go back on both sides, the GM reads why.
+  const ropes = actor => actor.items.filter(i => i.name === "Test rope").reduce((n, i) => n + (i.system.quantity ?? 1), 0);
+  const before = { rope: ropes(merchant.actor), mine: ropes(buyer.actor), buyer: inCp(buyer.actor), merchant: inCp(merchant.actor) };
+  const since = Date.now() - 1;
+  const restore = failNextUpdate(buyer.actor);
+  const failed = await requestDeal(source, buyer, { buy: [{ id: stall("Test rope").id, quantity: 1 }], sell: [] });
+  restore();
+  await sleep(500);
+  b.expect(failed === null && (ropes(merchant.actor) === before.rope) && (ropes(buyer.actor) === before.mine),
+    `a purse write that fails: the rope is back on the stall (${ropes(merchant.actor)}) and not with the buyer (${ropes(buyer.actor)})`);
+  b.expect((inCp(buyer.actor) === before.buyer) && (inCp(merchant.actor) === before.merchant), "and nobody paid");
+  const trace = tracesAfter(since)[0];
+  b.expect(trace && trace.whisper.length && trace.whisper.every(id => game.users.get(id)?.isGM), "the GM gets a whispered trace of the failed deal");
+  b.expect(Object.keys(game.settings.get(MODULE_ID, "operations") ?? {}).length === 0, "the operations journal is empty afterwards");
+
+  // Defect 10: a crafted request naming the merchant's **actor** from a player — refused unless the GM showed the shop.
+  const player = somePlayer();
+  if ( player ) {
+    const crafted = { source: { kind: "merchant", uuid: merchant.actor.uuid }, looter: buyer.uuid, buy: [{ id: stall("Test rope").id, quantity: 1 }], sell: [] };
+    const outcome = await CONFIG.queries[`${MODULE_ID}.shopDeal`](crafted, { user: player }).then(() => "accepted", err => err.message);
+    b.expect(outcome !== "accepted" && (ropes(buyer.actor) === before.mine), `a shop addressed by its actor, not shown by the GM: refused (« ${outcome} »)`);
+  } else b.note("no player user in this world: the actor-addressed deal is not played");
+}
+
+/** Trade: only what can be traded is offered, an agreement is bound to what was shown, the exchange is whole or undone. */
+async function trade(b) {
+  const player = somePlayer();
+  if ( !player ) return b.note("no player user in this world: trades are not played");
+  const query = name => CONFIG.queries[`${MODULE_ID}.trade${name}`];
+  const before = new Set(foundry.applications.instances.keys());
+  const owned = { [player.id]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER };
+  const alice = await b.actor({ name: "Test Alice", type: "character", img: "icons/svg/mystery-man.svg", ownership: owned,
+    system: { attributes: { hp: { value: 20, max: 20 } }, currency: { gp: 100 } } });
+  const [sack] = await alice.createEmbeddedDocuments("Item", [{ name: "Test sack", type: "container", system: { quantity: 1 } }]);
+  await alice.createEmbeddedDocuments("Item", [
+    { name: "Test potion", type: "consumable", system: { quantity: 2, container: sack.id } },
+    { name: "Test amulet", type: "equipment", system: { quantity: 1, attunement: "required", attuned: true } },
+    { name: "Test armor", type: "equipment", system: { quantity: 1, equipped: true } },
+    { name: "Test cantrip", type: "spell", system: { level: 0 } }]);
+  const bob = await b.actor({ name: "Test Bob", type: "character", img: "icons/svg/mystery-man.svg",
+    system: { attributes: { hp: { value: 20, max: 20 } }, currency: { gp: 10 } },
+    items: [{ name: "Test arrows", type: "consumable", system: { quantity: 20 } }] });
+  const npc = await testCreature(b, "Test bystander");
+  const of = (actor, name) => actor.items.find(i => i.name === name);
+  const gm = game.user;
+
+  // Defect 13: the other side must be a player character.
+  const toNpc = await query("Open")({ from: alice.uuid, to: npc.uuid }, { user: player }).then(() => "accepted", err => err.message);
+  b.expect(toNpc !== "accepted", `a trade with an NPC is refused (« ${toNpc} »)`);
+
+  const { id } = await query("Open")({ from: alice.uuid, to: bob.uuid }, { user: player });
+  await sleep(600);
+  const shown = () => TradeWindow.open.get(id)?.trade;
+  b.expect(!!shown() && (shown().gm === gm.id), "the trade window opens at the GM, who holds the other side; the state names the GM client holding it");
+
+  // Defects 2 and 12: the potion is inside the sack (it leaves with it), the armor is worn, the cantrip is not an object.
+  const offer = ["Test sack", "Test potion", "Test amulet", "Test armor", "Test cantrip"].map(n => ({ id: of(alice, n).id, quantity: of(alice, n).system.quantity ?? 1 }));
+  const answer = await query("Update")({ id, offer: { items: offer, coins: { gp: 30 } } }, { user: player });
+  await sleep(300);
+  const kept = shown().a.items.map(i => i.name).sort();
+  b.expect(kept.join() === ["Test amulet", "Test sack"].join(), `offer kept: the sack and the amulet only (${kept.join(", ")})`);
+  b.expect((answer.left ?? []).sort().join() === ["Test armor", "Test cantrip"].join(), `the player is told what was left out (${(answer.left ?? []).join(", ")})`);
+  await query("Update")({ id, offer: { items: [{ id: of(bob, "Test arrows").id, quantity: 5 }], coins: {} } }, { user: gm });
+  await sleep(300);
+
+  // Defect 11: Alice agrees, then changes her offer; the GM's side agrees to the revision it was shown — refused.
+  const seen = shown().rev;
+  await query("Accept")({ id, value: true, rev: seen }, { user: player });
+  await query("Update")({ id, offer: { items: shown().a.items.map(i => ({ id: i.id, quantity: i.quantity })), coins: { gp: 1 } } }, { user: player });
+  const stale = await query("Accept")({ id, value: true, rev: seen }, { user: gm }).then(() => "accepted", err => err.message);
+  b.expect(stale !== "accepted" && (alice.system.currency.gp === 100), `agreeing to an offer that changed meanwhile is refused (« ${stale} »)`);
+
+  // Defect 3: the exchange breaks at its last write — everything goes back, both agreements fall, the GM reads why.
+  await query("Update")({ id, offer: { items: shown().a.items.map(i => ({ id: i.id, quantity: i.quantity })), coins: { gp: 30 } } }, { user: player });
+  await query("Accept")({ id, value: true, rev: shown().rev }, { user: player });
+  let since = Date.now() - 1;
+  const restore = failNextUpdate(bob);
+  const broken = await query("Accept")({ id, value: true, rev: shown().rev }, { user: gm }).then(() => "accepted", err => err.message);
+  restore();
+  await sleep(600);
+  b.expect(broken !== "accepted" && !!of(alice, "Test sack") && !of(bob, "Test sack") && (of(alice, "Test potion")?.system.container === of(alice, "Test sack")?.id),
+    `a write that fails in the middle: the sack is back with its potion inside (« ${broken} »)`);
+  b.expect((alice.system.currency.gp === 100) && (bob.system.currency.gp === 10) && (of(bob, "Test arrows")?.system.quantity === 20) && !of(alice, "Test arrows"),
+    `coins and arrows are back too (${alice.system.currency.gp} / ${bob.system.currency.gp} gp, ${of(bob, "Test arrows")?.system.quantity} arrows)`);
+  b.expect(tracesAfter(since).length === 1, "the GM gets one trace of the failed trade");
+  b.expect(shown() && !shown().a.accepted && !shown().b.accepted && !shown().done, "the trade is still open, both agreements withdrawn");
+
+  // The trade itself.
+  await query("Accept")({ id, value: true, rev: shown().rev }, { user: player });
+  await query("Accept")({ id, value: true, rev: shown().rev }, { user: gm });
+  await sleep(800);
+  const sackAtBob = of(bob, "Test sack");
+  b.expect(!!sackAtBob && !of(alice, "Test sack") && (of(bob, "Test potion")?.system.container === sackAtBob?.id) && (of(bob, "Test potion")?.system.quantity === 2) && !of(alice, "Test potion"),
+    "done: the sack went with its two potions inside, once (defect 2)");
+  b.expect(of(bob, "Test amulet")?.system.attuned === false, "the amulet arrived unattuned (defect 14)");
+  b.expect((alice.system.currency.gp === 70) && (bob.system.currency.gp === 40) && (of(alice, "Test arrows")?.system.quantity === 5) && (of(bob, "Test arrows")?.system.quantity === 15),
+    `coins and arrows exchanged (${alice.system.currency.gp} / ${bob.system.currency.gp} gp)`);
+  b.expect(!!of(alice, "Test armor") && !!of(alice, "Test cantrip"), "the worn armor and the cantrip never left");
+
+  // Defect 8: a GM client that has just loaded tells the players it holds no trade — a window still open closes, with the reason.
+  const again = await query("Open")({ from: alice.uuid, to: bob.uuid }, { user: player });
+  await sleep(600);
+  const open = !!TradeWindow.open.get(again.id);
+  b.expect(CONFIG.queries[`${MODULE_ID}.tradeReset`]({}, { user: player }) === false && !!TradeWindow.open.get(again.id), "a player cannot make trade windows close");
+  CONFIG.queries[`${MODULE_ID}.tradeReset`]({}, { user: gm });
+  await sleep(600);
+  b.expect(open && !TradeWindow.open.get(again.id), "« this GM client holds no trade »: the window of a lost trade closes instead of staying dead");
+  await query("Cancel")({ id: again.id }, { user: gm }).catch(() => {});
+  await closeNew(before);
+}
+
+/** Necromancy: one undead per corpse, belongings on the ground, and a raising that fails leaves the corpse. */
+async function necromancy(b) {
+  const corpseOf = async (name, i) => {
+    const actor = await b.actor({ name, type: "npc", img: "icons/svg/skull.svg",
+      system: { attributes: { hp: { value: 0, max: 10 } }, traits: { size: "med" }, details: { type: { value: "humanoid" }, cr: 0 }, currency: { gp: 7 } },
+      flags: { [MODULE_ID]: { test: true, rolled: true } },
+      items: [{ name: "Test dagger", type: "weapon", system: { quantity: 1, properties: ["gear"], type: { value: "simpleM", baseItem: "dagger" } } }] });
+    const token = await b.token(actor, i, 0);
+    await token.actor.toggleStatusEffect("dead", { active: true, overlay: true });
+    await sleep(400);
+    return token;
+  };
+  const raisedFrom = name => game.actors.filter(a => a.getFlag(MODULE_ID, "raised")?.from === name);
+  const track = name => {
+    for ( const a of raisedFrom(name) ) if ( !b.created.actors.includes(a.id) ) b.created.actors.push(a.id);
+    for ( const t of b.scene.tokens ) if ( raisedFrom(name).includes(t.actor) && !b.created.Token.includes(t.id) ) b.created.Token.push(t.id);
+    for ( const r of b.scene.regions ) {
+      if ( !r.getFlag(MODULE_ID, "pile") || b.created.Region.includes(r.id) ) continue;
+      b.created.Region.push(r.id);
+      const store = fromUuidSync(r.behaviors.contents[0]?.system.actor ?? "", { strict: false });
+      if ( store ) b.created.actors.push(store.id);
+    }
+  };
+  const first = await corpseOf("Test corpse one", 0);
+  if ( !raisable(first) ) return b.expect(false, "a dead Medium humanoid can be raised");
+  const pilesBefore = b.scene.regions.filter(r => r.getFlag(MODULE_ID, "pile")).length;
+
+  // Defect 3: the corpse cannot be removed — no undead stays, the corpse does; its belongings fell and stay in their pile.
+  let since = Date.now() - 1;
+  const realDelete = first.delete;
+  first.delete = async function() { first.delete = realDelete; throw new Error("selftest: simulated server error"); };
+  const failed = await requestAnimate(first, { kind: "skeleton" });
+  first.delete = realDelete;
+  await sleep(800);
+  track("Test corpse one");
+  if ( (failed === null) && !game.packs.get("dnd-monster-manual.actors")?.index?.size && !game.packs.get("dnd5e.actors24")?.index?.size ) {
+    return b.note("neither the Monster Manual nor the SRD 2024 creatures are here: raising is not played");
+  }
+  b.expect(failed === null && b.scene.tokens.has(first.id), "a raising that breaks at its last write: the corpse is still on the scene");
+  b.expect(raisedFrom("Test corpse one").length === 0 && !b.scene.tokens.some(t => t.actor?.getFlag(MODULE_ID, "raised")?.from === "Test corpse one"),
+    "and no undead actor nor token is left behind");
+  const trace = tracesAfter(since)[0];
+  b.expect(!!trace && trace.whisper.every(id => game.users.get(id)?.isGM), "the GM gets a trace of the failed raising");
+  const piles = b.scene.regions.filter(r => r.getFlag(MODULE_ID, "pile"));
+  const store = fromUuidSync(piles.at(-1)?.behaviors.contents[0]?.system.actor ?? "", { strict: false });
+  b.expect((piles.length === pilesBefore + 1) && store?.items.some(i => i.name === "Test dagger") && (store.system.currency.gp === 7),
+    "its belongings are not lost: dagger and coins are in the pile at its feet (the trace says so)");
+
+  // Defect 6: two requests on the same corpse at once — one undead, with its token, the corpse replaced.
+  const second = await corpseOf("Test corpse two", 2);
+  const results = await Promise.all([requestAnimate(second, { kind: "zombie" }), requestAnimate(second, { kind: "zombie" })]);
+  await sleep(1000);
+  track("Test corpse two");
+  const undead = raisedFrom("Test corpse two");
+  b.expect(results.filter(Boolean).length === 1, `two requests at once: one is carried out, the other refused (${results.map(r => (r ? "done" : "refused")).join(", ")})`);
+  b.expect(undead.length === 1, `one undead actor (${undead.length})`);
+  const placed = b.scene.tokens.filter(t => undead.includes(t.actor));
+  b.expect((placed.length === 1) && !b.scene.tokens.has(second.id) && (placed[0]?._source.x === second._source.x) && (placed[0]?._source.y === second._source.y),
+    "one token, where the corpse was; the corpse is gone");
+  b.expect(Object.keys(game.settings.get(MODULE_ID, "operations") ?? {}).length === 0, "the operations journal is empty afterwards");
+}
+
+/** Thrown weapons: read from the Core's resolution — lodged or at the target's feet on a hit, beyond it on a miss. */
+async function thrown(b) {
+  if ( !setting("thrownWeapons") ) return b.note("thrown weapons are switched off in this world: not played");
+  const thrower = await b.token(await b.actor({ name: "Test thrower", type: "character", img: "icons/svg/mystery-man.svg",
+    system: { attributes: { hp: { value: 20, max: 20 } } },
+    items: [
+      { name: "Test javelin", type: "weapon", system: { quantity: 4, properties: ["thr"], type: { value: "simpleM", baseItem: "javelin" }, range: { value: 30, long: 120, reach: 5 },
+        activities: { testthrowact0001: { _id: "testthrowact0001", type: "attack" } } } },
+      { name: "Test returning axe", type: "weapon", system: { quantity: 1, properties: ["thr", "ret"], type: { value: "simpleM" }, range: { value: 20, long: 60, reach: 5 },
+        activities: { testthrowact0002: { _id: "testthrowact0002", type: "attack" } } } }
+    ], prototypeToken: { actorLink: true } }), 0, 1);
+  const target = await b.token(await testCreature(b, "Test target"), 4, 1);
+  const item = name => thrower.actor.items.find(i => i.name === name);
+  const pilesNow = () => b.scene.regions.filter(r => r.getFlag(MODULE_ID, "pile"));
+  const storeOf = region => fromUuidSync(region.behaviors.contents[0]?.system.actor ?? "", { strict: false });
+  const track = () => { for ( const r of pilesNow() ) if ( !b.created.Region.includes(r.id) ) { b.created.Region.push(r.id); const s = storeOf(r); if ( s ) b.created.actors.push(s.id); } };
+  const javelinsOnGround = () => pilesNow().reduce((sum, r) => sum + (storeOf(r)?.items.filter(i => i.name === "Test javelin").reduce((n, i) => n + (i.system.quantity ?? 1), 0) ?? 0), 0);
+  const lodged = () => target.actor.items.filter(i => i.name === "Test javelin").reduce((n, i) => n + (i.system.quantity ?? 1), 0);
+
+  /** A finished thrown attack as the Core publishes it: its attack roll carries the mode, the resolution the targets. */
+  let count = 0;
+  async function throwAt(weapon, hit) {
+    const activity = weapon.system.activities?.contents?.[0] ?? [...(weapon.system.activities ?? [])][0];
+    const roll = await new Roll("1d20", {}, { attackMode: "thrown" }).evaluate({ allowInteractive: false });
+    const message = await ChatMessage.implementation.create({ content: "selftest: thrown attack", rolls: [roll], whisper: [game.user.id],
+      speaker: { scene: b.scene.id, token: thrower.id, actor: thrower.actor.id }, flags: TEST });
+    Hooks.callAll(RESOLUTION_HOOK, { id: `selftest-${Date.now()}-${++count}`, activity: activity?.uuid, source: thrower.actor.uuid, plan: { attack: true },
+      step: hit ? "done" : "missed", attack: { messageId: message.id }, targets: [{ token: target.uuid, hit }], origin: null });
+    await sleep(1800);
+    track();
+    await message.delete().catch(() => {});
+  }
+  if ( !(item("Test javelin").system.activities?.size > 0) ) return b.note("the test javelin has no attack activity in this dnd5e version: not played");
+
+  // A miss: the javelin lands beyond the target, in a pile — never in the target, never lost.
+  await throwAt(item("Test javelin"), false);
+  b.expect((javelinsOnGround() === 1) && (lodged() === 0), `a miss: one javelin on the ground beyond the target (${javelinsOnGround()} on the ground, ${lodged()} lodged)`);
+  const miss = pilesNow().find(r => storeOf(r)?.items.some(i => i.name === "Test javelin"));
+  const G = b.G;
+  const beyond = miss ? (miss.bounds.x - target._source.x) / G : null;
+  b.expect(miss && (beyond > -1.5) && (beyond < 4.5), `it fell within three squares beyond the target (${beyond?.toFixed(1)} squares)`);
+
+  // Hits: lodged in the target (its inventory) or at its feet — one javelin each time, wherever it goes.
+  for ( let i = 0; i < 3; i++ ) await throwAt(item("Test javelin"), true);
+  b.expect(javelinsOnGround() + lodged() === 4, `three hits: every javelin is somewhere (${javelinsOnGround()} on the ground, ${lodged()} lodged in the target)`);
+  b.expect(item("Test javelin")?.system.quantity === 4, "the thrower's sheet is not decremented a second time (dnd5e already removes the thrown one)");
+
+  // A returning weapon comes back to the hand: nothing falls.
+  const before = javelinsOnGround() + pilesNow().reduce((n, r) => n + (storeOf(r)?.items.size ?? 0), 0);
+  await throwAt(item("Test returning axe"), true);
+  const after = javelinsOnGround() + pilesNow().reduce((n, r) => n + (storeOf(r)?.items.size ?? 0), 0);
+  b.expect((after === before) && !target.actor.items.some(i => i.name === "Test returning axe"), "a returning weapon: nothing on the ground, nothing lodged");
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
-  mecanisme: [mechanism, 9, 4], vol: [npcTheft, 4, 2] };
+  mecanisme: [mechanism, 9, 4], vol: [npcTheft, 4, 2],
+  // Lot 0 (2026-11-26)
+  shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {
