@@ -20,7 +20,7 @@ import { concealedThings, regionConcealed, reaches, passiveScore, tilesIn, playe
 import { TOKEN_MENU_HOOK, engineStopWalks, engineBudgetIssues, engineSpend, engineTimer } from "../adapter/engine.mjs";
 import { concealedTraps, regionHiddenByTraps, hiddenByTraps, tilesHiddenByTraps } from "../adapter/trapped.mjs";
 import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
-import { waitForDice, newRollMessage } from "../adapter/dice.mjs";
+import { waitForDice, newRollMessage, diceShown } from "../adapter/dice.mjs";
 
 /** 0.17.2 : le bruit d'une fouille en cours (le froissement d'un objet posé), entendu de tous. */
 const RUMMAGE_SOUND = SOUNDS.rummage;
@@ -304,10 +304,9 @@ async function searchDelay(token) {
 
 /**
  * Combien de temps les dés 3D mettent à s'arrêter chez ce MJ (mesuré à chaque fouille, 2,5 s au départ) : la fouille lance ses dés
- * d'autant avant la fin de sa durée. Sans Dice So Nice, ou fenêtre masquée : aucun délai.
+ * d'autant avant la fin de sa durée. Sans dés 3D (Dice So Nice, Dicer…), ou fenêtre masquée : aucun délai.
  */
 let diceLeadMs = 2500;
-const diceShown = () => !!game.modules.get("dice-so-nice")?.active && !!game.dice3d && !document.hidden;
 
 /** Les personnages dont le MJ mène une fouille en ce moment (UUID de l'acteur). */
 const searching = new Set();
