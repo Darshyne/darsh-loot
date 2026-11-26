@@ -179,7 +179,8 @@ export class TradeWindow extends ApplicationV2 {
   }
 
   static #onAccept() {
-    return this.actions.accept(this.trade.id, true);
+    // The revision of the offers shown here goes with the agreement: the GM client refuses it if they changed meanwhile.
+    return this.actions.accept(this.trade.id, true, this.trade.rev);
   }
 
   static #onUnaccept() {

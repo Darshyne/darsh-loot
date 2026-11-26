@@ -5,12 +5,13 @@
  * Règle : toute modification d'une offre retire les deux validations (on ne valide que ce qu'on a vu) ; l'échange se
  * fait quand les deux côtés ont validé.
  */
-import { COINS } from "./loot.mjs";
+import { COINS, PHYSICAL_TYPES } from "./loot.mjs";
 
 /** Un échange neuf entre deux personnages. */
 export function newTrade({ id, a, b }) {
   const side = s => ({ actor: s.actor, name: s.name, user: s.user ?? null, items: [], coins: {}, accepted: false });
-  return { id, a: side(a), b: side(b), done: false, cancelled: false };
+  // `rev`: the revision of the offers, raised at each change (lot 0, defect 11) — an agreement names the revision it agrees to.
+  return { id, a: side(a), b: side(b), done: false, cancelled: false, rev: 0 };
 }
 
 /** A trade nobody has touched for this long is abandoned (ms): the GM client cancels it (lot 0, defect 9). */
@@ -56,6 +57,7 @@ export function setOffer(trade, side, { items=[], coins={} }={}) {
   const offer = { items: [...merged].map(([id, quantity]) => ({ id, quantity })), coins: cleanCoins(coins) };
   return {
     ...trade,
+    rev: (trade.rev ?? 0) + 1,
     [side]: { ...trade[side], ...offer, accepted: false },
     [other(side)]: { ...trade[other(side)], accepted: false }
   };
@@ -75,6 +77,18 @@ export function unaccept(trade, side) {
 export function ready(trade) {
   const something = s => (s.items.length > 0) || (Object.keys(s.coins).length > 0);
   return !trade.done && !trade.cancelled && trade.a.accepted && trade.b.accepted && (something(trade.a) || something(trade.b));
+}
+
+/**
+ * What may be offered in a trade (lot 0, audit of 2026-11-26, defect 12): physical items only — a spell, a feat, a class are on
+ * the sheet too, and were accepted — and not what the character is wearing (unequip it first, as for a sale to a merchant).
+ * @param {{id: string, quantity: number}[]} items
+ * @param {Record<string, { type: string, equipped?: boolean, name?: string }>} sheet  The items of the sheet, by id.
+ * @returns {{ items: {id: string, quantity: number}[], left: string[] }}  `left`: the ids refused.
+ */
+export function tradable(items, sheet={}) {
+  const ok = i => !sheet[i.id] || (PHYSICAL_TYPES.has(sheet[i.id].type) && !sheet[i.id].equipped);
+  return { items: items.filter(ok), left: items.filter(i => !ok(i)).map(i => i.id) };
 }
 
 /**

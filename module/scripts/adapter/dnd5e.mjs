@@ -51,9 +51,16 @@ export function actingToken() {
   return canvas.scene?.tokens.find(t => t.actorId === character.id) ?? null;
 }
 
-/** Distance de bord à bord entre deux tokens, en unités de la scène (positions de `_source`, pas l'animation). */
+/**
+ * Distance de bord à bord entre deux tokens, en unités de la scène (positions de `_source`, pas l'animation).
+ * Lot 0 (audit of 2026-11-26, defect 17): two tokens on two different V14 levels are out of reach of each other (Infinity),
+ * like a token and a region of another level (`regionDistance`) — elevation alone used to count, so a corpse or a merchant on the
+ * floor above could be « within reach ». A token without a level (scene without levels) is measured as before.
+ */
 export function tokenDistance(a, b) {
   const scene = a.parent;
+  const levelA = a._source.level, levelB = b._source.level;
+  if ( levelA && levelB && (levelA !== levelB) ) return Infinity;
   const size = scene.grid.size;
   const box = t => ({ col: t._source.x / size, row: t._source.y / size, w: t._source.width, h: t._source.height,
     elevation: t._source.elevation ?? 0 });

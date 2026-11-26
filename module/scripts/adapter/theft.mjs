@@ -10,14 +10,19 @@ import { gearEntries, coinsOf } from "../core/loot.mjs";
 import { theftDC, difficultyOf, priceInGp, purseInGp, purseHandful } from "../core/theft.mjs";
 
 
-/** Un PNJ vivant, qu'on peut voler. */
+/**
+ * Un PNJ vivant, qu'on peut voler. Lot 0 (audit of 2026-11-26, defect 18): an NPC without maximum hit points (created without
+ * any: dnd5e gives it 0 HP, it is not dead for all that) is alive — the rule already made for merchants (`merchantAlive`).
+ */
 export function livingNPC(tokenDoc) {
   const actor = tokenDoc?.actor;
   if ( !actor || (actor.type !== "npc") ) return false;
   if ( actor.statuses.has("dead") ) return false;
   // 0.17.0 : un piège (acteur ou token) ou un objet du moteur n'a pas de poches.
   if ( isTrapToken(tokenDoc) || engineObjectToken(tokenDoc) ) return false;
-  return (actor.system.attributes?.hp?.value ?? 1) > 0;
+  const hp = actor.system.attributes?.hp;
+  if ( !(Number(hp?.max) > 0) && (hp?.max !== undefined) ) return true;
+  return (hp?.value ?? 1) > 0;
 }
 
 /** Une arme naturelle : type « natural », ou l'Attaque à mains nues (identifiant dnd5e). */
@@ -157,7 +162,10 @@ async function moveCoinsNow(from, to, coins) {
   }
   if ( !moved.length ) return [];
   // `update` ajoute `_id` à l'objet reçu : le bilan se fait avant.
+  const before = Object.fromEntries(Object.keys(out).map(k => [k, Number(cur[k.split(".").pop()]) || 0]));
   await from.update(out);
-  await to.update(add);
+  // Lot 0 (defect 3): coins that left one purse and cannot reach the other go back.
+  try { await to.update(add); }
+  catch(err) { await from.update(before).catch(() => {}); throw err; }
   return moved;
 }

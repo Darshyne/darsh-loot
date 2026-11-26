@@ -21,7 +21,8 @@
       "PasCadavre": "Cette créature n'est pas un cadavre.",
       "PasAToi": "Ce personnage ne vous appartient pas.",
       "MJSeul": "Seul le MJ peut fouiller les cadavres.",
-      "Loin": "Trop loin : approchez-vous pour fouiller."
+      "Loin": "Trop loin : approchez-vous pour fouiller.",
+      "Mur": "Un mur fait obstacle."
     },
     "Notice": {
       "NoGM": "Aucun MJ connecté : la fouille a besoin d'un MJ actif.",
@@ -300,7 +301,8 @@
       "AlreadyTriedNpc": "Ce PNJ a déjà tenté sa chance pour cet objet.",
       "NpcCaughtCard": "{victim} surprend {thief} la main dans ses poches !",
       "FloatNoticed": "Hé !",
-      "NoticeVictim": "Tu sens qu'une main a fouillé tes poches : {what}."
+      "NoticeVictim": "Tu sens qu'une main a fouillé tes poches : {what}.",
+      "Gone": "Quelqu'un d'autre a été plus rapide : ce n'est plus dans ces poches."
     },
     "Necro": {
       "Hud": "Relever le mort",
@@ -349,7 +351,9 @@
       "WindowFailed": "La fenêtre d'échange n'a pas pu s'ouvrir : {reason}",
       "GMLeft": "Échange annulé : le jeu du MJ a été rechargé ou a changé de main. Rien n'a été échangé — relancez l'échange.",
       "Expired": "Échange annulé : personne n'y a touché depuis une demi-heure.",
-      "TooMany": "Vous avez déjà plusieurs propositions d'échange ouvertes : terminez-en ou annulez-en une d'abord."
+      "TooMany": "Vous avez déjà plusieurs propositions d'échange ouvertes : terminez-en ou annulez-en une d'abord.",
+      "Changed": "L'offre vient de changer : regardez-la de nouveau avant de valider.",
+      "NotTradable": "Ne peut pas être échangé (pas un objet physique, ou équipé — retirez-le d'abord) : {names}"
     },
     "Shop": {
       "Title": "Boutique : {name}",
@@ -396,7 +400,8 @@
       "Show": "Montrer aux joueurs",
       "Shown": "{name} : boutique montrée à {count} joueur(s).",
       "Stuck": "{name} ne peut pas être vendu : il n'est pas marqué comme équipement sur la fiche du marchand. Rien n'a été payé.",
-      "StuckNote": "Invendable : pas marqué comme équipement (propriété « Équipement » de l'objet)."
+      "StuckNote": "Invendable : pas marqué comme équipement (propriété « Équipement » de l'objet).",
+      "NotShown": "Cette boutique ne vous est pas ouverte pour l'instant : allez voir le marchand, ou demandez au MJ de montrer la boutique."
     },
     "Merchant": {
       "Title": "Marchand : {name}",

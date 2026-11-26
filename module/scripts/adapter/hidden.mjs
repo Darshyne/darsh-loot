@@ -152,6 +152,22 @@ export function lineOfSight(token, point) {
   }
 }
 
+/**
+ * Is at least part of this box (in grid squares: `{ col, row, w, h }`, what a source's `box()` gives) in the token's line of
+ * sight? Its centre and four points near its corners are tried: a wall that hides only part of it does not hide it. Lot 0
+ * (audit of 2026-11-26, defect 16): the GM client only checked the distance, so a crafted request searched through a wall.
+ * No box (a shop without a token), or a scene the GM client is not viewing: cannot be tested, yes.
+ */
+export function boxInSight(token, box) {
+  if ( !box ) return true;
+  const size = token.parent.grid.size;
+  const x = box.col * size, y = box.row * size, w = box.w * size, h = box.h * size;
+  const inset = 0.25;
+  const points = [{ x: x + (w / 2), y: y + (h / 2) },
+    ...[[inset, inset], [1 - inset, inset], [inset, 1 - inset], [1 - inset, 1 - inset]].map(([fx, fy]) => ({ x: x + (w * fx), y: y + (h * fy) }))];
+  return points.some(point => lineOfSight(token, point));
+}
+
 /** Le token atteint-il cet objet : même niveau, à la distance donnée, et en ligne de vue ? */
 export function reaches(token, thing, distance) {
   if ( thing.scene !== token.parent ) return false;

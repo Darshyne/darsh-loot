@@ -166,6 +166,16 @@ export function stolenVerdict(merchant, stolen, identity={}) {
   return (merchant.stolen === "fence") ? "fence" : "ok";
 }
 
+/**
+ * The verdict on a bag is the worst verdict among itself and what it holds (lot 0, audit of 2026-11-26, defect 15): stolen goods
+ * slipped into a bag used to pass as an honest bag and come out « laundered », even at the one they were stolen from.
+ * @param {string[]} verdicts  « ok », « fence » or « refuse ».
+ */
+export function worstVerdict(verdicts) {
+  if ( verdicts.includes("refuse") ) return "refuse";
+  return verdicts.includes("fence") ? "fence" : "ok";
+}
+
 /* -------------------------------------------- */
 /*  Monnaie                                     */
 /* -------------------------------------------- */

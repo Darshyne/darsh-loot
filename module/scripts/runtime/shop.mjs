@@ -9,6 +9,7 @@ import { askGM, sourceRef } from "./take.mjs";
 import { resolveSource, merchantSource } from "../adapter/sources.mjs";
 import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 import { inTurn, operation } from "../adapter/ledger.mjs";
+import { boxInSight } from "../adapter/hidden.mjs";
 import {
   merchantOf, merchantToken, isMerchant, quote, executeDeal, unsellable, restock, memorizeStock, convertItemPiles, formatPrice
 } from "../adapter/shop.mjs";
@@ -16,6 +17,20 @@ import { MerchantConfig } from "../apps/merchant-config.mjs";
 
 const DEAL_QUERY = `${MODULE_ID}.shopDeal`;
 const SHOW_QUERY = `${MODULE_ID}.shopShow`;
+
+/**
+ * How long a shop the GM has shown stays open to the players it was shown to (ms): a session. Lot 0 (audit of 2026-11-26,
+ * defect 10): a shop addressed by its **actor** has neither place nor reach — that is meant for a shop without a token, which the
+ * GM shows. But any player could send that request for any merchant and trade from anywhere. Now the GM client only accepts it
+ * for a shop it has shown (`flags.darsh-loot.shown`: when, and to whom), and a merchant standing on the scene keeps its reach.
+ */
+const SHOWN_VALID_MS = 12 * 3600000;
+
+/** Was this shop shown to this user, recently enough? */
+function shownTo(actor, user) {
+  const shown = actor.getFlag(MODULE_ID, "shown");
+  return !!shown && ((Date.now() - (Number(shown.time) || 0)) < SHOWN_VALID_MS) && (shown.users ?? []).includes(user.id);
+}
 
 /** Le personnage derrière ce qui agit : un token, ou l'acteur lui-même (boutique sans token). */
 const actorOf = looter => ((looter instanceof Actor) ? looter : (looter?.actor ?? null));
@@ -42,7 +57,13 @@ async function handleDeal(payload, { user }) {
   if ( buyer === source.actor ) throw new Error(loc("Refus.PasAToi"));
   if ( !user.isGM ) {
     if ( merchantOf(source.actor).closed ) throw new Error(loc("Shop.Closed"));
-    if ( source.distance(looter) > sceneSetting("reach", looter.parent) ) throw new Error(loc("Shop.TooFar"));
+    if ( source.doc.documentName === "Actor" ) {
+      if ( !shownTo(source.actor, user) ) throw new Error(loc("Shop.NotShown"));
+    } else {
+      // A merchant on a scene: the character must be there too, as a token, within reach and not behind a wall.
+      if ( (looter.documentName !== "Token") || (source.distance(looter) > sceneSetting("reach", looter.parent)) ) throw new Error(loc("Shop.TooFar"));
+      if ( !boxInSight(looter, source.box()) ) throw new Error(loc("Refus.Mur"));
+    }
   }
   // Deux joueurs qui concluent en même temps passent l'un après l'autre ; et le devis se fait dans le même tour que les
   // écritures, sur le marchand **et** le personnage : sa bourse ne bouge pas (échange, vol, autre marchand) entre les deux.
@@ -138,6 +159,8 @@ function flagItem(item, shop) {
 export async function showShop(source) {
   if ( !gmOnly() ) return 0;
   const players = game.users.filter(u => u.active && !u.isGM);
+  // Noted on the merchant before the windows open: a shop shown by its actor is open to these players only (see `shownTo`).
+  if ( source.doc.documentName === "Actor" ) await source.actor.setFlag(MODULE_ID, "shown", { time: Date.now(), users: players.map(u => u.id) });
   for ( const user of players ) {
     user.query(SHOW_QUERY, { source: sourceRef(source) }, { timeout: 10000 }).catch(err => log.warn("shop not shown:", err.message));
   }

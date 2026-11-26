@@ -127,8 +127,11 @@ describe("déplacement (moveItem, moveCoins)", () => {
 
 describe("échange entre joueurs", () => {
   const query = name => CONFIG.queries[`darsh-loot.trade${name}`];
-  const alice = { id: "uA", isGM: false, name: "A", active: true, isSelf: false, query: async () => true };
-  const bob = { id: "uB", isGM: false, name: "B", active: true, isSelf: false, query: async () => true };
+  // The last state each player was sent: an agreement names the revision of the offers it was given on (lot 0, defect 11).
+  const shown = { rev: 0 };
+  const see = async (_name, state) => { if ( Number.isFinite(state?.rev) ) shown.rev = state.rev; return true; };
+  const alice = { id: "uA", isGM: false, name: "A", active: true, isSelf: false, query: see };
+  const bob = { id: "uB", isGM: false, name: "B", active: true, isSelf: false, query: see };
 
   /** Un échange ouvert par Alice, son offre posée et validée : il ne manque que la validation de Bob. */
   async function tradeAwaitingBob(offer) {
@@ -137,13 +140,13 @@ describe("échange entre joueurs", () => {
     const b = new FakeActor({ id: "b", name: "Bob", owners: ["uB"] });
     const { id } = await query("Open")({ from: a.uuid, to: b.uuid }, { user: alice });
     await query("Update")({ id, offer }, { user: alice });
-    await query("Accept")({ id, value: true }, { user: alice });
+    await query("Accept")({ id, value: true, rev: shown.rev }, { user: alice });
     return { id, a, b };
   }
 
   it("double clic sur « Valider » : les pièces ne passent qu'une fois", async () => {
     const { id, a, b } = await tradeAwaitingBob({ items: [], coins: { gp: 50 } });
-    const accept = () => query("Accept")({ id, value: true }, { user: bob });
+    const accept = () => query("Accept")({ id, value: true, rev: shown.rev }, { user: bob });
     const results = await Promise.allSettled([accept(), accept()]);
     expect(statuses(results)).toEqual(["fulfilled", "fulfilled"]);
     expect([a.system.currency.gp, b.system.currency.gp]).toEqual([50, 50]);
@@ -151,22 +154,22 @@ describe("échange entre joueurs", () => {
 
   it("un second « Valider » au milieu des écritures : l'épée offerte n'arrive qu'une fois", async () => {
     const { id, a, b } = await tradeAwaitingBob({ items: [{ id: "epee", quantity: 1 }], coins: { gp: 50 } });
-    const first = query("Accept")({ id, value: true }, { user: bob });
+    const first = query("Accept")({ id, value: true, rev: shown.rev }, { user: bob });
     await tick(3);
-    await Promise.allSettled([first, query("Accept")({ id, value: true }, { user: bob })]);
+    await Promise.allSettled([first, query("Accept")({ id, value: true, rev: shown.rev }, { user: bob })]);
     expect([a.count(sword.name), b.count(sword.name)]).toEqual([0, 1]);
     expect([a.system.currency.gp, b.system.currency.gp]).toEqual([50, 50]);
   });
 
   it("pendant l'exécution, ni modification ni annulation ; ensuite l'échange est clos", async () => {
     const { id, a, b } = await tradeAwaitingBob({ items: [], coins: { gp: 50 } });
-    const running = query("Accept")({ id, value: true }, { user: bob });
+    const running = query("Accept")({ id, value: true, rev: shown.rev }, { user: bob });
     const more = { items: [], coins: { gp: 100 } };
     await expect(query("Update")({ id, offer: more }, { user: alice })).rejects.toThrow("DLO.Trade.Over");
     await expect(query("Cancel")({ id }, { user: alice })).resolves.toBe(true);
     await running;
     expect([a.system.currency.gp, b.system.currency.gp]).toEqual([50, 50]);
-    await expect(query("Accept")({ id, value: true }, { user: bob })).rejects.toThrow("DLO.Trade.Over");
+    await expect(query("Accept")({ id, value: true, rev: shown.rev }, { user: bob })).rejects.toThrow("DLO.Trade.Over");
   });
 });
 

@@ -21,7 +21,8 @@
       "PasCadavre": "This creature is not a corpse.",
       "PasAToi": "You do not own this character.",
       "MJSeul": "Only the GM can search corpses.",
-      "Loin": "Too far away: step closer to search."
+      "Loin": "Too far away: step closer to search.",
+      "Mur": "A wall is in the way."
     },
     "Notice": {
       "NoGM": "No GM connected: searching needs an active GM.",
@@ -300,7 +301,8 @@
       "AlreadyTriedNpc": "This NPC already tried for that item.",
       "NpcCaughtCard": "{victim} catches {thief} with a hand in their pockets!",
       "FloatNoticed": "Hey!",
-      "NoticeVictim": "You feel your pockets were picked: {what}."
+      "NoticeVictim": "You feel your pockets were picked: {what}.",
+      "Gone": "Someone else got there first: it is no longer in these pockets."
     },
     "Necro": {
       "Hud": "Raise the dead",
@@ -349,7 +351,9 @@
       "WindowFailed": "The trade window could not open: {reason}",
       "GMLeft": "Trade cancelled: the GM's game was reloaded or changed hands. Nothing was exchanged — start the trade again.",
       "Expired": "Trade cancelled: nobody touched it for half an hour.",
-      "TooMany": "You already have several trade proposals open: finish or cancel one first."
+      "TooMany": "You already have several trade proposals open: finish or cancel one first.",
+      "Changed": "The offer has just changed: look at it again before agreeing.",
+      "NotTradable": "Cannot be traded (not a physical item, or equipped — unequip it first): {names}"
     },
     "Shop": {
       "Title": "Shop: {name}",
@@ -396,7 +400,8 @@
       "Show": "Show to players",
       "Shown": "{name}: shop shown to {count} player(s).",
       "Stuck": "{name} cannot be sold: it is not marked as equipment on the merchant's sheet. Nothing was charged.",
-      "StuckNote": "Cannot be sold: not marked as equipment (« Gear » property of the item)."
+      "StuckNote": "Cannot be sold: not marked as equipment (« Gear » property of the item).",
+      "NotShown": "This shop is not open to you right now: go to the merchant, or ask the GM to show the shop."
     },
     "Merchant": {
       "Title": "Merchant: {name}",

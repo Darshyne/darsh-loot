@@ -10,7 +10,7 @@
 import { MODULE_ID } from "../shared.mjs";
 import { COINS, canLeaveOwner } from "../core/loot.mjs";
 import {
-  normalizeMerchant, toCp, modifiersFor, buyPrice, sellPrice, goodsOf, wares, stolenVerdict, settle, cleanCart,
+  normalizeMerchant, toCp, modifiersFor, buyPrice, sellPrice, goodsOf, wares, stolenVerdict, worstVerdict, settle, cleanCart,
   restockPlan, coinsFor, purseValue, fromItemPiles
 } from "../core/shop.mjs";
 import { drawItems } from "./treasure.mjs";
@@ -67,6 +67,15 @@ function baseCpOf(item, actor) {
   return own + inside.reduce((sum, i) => sum + (baseCpOf(i, actor) * (i.system.quantity ?? 1)), 0);
 }
 
+/** The stolen marks of the items stored in this bag, bags inside it included. */
+function stolenInside(actor, id, seen=new Set()) {
+  if ( seen.has(id) ) return [];
+  seen.add(id);
+  return actor.items.filter(i => i.system.container === id).flatMap(i => [
+    ...(i.getFlag(MODULE_ID, "stolen") ? [i.getFlag(MODULE_ID, "stolen")] : []),
+    ...((i.type === "container") ? stolenInside(actor, i.id, seen) : [])]);
+}
+
 /** Les objets d'un acteur en données simples, pour core/shop.mjs. */
 function plainItems(actor) {
   return actor.items.map(i => {
@@ -80,6 +89,8 @@ function plainItems(actor) {
       hidden: shop.hidden === true, notForSale: shop.notForSale === true,
       base: Number.isFinite(shop.base) ? shop.base : null, rolled: shop.rolled === true, bought: shop.bought === true,
       stolen: i.getFlag(MODULE_ID, "stolen") ?? null,
+      // Lot 0 (defect 15): the stolen marks of everything stored in this bag, at any depth.
+      stolenInside: (i.type === "container") ? stolenInside(actor, i.id) : [],
       // Lot 0 (defect 1): what this actor cannot hand over (an NPC item that is not gear).
       stuck: !canLeaveOwner({ fromNpc: actor.type === "npc", properties: i.system.properties })
     };
@@ -109,7 +120,7 @@ export function waresView(seller, actor, token=null) {
   const identity = identityOf(actor, token);
   return wares(plainItems(seller)).map(e => {
     const modifiers = modifiersFor(merchant, { type: e.type, characterId: seller.id });
-    const verdict = stolenVerdict(merchant, e.stolen, identity);
+    const verdict = worstVerdict([e.stolen, ...(e.stolenInside ?? [])].map(mark => stolenVerdict(merchant, mark, identity)));
     const rate = (verdict === "fence") ? merchant.fenceRate : 1;
     return { ...e, modifiers, verdict, rate, unit: sellPrice(e.baseCp, 1, modifiers, rate), available: e.quantity };
   });

@@ -15,7 +15,7 @@ import { moveItemNow } from "../adapter/drop.mjs";
 import { inTurn, operation } from "../adapter/ledger.mjs";
 import { addCoins, COINS } from "../core/loot.mjs";
 import {
-  newTrade, setOffer, accept, unaccept, ready, clampOffer, withoutContained, other, staleTrades, TRADE_MAX_OPEN
+  newTrade, setOffer, accept, unaccept, ready, clampOffer, withoutContained, tradable, other, staleTrades, TRADE_MAX_OPEN
 } from "../core/trade.mjs";
 import { TradeWindow } from "../apps/trade-window.mjs";
 
@@ -67,8 +67,13 @@ function onTokenMenu(entries, { token, target }) {
 
 /** Mettre à jour mon offre, valider, retirer ma validation, annuler — depuis la fenêtre. */
 export const tradeActions = {
-  update: (id, offer) => askGM(Q.update, handleUpdate, { id, offer }),
-  accept: (id, value) => askGM(Q.accept, handleAccept, { id, value }),
+  update: async (id, offer) => {
+    const answer = await askGM(Q.update, handleUpdate, { id, offer });
+    // What the GM client left out of my offer (a spell, something I am wearing): said here, the window shows the rest.
+    if ( answer?.left?.length ) ui.notifications.warn(loc("Trade.NotTradable", { names: answer.left.join(", ") }));
+    return answer;
+  },
+  accept: (id, value, rev) => askGM(Q.accept, handleAccept, { id, value, rev }),
   cancel: id => askGM(Q.cancel, handleCancel, { id })
 };
 
@@ -187,6 +192,9 @@ async function handleOpen({ from, to, item, quantity }, { user }) {
   const b = fromUuidSync(to, { strict: false });
   if ( !a || !b ) throw new Error(loc("Refus.Introuvable"));
   if ( !a.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
+  // Lot 0 (audit of 2026-11-26, defect 13): the menu only offers another player character; a crafted request could name an NPC
+  // or a merchant, whose side the GM client would then have held.
+  if ( (a === b) || (!user.isGM && (b.type !== "character")) ) throw new Error(loc("Trade.Impossible"));
   const holder = holderOf(b, user);
   if ( !holder ) throw new Error(loc("Trade.NobodyThere", { name: b.name }));
   await purgeStale();
@@ -212,8 +220,10 @@ async function handleOpen({ from, to, item, quantity }, { user }) {
 function possibleOffer(offer, actor) {
   const owned = Object.fromEntries(actor.items.map(i => [i.id, i.system.quantity ?? 1]));
   const clamped = clampOffer({ items: offer.items, coins: offer.coins }, owned, actor.system.currency);
-  const loose = withoutContained(clamped.items, Object.fromEntries(actor.items.map(i => [i.id, i.system.container ?? null])));
-  return { items: loose.items, coins: clamped.coins, changed: clamped.changed || loose.changed };
+  const allowed = tradable(clamped.items, Object.fromEntries(actor.items.map(i => [i.id, { type: i.type, equipped: !!i.system.equipped }])));
+  const loose = withoutContained(allowed.items, Object.fromEntries(actor.items.map(i => [i.id, i.system.container ?? null])));
+  return { items: loose.items, coins: clamped.coins, changed: clamped.changed || loose.changed || (allowed.left.length > 0),
+    left: allowed.left.map(id => actor.items.get(id)?.name ?? id) };
 }
 
 async function handleUpdate({ id, offer }, { user }) {
@@ -221,17 +231,25 @@ async function handleUpdate({ id, offer }, { user }) {
   const side = sideOf(trade, user);
   if ( !side ) throw new Error(loc("Refus.PasAToi"));
   const actor = fromUuidSync(trade[side].actor, { strict: false });
-  const next = keep(setOffer(trade, side, possibleOffer({ items: offer.items ?? [], coins: offer.coins ?? {} }, actor)));
+  const possible = possibleOffer({ items: offer.items ?? [], coins: offer.coins ?? {} }, actor);
+  const next = keep(setOffer(trade, side, possible));
   await broadcast(next);
-  return true;
+  return { ok: true, left: possible.left };
 }
 
-async function handleAccept({ id, value }, { user }) {
+async function handleAccept({ id, value, rev }, { user }) {
   // Un second « valider » pendant l'exécution (double clic) : déjà pris en compte, l'échange ne se refait pas.
   if ( executing.has(id) ) return true;
   let trade = findTrade(id);
   const side = sideOf(trade, user);
   if ( !side ) throw new Error(loc("Refus.PasAToi"));
+  // Lot 0 (audit of 2026-11-26, defect 11): an agreement names the revision of the offers it was given on. If the other side
+  // changed its offer just before the click, this player would agree to something never shown: refused, and the current state is
+  // sent again so the window shows what is really on the table.
+  if ( value && (rev !== trade.rev) ) {
+    await broadcast(trade);
+    throw new Error(loc("Trade.Changed"));
+  }
   trade = keep(value ? accept(trade, side) : unaccept(trade, side));
   if ( ready(trade) ) {
     // Noté avant la première attente : l'échange accepté des deux côtés reste dans `trades` tant qu'il s'exécute.

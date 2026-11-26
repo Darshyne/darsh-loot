@@ -104,6 +104,9 @@ async function handleSteal(payload, { user }) {
     const stolen = stolenFlag({ from: victim.name, fromUuid: actor.uuid, place: victim.parent?.name, time: game.time.worldTime });
     const what = (payload.itemId === "coins") ? { coins: true } : { itemIds: [payload.itemId], stolen };
     const taken = await transfer(actor, looter.actor, what);
+    // Lot 0 (audit of 2026-11-26, defect 19): another thief took it while this request waited its turn — the second used to read
+    // « stolen » and receive nothing.
+    if ( !taken.names.length && !taken.coins.length ) throw new Error(loc("Steal.Gone"));
     announce(looter, source, taken, true);
   } else {
     await caught(victim, looter, payload.total, dc);

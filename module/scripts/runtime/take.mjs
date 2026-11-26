@@ -9,7 +9,7 @@ import { inTurn } from "../adapter/ledger.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { stolenFlag } from "../core/theft.mjs";
 import { clearIfEmpty } from "../adapter/drop.mjs";
-import { behaviorConcealed } from "../adapter/hidden.mjs";
+import { behaviorConcealed, boxInSight } from "../adapter/hidden.mjs";
 import { playForAll, SOUNDS } from "./feedback.mjs";
 
 const TAKE_QUERY = `${MODULE_ID}.take`;
@@ -73,6 +73,8 @@ export function checkAccess({ source: ref, looter: looterUuid }, user) {
   if ( ["container", "zone"].includes(source.kind) && behaviorConcealed(source.doc) ) throw new Error(loc("Refus.Introuvable"));
   if ( (source.kind === "corpse") && (setting("whoLoots") === "gm") ) throw new Error(loc("Refus.MJSeul"));
   if ( source.distance(looter) > sceneSetting("reach", looter.parent) ) throw new Error(loc("Refus.Loin"));
+  // Lot 0 (defect 16): within reach is not enough — no wall between the character and what it searches.
+  if ( !boxInSight(looter, source.box()) ) throw new Error(loc("Refus.Mur"));
   return { source, looter };
 }
 

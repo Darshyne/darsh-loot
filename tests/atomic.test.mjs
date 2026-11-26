@@ -154,8 +154,11 @@ describe("defects 1 and 3 — a deal at a merchant", () => {
 
 describe("defects 2 and 3 — a trade between two characters", () => {
   const query = name => CONFIG.queries[`darsh-loot.trade${name}`];
-  const alice = { id: "uA", isGM: false, name: "A", active: true, isSelf: false, query: async () => true };
-  const bob = { id: "uB", isGM: false, name: "B", active: true, isSelf: false, query: async () => true };
+  // The last state the players were sent: an agreement names the revision of the offers it was given on (defect 11).
+  const shown = { rev: 0 };
+  const see = async (_name, state) => { if ( Number.isFinite(state?.rev) ) shown.rev = state.rev; return true; };
+  const alice = { id: "uA", isGM: false, name: "A", active: true, isSelf: false, query: see };
+  const bob = { id: "uB", isGM: false, name: "B", active: true, isSelf: false, query: see };
   const bag = { _id: "sac", name: "Sac", type: "container", system: { quantity: 1 } };
   const inside = { _id: "potion", name: "Potion", type: "consumable", system: { quantity: 2, container: "sac" } };
 
@@ -167,9 +170,8 @@ describe("defects 2 and 3 — a trade between two characters", () => {
     return { id, a, b };
   }
   async function bothAccept(id) {
-    const rev = () => query("Peek")?.(id)?.rev;
-    await query("Accept")({ id, value: true, rev: rev() }, { user: alice });
-    return query("Accept")({ id, value: true, rev: rev() }, { user: bob });
+    await query("Accept")({ id, value: true, rev: shown.rev }, { user: alice });
+    return query("Accept")({ id, value: true, rev: shown.rev }, { user: bob });
   }
 
   it("defect 2 — a bag offered with an item stored in it: the bag goes with its contents, once", async () => {
