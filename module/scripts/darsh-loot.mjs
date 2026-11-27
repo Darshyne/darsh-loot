@@ -10,7 +10,8 @@ import { registerOperations, reportInterrupted } from "./runtime/operations.mjs"
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
 import { registerContainersInit, registerContainers, ensureContainer, requestUnlock } from "./runtime/containers.mjs";
 import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
-import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
+import { registerWindows, openSource, visitSource, prepareLoot } from "./runtime/open.mjs";
+import { registerShareInit, registerShare, requestShareCoins } from "./runtime/share.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerMechanismsInit, actuate, resetMechanism } from "./runtime/mechanisms.mjs";
@@ -49,6 +50,7 @@ Hooks.once("init", () => {
   registerSettingsWindow();
   registerOperations();
   registerTake();
+  registerShareInit();
   registerTreasure();
   registerContainersInit();
   registerZonesInit();
@@ -81,6 +83,7 @@ Hooks.once("ready", () => {
   registerDropFx();
   registerThrow();
   registerTrade();
+  registerShare({ prepare: prepareLoot });
   registerTheftMenu(visitSource);
   registerShop({ open: openSource, visit: visitSource });
   game.modules.get(MODULE_ID).api = {
@@ -178,6 +181,14 @@ Hooks.once("ready", () => {
     /** Ce qu'un token mort ou un coffre (acteur) porte, tel que la fenêtre le montre. */
     view: tokenOrActor => lootView(doc(tokenOrActor)?.actor ?? tokenOrActor),
     isCorpse: token => corpseToken(doc(token)),
+    /**
+     * Share the coins of a corpse (token) or a container (behavior) between the party's characters, for a character (token;
+     * a GM may give none). Resolves to `{ each, left, bonus, names }`, or null when refused.
+     */
+    shareCoins: (thing, looter=null) => {
+      const d = doc(thing);
+      return requestShareCoins((d?.documentName === "Token") ? corpseSource(d) : containerSource(d), doc(looter));
+    },
     /** Prendre sans fenêtre (tests) : { itemIds, coins }. */
     take: (corpse, looter, what) => requestTake(corpseSource(doc(corpse)), doc(looter), what),
     takeFromContainer: (behavior, looter, what) => requestTake(containerSource(behavior), doc(looter), what),

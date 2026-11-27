@@ -4,7 +4,7 @@
  * `flags.darsh-loot.test`), vérifie la cohérence de ce qui se passe — pas des valeurs de dés : trouvé ⇔ passive ≥ DD, désamorcé ou
  * parti, etc. — et retire tout ce qu'elle a créé, même en cas d'échec. Rien ici ne sert au jeu.
  */
-import { MODULE_ID, setting } from "../shared.mjs";
+import { MODULE_ID, setting, loc } from "../shared.mjs";
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { trapHandle, isTrapToken, autoRegionOf, anyKnown } from "../adapter/trapped.mjs";
 import { engineAvoids, engineObjectToken, engineTestApi } from "../adapter/engine.mjs";
@@ -31,6 +31,8 @@ import { purseValue } from "../core/shop.mjs";
 import { requestDeal } from "./shop.mjs";
 import { requestAnimate, raisable } from "./necromancy.mjs";
 import { TradeWindow } from "../apps/trade-window.mjs";
+import { requestShareCoins, sharersOf } from "./share.mjs";
+import { isForceable } from "../core/force.mjs";
 
 const TEST = { [MODULE_ID]: { test: true } };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -1074,12 +1076,119 @@ async function thrown(b) {
   b.expect((after === before) && !target.actor.items.some(i => i.name === "Test returning axe"), "a returning weapon: nothing on the ground, nothing lodged");
 }
 
+/* -------------------------------------------- */
+/*  Lot 1 — sharing (2026-11-27)                */
+/* -------------------------------------------- */
+
+/**
+ * A primary party of test characters for the time of a part: three player characters, the third one without a token (absent).
+ * Returns the tokens, the actors and `restore()`, which puts back the world's own primary party and the sharing settings.
+ */
+async function testParty(b) {
+  const previous = { party: game.settings.get("dnd5e", "primaryParty")?.actor?.id ?? null,
+    shareWith: setting("shareWith"), shareRemainder: setting("shareRemainder") };
+  const pcs = [await testCharacter(b, "Test sharer"), await testCharacter(b, "Test companion"), await testCharacter(b, "Test absent")];
+  const group = await b.actor({ name: "Test party", type: "group", img: "icons/svg/mystery-man.svg",
+    system: { members: pcs.map(a => ({ actor: a.id })) } });
+  await game.settings.set("dnd5e", "primaryParty", { actor: group.id });
+  await game.settings.set(MODULE_ID, "shareWith", "party");
+  await game.settings.set(MODULE_ID, "shareRemainder", "source");
+  const tokens = [await b.token(pcs[0], 0, 0), await b.token(pcs[1], 0, 1)];
+  return { pcs, tokens, group, async restore() {
+    await game.settings.set("dnd5e", "primaryParty", { actor: previous.party });
+    await game.settings.set(MODULE_ID, "shareWith", previous.shareWith);
+    await game.settings.set(MODULE_ID, "shareRemainder", previous.shareRemainder);
+  } };
+}
+
+/** A dead test NPC with this purse and these items, already « rolled » (no treasure added), on square (i, j). */
+async function testCorpse(b, name, i, j, { currency={}, items=[] }={}) {
+  const actor = await b.actor({ name, type: "npc", img: "icons/svg/skull.svg",
+    system: { attributes: { hp: { value: 0, max: 10 } }, details: { type: { value: "humanoid" }, cr: 1 }, currency },
+    flags: { [MODULE_ID]: { test: true, rolled: true } }, items });
+  const token = await b.token(actor, i, j);
+  await token.actor.toggleStatusEffect("dead", { active: true, overlay: true });
+  await sleep(400);
+  return token;
+}
+
+/** Share the coins: split between the party, seen and heard by all, whole or undone, forceable when too far. */
+async function shareCoinsPart(b) {
+  const party = await testParty(b);
+  try {
+    const [looter] = party.tokens;
+    const purse = a => ({ gp: a.system.currency.gp ?? 0, sp: a.system.currency.sp ?? 0 });
+    const golds = () => party.pcs.map(a => purse(a).gp);
+    const corpse = await testCorpse(b, "Test rich corpse", 1, 0, { currency: { gp: 10, sp: 7 } });
+    const source = corpseSource(corpse);
+
+    const names = sharersOf(source, looter).map(a => a.name);
+    b.expect(names.length === 3, `the party of the share: the three characters of the primary party, the absent one included (${names.join(", ")})`);
+    const menu = engineTestApi()?.mcp?.menu?.({ tokenId: looter.id, targetId: corpse.id });
+    if ( menu ) b.expect(menu.labels.includes(loc("Share.MenuCoins")), `right-click menu of the corpse: ${menu.labels.join(" | ")}`);
+    else b.note("the Core's test API is not there: the menu entry is not read");
+
+    let since = Date.now() - 1;
+    const sounds = b.sounds.length;
+    const shared = await requestShareCoins(source, looter);
+    await sleep(600);
+    b.expect(!!shared && golds().join() === "3,3,3" && party.pcs.every(a => purse(a).sp === 2),
+      `10 gp 7 sp between three: 3 gp 2 sp each (${JSON.stringify(party.pcs.map(purse))})`);
+    b.expect(purse(corpse.actor).gp === 1 && purse(corpse.actor).sp === 1, `what does not divide stays on the corpse (${JSON.stringify(purse(corpse.actor))})`);
+    const card = messagesAfter(since, m => !!m.getFlag(MODULE_ID, "share"))[0];
+    b.expect(card && !card.whisper.length && !!card.getFlag(MODULE_ID, "feedback"), "one public card, with the floating text over the members");
+    b.expect(card?.getFlag(MODULE_ID, "shareFx")?.to?.length === 2, "the coins fly to the two members who are on the scene");
+    b.expect(b.sounds.slice(sounds).some(x => x.broadcast && (x.src === SOUNDS.coins)), "the coins are heard by everyone");
+
+    // « Only those on the scene », and the remainder to the one who shares.
+    await game.settings.set(MODULE_ID, "shareWith", "scene");
+    await game.settings.set(MODULE_ID, "shareRemainder", "sharer");
+    const second = corpseSource(await testCorpse(b, "Test second corpse", 1, 1, { currency: { gp: 5 } }));
+    await requestShareCoins(second, looter);
+    await sleep(500);
+    b.expect(golds().join() === "6,5,3" && purse(second.actor).gp === 0,
+      `setting « on the scene » + « remainder to the sharer »: 5 gp between two present, the sharer keeps the odd one (${golds().join(", ")})`);
+    await game.settings.set(MODULE_ID, "shareWith", "party");
+    await game.settings.set(MODULE_ID, "shareRemainder", "source");
+
+    // A write that fails half-way: everything goes back, the GM reads why.
+    const third = corpseSource(await testCorpse(b, "Test third corpse", 2, 0, { currency: { gp: 9 } }));
+    const before = golds().join();
+    since = Date.now() - 1;
+    const restore = failNextUpdate(party.pcs[2]);
+    const failed = await requestShareCoins(third, looter);
+    restore();
+    await sleep(500);
+    b.expect(failed === null && golds().join() === before && purse(third.actor).gp === 9, `a write that fails: every coin is back (${golds().join(", ")}, corpse ${purse(third.actor).gp} gp)`);
+    b.expect(tracesAfter(since).length === 1, "the GM gets one whispered trace of the failed share");
+    b.expect(Object.keys(game.settings.get(MODULE_ID, "operations") ?? {}).length === 0, "the operations journal is empty afterwards");
+
+    // From a player: too far is refused with a reason that can be forced; forced, it is done and the GM is told.
+    const player = somePlayer();
+    if ( player ) {
+      const far = corpseSource(await testCorpse(b, "Test far corpse", 5, 0, { currency: { gp: 6 } }));
+      const payload = { source: { kind: "corpse", uuid: far.uuid }, looter: looter.uuid };
+      const query = CONFIG.queries[`${MODULE_ID}.shareCoins`];
+      const refusal = await query(payload, { user: player }).then(() => "accepted", err => err.message);
+      b.expect(isForceable(refusal) && purse(far.actor).gp === 6, "a player four squares away: refused, with a reason that can be forced");
+      since = Date.now() - 1;
+      const forced = await query({ ...payload, force: true }, { user: player }).then(() => "accepted", err => err.message);
+      await sleep(500);
+      const told = messagesAfter(since, m => !!m.getFlag(MODULE_ID, "forced"))[0];
+      b.expect(forced === "accepted" && purse(far.actor).gp === 0, `forced: done (${forced})`);
+      b.expect(told && told.whisper.length && told.whisper.every(id => game.users.get(id)?.isGM), "the GM is told, in a whisper, that the rule was overridden");
+    } else b.note("no player user in this world: the forced share is not played");
+  } finally { await party.restore(); }
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
   mecanisme: [mechanism, 9, 4], vol: [npcTheft, 4, 2],
   // Lot 0 (2026-11-26)
-  shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4] };
+  shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4],
+  // Lot 1 (2026-11-27)
+  "share-coins": [shareCoinsPart, 7, 3] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

@@ -5,6 +5,7 @@
  */
 import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { lootView, hasThievesTools, keyItem } from "../adapter/dnd5e.mjs";
+import { partyMembers, sceneOfSource } from "../adapter/party.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 const escape = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -28,6 +29,7 @@ export class LootWindow extends ApplicationV2 {
       take: LootWindow.#onTake,
       takeAll: LootWindow.#onTakeAll,
       takeCoins: LootWindow.#onTakeCoins,
+      shareCoins: LootWindow.#onShareCoins,
       unlock: LootWindow.#onUnlock,
       openStore: LootWindow.#onOpenStore
     }
@@ -78,7 +80,9 @@ export class LootWindow extends ApplicationV2 {
       blocked: this.#blocked(),
       looterName: this.looter?.name ?? "",
       gm: game.user.isGM,
-      container: this.source.kind === "container"
+      container: this.source.kind === "container",
+      // Lot 1: who would get a share of the coins (the GM client decides; this is what the button announces).
+      sharers: view.coins.length ? partyMembers(sceneOfSource(this.source), looterActor ?? null).map(a => a.name) : []
     };
   }
 
@@ -119,7 +123,12 @@ export class LootWindow extends ApplicationV2 {
     root.innerHTML = `
       <p class="dlo-to">${context.looterName ? loc("Window.To", { name: escape(context.looterName) }) : ""}</p>
       ${context.empty ? `<p class="dlo-empty">${loc("Window.Empty")}</p>` : `<ol class="dlo-grid ${disabled}">${slots}</ol>`}
-      ${coins ? `<div class="dlo-coins" data-action="takeCoins" data-tooltip="${loc("Window.TakeCoins")}">${coins}</div>` : ""}
+      ${coins ? `<div class="dlo-coin-row">
+        <div class="dlo-coins" data-action="takeCoins" data-tooltip="${loc("Window.TakeCoins")}">${coins}</div>
+        ${(context.sharers.length >= 2) ? `<button type="button" class="dlo-share" data-action="shareCoins" ${(context.looterName || context.gm) ? "" : "disabled"}
+          data-tooltip="${escape(loc("Share.Tooltip", { count: context.sharers.length, names: context.sharers.join(", ") }))}">
+          <i class="fa-solid fa-people-group"></i> ${loc("Share.Button")}</button>` : ""}
+      </div>` : ""}
       ${context.blocked ? `<p class="dlo-blocked">${context.blocked}</p>` : ""}
       <footer class="dlo-foot">
         ${store}
@@ -159,6 +168,17 @@ export class LootWindow extends ApplicationV2 {
   static async #onTakeCoins() {
     if ( this.#blocked() || this.source.locked() ) return;
     await this.handlers.onTake(this.source, this.looter, { coins: true });
+  }
+
+  /**
+   * Lot 1: split the coins between the party. Not held back by « too far »: the GM client refuses it with a reason the player
+   * may override (« do it anyway »), as the suite's rule asks.
+   */
+  static async #onShareCoins(event, target) {
+    if ( this.source.locked() || (!this.looter?.actor && !game.user.isGM) ) return;
+    target.disabled = true;
+    try { await this.handlers.onShareCoins(this.source, this.looter); }
+    finally { if ( target.isConnected ) target.disabled = false; }
   }
 
   static async #onTakeAll() {

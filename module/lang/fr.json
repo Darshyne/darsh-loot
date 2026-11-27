@@ -1269,6 +1269,41 @@
         "Placed": "token posé : {what}",
         "Belongings": "affaires de {who} tombées au sol"
       }
+    },
+    "Share": {
+      "Button": "Partager",
+      "Tooltip": "Partager les pièces entre {count} personnages : {names}",
+      "MenuCoins": "Partager les pièces avec le groupe",
+      "Alone": "Personne avec qui partager : le groupe compte moins de deux personnages ici.",
+      "TooFew": "Pas assez de pièces pour en donner une à chacun des {count} personnages : prenez-les plutôt.",
+      "NoCoins": "Aucune pièce ici.",
+      "Card": "Pièces partagées entre {names} : {each} chacun.",
+      "CardBonus": "{who} garde le reste : {rest}.",
+      "CardLeft": "Resté sur place : {rest}.",
+      "Plan": "{names} reçoivent chacun {each}",
+      "Op": "pièces de {from} partagées avec le groupe",
+      "ForcedWhat": "{who} a partagé des pièces",
+      "Settings": {
+        "ShareWith": {
+          "Name": "Partage : qui reçoit une part",
+          "Hint": "Les personnages joueurs du groupe principal de dnd5e. Sans groupe principal : les personnages de joueurs qui ont un token sur la scène.",
+          "Party": "Tout le groupe, absents compris",
+          "Scene": "Seulement les personnages qui ont un token sur la scène"
+        },
+        "ShareRemainder": {
+          "Name": "Partage : les pièces qui ne se divisent pas",
+          "Hint": "Les pièces se partagent pièce par pièce, sans conversion : 10 po entre 3 personnages donnent 3 po chacun et 1 po de reste.",
+          "Source": "Elles restent là où elles ont été trouvées",
+          "Sharer": "Elles vont au personnage qui partage"
+        }
+      }
+    },
+    "Force": {
+      "Title": "Impossible",
+      "Question": "Le faire quand même ? Le MJ sera prévenu.",
+      "Anyway": "Le faire quand même",
+      "GiveUp": "Renoncer",
+      "Told": "{user} a passé outre une règle — {what}. Raison écartée : {reason}"
     }
   },
   "TYPES": {

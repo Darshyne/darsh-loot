@@ -313,3 +313,14 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-shop .dlo-shop-stuck { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px; color: #e3b07c;
   border: 1px solid #9a5a41; border-radius: 4px; background: rgba(154, 90, 65, 0.15); font-size: 0.85rem; }
 .dlo-shop .dlo-shop-stuck button { width: auto; flex: none; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
+/* Lot 1 — sharing: the coins and, beside them, « Share » */
+.dlo-loot .dlo-coin-row { display: flex; align-items: stretch; gap: 6px; margin-top: 10px; }
+.dlo-loot .dlo-coin-row .dlo-coins { flex: 1; margin-top: 0; }
+.dlo-loot .dlo-share {
+  flex: 0 0 auto; width: auto; padding: 2px 10px;
+  background: #2b2418; color: var(--dlo-gold);
+  border: 1px solid var(--dlo-edge); border-radius: 4px; cursor: pointer;
+}
+.dlo-loot .dlo-share:hover:not(:disabled) { border-color: var(--dlo-gold); }
+.dlo-loot .dlo-share:disabled { color: var(--dlo-muted); opacity: 0.55; cursor: not-allowed; }
+.dlo-force-reason { font-weight: bold; }

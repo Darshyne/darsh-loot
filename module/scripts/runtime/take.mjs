@@ -11,11 +11,12 @@ import { stolenFlag } from "../core/theft.mjs";
 import { clearIfEmpty } from "../adapter/drop.mjs";
 import { behaviorConcealed, boxInSight } from "../adapter/hidden.mjs";
 import { playForAll, SOUNDS } from "./feedback.mjs";
+import { forceableRefusal } from "../core/force.mjs";
 
 const TAKE_QUERY = `${MODULE_ID}.take`;
 
 /** Les sources où l'on prend (SPEC §3.1–3.2). */
-const TAKE_KINDS = ["corpse", "container"];
+export const TAKE_KINDS = ["corpse", "container"];
 
 /** Ce qui voyage dans une requête pour désigner une source. */
 export const sourceRef = source => ({ kind: source.kind, uuid: source.uuid });
@@ -23,13 +24,15 @@ export const sourceRef = source => ({ kind: source.kind, uuid: source.uuid });
 /**
  * Envoie une requête au MJ actif (ou l'exécute si l'on est lui). Un refus devient un avertissement, jamais une erreur. `timeout` :
  * pour une requête qui attend exprès (la fouille, qui conclut à la fin de sa durée).
+ * `onRefusal(err)` (lot 1): called with a refusal before it is shown; returning `true` means the caller deals with it (a refusal
+ * the player may force, runtime/force.mjs) and nothing is notified here.
  */
-export async function askGM(name, handler, payload, { timeout=15000 }={}) {
+export async function askGM(name, handler, payload, { timeout=15000, onRefusal=null }={}) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Notice.NoGM")); return null; }
   if ( gm.isSelf ) {
     try { return await handler(payload, { user: game.user }); }
-    catch(err) { return refused(name, err); }
+    catch(err) { return refused(name, err, onRefusal); }
   }
   // Lot 0 (audit of 2026-11-26, defect 7): the query used to give up after `timeout` and say « refused » while the GM client,
   // merely slow (a compendium to load, a queue of gestures), carried it out anyway. Now: after `timeout` the player is told the
@@ -40,7 +43,7 @@ export async function askGM(name, handler, payload, { timeout=15000 }={}) {
   try {
     return await gm.query(name, payload, { timeout: Math.max(timeout, GM_PATIENCE_MS) });
   } catch(err) {
-    if ( !/timed? ?out/i.test(err.message) ) return refused(name, err);
+    if ( !/timed? ?out/i.test(err.message) ) return refused(name, err, onRefusal);
     log.warn(`${name}: no answer from the GM client`, err.message);
     ui.notifications.warn(loc("Notice.NoAnswer"));
     return null;
@@ -54,17 +57,21 @@ export async function askGM(name, handler, payload, { timeout=15000 }={}) {
 const GM_PATIENCE_MS = 90000;
 
 /** A refusal: the reason the GM client gave, as a warning — never a console error (the Core scenarios count them). */
-function refused(name, err) {
+function refused(name, err, onRefusal=null) {
   log.warn(`${name} refused:`, err.message);
+  if ( onRefusal?.(err) === true ) return null;
   ui.notifications.warn(loc("Notice.Refused", { reason: err.message }));
   return null;
 }
 
 /**
  * Les contrôles communs chez le MJ : la source et le personnage existent, le joueur le possède, il est à portée.
- * @returns {{ source: object, looter: TokenDocument }}
+ * Lot 1 — `canForce`: for a gesture whose « too far » and « a wall is in the way » may be overridden by the player (suite rule).
+ * The refusal then carries the mark of core/force.mjs; sent again with `force: true`, the gesture goes on and `forced` gives
+ * the reason that was overridden, for the caller to tell the GM. Ownership, a hidden container and « GM only » are never forced.
+ * @returns {{ source: object, looter: TokenDocument, forced?: string }}
  */
-export function checkAccess({ source: ref, looter: looterUuid }, user) {
+export function checkAccess({ source: ref, looter: looterUuid, force=false }, user, { canForce=false }={}) {
   const source = resolveSource(ref);
   const looter = fromUuidSync(looterUuid, { strict: false });
   if ( !source || !looter?.actor || !source.exists() ) throw new Error(loc("Refus.Introuvable"));
@@ -72,10 +79,13 @@ export function checkAccess({ source: ref, looter: looterUuid }, user) {
   if ( user.isGM ) return { source, looter };
   if ( ["container", "zone"].includes(source.kind) && behaviorConcealed(source.doc) ) throw new Error(loc("Refus.Introuvable"));
   if ( (source.kind === "corpse") && (setting("whoLoots") === "gm") ) throw new Error(loc("Refus.MJSeul"));
-  if ( source.distance(looter) > sceneSetting("reach", looter.parent) ) throw new Error(loc("Refus.Loin"));
   // Lot 0 (defect 16): within reach is not enough — no wall between the character and what it searches.
-  if ( !boxInSight(looter, source.box()) ) throw new Error(loc("Refus.Mur"));
-  return { source, looter };
+  const obstacle = (source.distance(looter) > sceneSetting("reach", looter.parent)) ? loc("Refus.Loin")
+    : (!boxInSight(looter, source.box()) ? loc("Refus.Mur") : null);
+  if ( !obstacle ) return { source, looter };
+  if ( !canForce ) throw new Error(obstacle);
+  if ( !force ) throw forceableRefusal(obstacle);
+  return { source, looter, forced: obstacle };
 }
 
 /**

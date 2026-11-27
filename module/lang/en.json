@@ -1269,6 +1269,41 @@
         "Placed": "token placed: {what}",
         "Belongings": "belongings of {who} dropped to the ground"
       }
+    },
+    "Share": {
+      "Button": "Share",
+      "Tooltip": "Share the coins between {count} characters: {names}",
+      "MenuCoins": "Share the coins with the party",
+      "Alone": "Nobody to share with: the party has fewer than two characters here.",
+      "TooFew": "Not enough coins to give one to each of the {count} characters: take them instead.",
+      "NoCoins": "No coins here.",
+      "Card": "Coins shared between {names}: {each} each.",
+      "CardBonus": "{who} keeps the remainder: {rest}.",
+      "CardLeft": "Left behind: {rest}.",
+      "Plan": "{names} each receive {each}",
+      "Op": "coins of {from} shared with the party",
+      "ForcedWhat": "{who} shared coins",
+      "Settings": {
+        "ShareWith": {
+          "Name": "Sharing: who gets a share",
+          "Hint": "Player characters of the dnd5e primary party. Without a primary party: the player-owned characters with a token on the scene.",
+          "Party": "The whole party, absent characters included",
+          "Scene": "Only the characters with a token on the scene"
+        },
+        "ShareRemainder": {
+          "Name": "Sharing: coins that do not divide",
+          "Hint": "Coins are split coin by coin, without conversion: 10 gp between 3 characters is 3 gp each and 1 gp over.",
+          "Source": "They stay where they were found",
+          "Sharer": "They go to the character who shares"
+        }
+      }
+    },
+    "Force": {
+      "Title": "Not possible",
+      "Question": "Do it anyway? The GM will be told.",
+      "Anyway": "Do it anyway",
+      "GiveUp": "Give up",
+      "Told": "{user} overrode a rule — {what}. Reason set aside: {reason}"
     }
   },
   "TYPES": {

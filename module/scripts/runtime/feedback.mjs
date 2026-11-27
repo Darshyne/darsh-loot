@@ -82,9 +82,10 @@ export async function channel(token, { seconds=0, label="", timerLabel=label, so
  * @param {TokenDocument} token
  * @param {string} text            Texte de la carte et du texte flottant (déjà traduit, sans HTML).
  * @param {{kind?: string, icon?: string, sound?: string|null, float?: string}} [options]  `kind` : gain / refused…
+ *   `flags` (lot 1): more `flags.darsh-loot.*` for the card (what each client animates: the coins of a share).
  */
 export async function feedbackCard(token, text, { kind="gain", icon="fa-solid fa-screwdriver-wrench", sound=null, float=text, ping=false,
-  also=[] }={}) {
+  also=[], flags={} }={}) {
   if ( !token || !text ) return null;
   if ( sound ) playForAll(sound);
   // 0.21.0 (issue #5) : `ping` — un ping vu de tous autour de chaque token nommé ; `also` — d'autres textes flottants
@@ -94,7 +95,7 @@ export async function feedbackCard(token, text, { kind="gain", icon="fa-solid fa
   return ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ token, actor: token.actor }),
     content: `<p><i class="${icon}"></i> ${foundry.utils.escapeHTML(text)}</p>`,
-    flags: { [MODULE_ID]: { feedback: { token: token.uuid, text: float, kind,
+    flags: { [MODULE_ID]: { ...flags, feedback: { token: token.uuid, text: float, kind,
       also: others.map(o => ({ token: o.token.uuid ?? o.token, text: o.text, kind: o.kind ?? kind })) } } }
   });
 }

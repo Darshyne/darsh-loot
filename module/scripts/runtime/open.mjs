@@ -3,6 +3,7 @@
  */
 import { route } from "./router.mjs";
 import { requestTake } from "./take.mjs";
+import { requestShareCoins } from "./share.mjs";
 import { ensureRolled } from "./treasure.mjs";
 import { ensureContainer, requestUnlock } from "./containers.mjs";
 import { trapGate, requestSpring } from "./traps.mjs";
@@ -18,7 +19,7 @@ import { setting, sceneSetting, loc } from "../shared.mjs";
 import { playForAll, SOUNDS } from "./feedback.mjs";
 import { containerSounds } from "../adapter/container-behavior.mjs";
 
-const HANDLERS = { onTake: requestTake, onUnlock: requestUnlock };
+const HANDLERS = { onTake: requestTake, onUnlock: requestUnlock, onShareCoins: requestShareCoins };
 
 /**
  * Ouvre la fenêtre d'une source pour le token qui agit : fouille (cadavre, conteneur, après le tirage la première fois),
@@ -35,6 +36,16 @@ export async function openSource(source, looter=actingToken()) {
     return StealWindow.show(source, looter, requestSteal);
   }
   if ( source.kind === "merchant" ) return ShopWindow.show(source, looter, SHOP_ACTIONS);
+  if ( !(await prepareLoot(source, looter)) ) return null;
+  return LootWindow.show(source, looter, HANDLERS);
+}
+
+/**
+ * What happens when a corpse or a container is opened, before anything is shown or taken: the treasure is rolled (once), a
+ * trapped chest goes off or asks first, the chest gets its contents, and it is heard. Returns false when the player gave up
+ * (a spotted trap). Lot 1: also the first step of a gesture made from the menu, without the window (« Share the coins »).
+ */
+export async function prepareLoot(source, looter) {
   if ( source.kind === "corpse" ) {
     await ensureRolled(source.doc);
     playForAll(SOUNDS.rummage, 0.6);   // 2026-10-28 : la fouille d'un cadavre s'entend
@@ -43,14 +54,14 @@ export async function openSource(source, looter=actingToken()) {
     // 0.16.0 : un coffre piégé part quand on l'ouvre (s'il n'est pas verrouillé : sinon, quand la serrure cède). Repéré, le joueur
     // choisit d'abord : désamorcer, ouvrir quand même, renoncer.
     if ( looter && !source.locked() ) {
-      if ( !game.user.isGM && !(await trapGate(source.doc, looter, ["open"])) ) return null;
+      if ( !game.user.isGM && !(await trapGate(source.doc, looter, ["open"])) ) return false;
       await requestSpring(source.doc, looter, "open");
     }
     await ensureContainer(source.doc);
     // 2026-10-28 : le coffre s'ouvre avec le son choisi dans sa configuration (ceux des portes) ; verrouillé, la serrure parle à sa place.
     if ( !source.locked() ) playForAll(containerSounds(source.doc)?.open);
   }
-  return LootWindow.show(source, looter, HANDLERS);
+  return true;
 }
 
 /**

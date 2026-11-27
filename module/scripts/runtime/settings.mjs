@@ -146,6 +146,19 @@ export function registerSettings() {
     scope: "world", config: true, type: String, default: "gm",
     choices: { gm: "DLO.Settings.Announce.GM", all: "DLO.Settings.Announce.All", none: "DLO.Settings.Announce.None" }
   });
+  // Lot 1 (2026-11-27): who gets a share — every player character of dnd5e's primary party, or only those with a token on the
+  // scene of the loot. Without a primary party: the player-owned characters on the scene.
+  game.settings.register(MODULE_ID, "shareWith", {
+    name: "DLO.Share.Settings.ShareWith.Name", hint: "DLO.Share.Settings.ShareWith.Hint",
+    scope: "world", config: true, type: String, default: "party",
+    choices: { party: "DLO.Share.Settings.ShareWith.Party", scene: "DLO.Share.Settings.ShareWith.Scene" }
+  });
+  // Lot 1: the coins that do not divide stay where they are, or go to the one who shares.
+  game.settings.register(MODULE_ID, "shareRemainder", {
+    name: "DLO.Share.Settings.ShareRemainder.Name", hint: "DLO.Share.Settings.ShareRemainder.Hint",
+    scope: "world", config: true, type: String, default: "source",
+    choices: { source: "DLO.Share.Settings.ShareRemainder.Source", sharer: "DLO.Share.Settings.ShareRemainder.Sharer" }
+  });
   // Lot 0: the journal of multi-write gestures in progress (runtime/operations.mjs), hidden. Empty unless a GM reloaded mid-gesture.
   game.settings.register(MODULE_ID, "operations", { scope: "world", config: false, type: Object, default: {} });
 }

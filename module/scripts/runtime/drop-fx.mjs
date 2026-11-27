@@ -69,6 +69,8 @@ export async function playDrop(doc, drop) {
     });
     sprite.destroy();
   }
+  // `mute` (lot 1): coins flying to each member of a share — one sound for the whole gesture, played by the GM client for all.
+  if ( drop.mute ) return;
   await landingSound(drop.sound);
 }
 
