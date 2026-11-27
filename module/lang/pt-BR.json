@@ -11,7 +11,11 @@
       "Container": "Contêiner",
       "SearchCorpse": "Revistar o cadáver",
       "OpenStore": "Ficha do conteúdo",
-      "SearchContainer": "Revistar"
+      "SearchContainer": "Revistar",
+      "QuantityTitle": "Pegar: {name}",
+      "Quantity": "Quantos?",
+      "TakeSome": "Pegar",
+      "StackHint": "{name} — clique para escolher quantos pegar; Shift+clique para pegar todos"
     },
     "Hud": {
       "Search": "Revistar o cadáver"
@@ -21,11 +25,14 @@
       "PasCadavre": "Esta criatura não está morta.",
       "PasAToi": "Você não controla este personagem.",
       "MJSeul": "Somente o mestre pode revistar cadáveres.",
-      "Loin": "Muito longe: aproxime-se para revistar."
+      "Loin": "Muito longe: aproxime-se para revistar.",
+      "Mur": "Há uma parede no caminho."
     },
     "Notice": {
       "NoGM": "Nenhum mestre conectado: é necessário um mestre ativo para revistar.",
-      "Refused": "Não é possível: {reason}"
+      "Refused": "Não é possível: {reason}",
+      "StillWaiting": "O jogo do Mestre ainda não respondeu: aguardando…",
+      "NoAnswer": "O jogo do Mestre não respondeu. A ação ainda pode ter acontecido: confira antes de tentar novamente."
     },
     "Chat": {
       "Took": "{looter} pega de {corpse}: {what}.",
@@ -150,7 +157,9 @@
       "Folder": "Saque — contêineres",
       "ActorName": "Contêiner: {name}",
       "ConvertMenu": "Converter em contêiner",
-      "Converted": "{name} agora é um contêiner (tile e região)."
+      "Converted": "{name} agora é um contêiner (tile e região).",
+      "StoreMissing": "O contêiner « {name} » ({scene}) perdeu o ator que guarda seu conteúdo (foi excluído ou não foi importado com a cena). Um novo ator vazio foi criado. Para preenchê-lo, abra o contêiner e coloque itens nele, ou desmarque « Já sorteado » nas configurações para sortear a tabela novamente.",
+      "StoreShared": "O contêiner « {name} » ({scene}) compartilhava o conteúdo com outro contêiner (cena duplicada). Agora tem o seu próprio, com uma cópia do que havia no outro."
     },
     "ContainerBehavior": {
       "Hoard": {
@@ -277,7 +286,8 @@
       "AlreadyTriedNpc": "Este PNJ já tentou pegar esse item.",
       "NpcCaughtCard": "{victim} pega {thief} com a mão em seus bolsos!",
       "FloatNoticed": "Ei!",
-      "NoticeVictim": "Você percebe que foi alvo de um furto: {what}."
+      "NoticeVictim": "Você percebe que foi alvo de um furto: {what}.",
+      "Gone": "Alguém chegou primeiro: o item não está mais nesses bolsos."
     },
     "Necro": {
       "Hud": "Reanimar morto",
@@ -292,7 +302,8 @@
       "Chat": "{caster} reanima {corpse}: {undead} se ergue.",
       "Someone": "Alguém",
       "NotRaisable": "Somente o cadáver de um humanoide Pequeno ou Médio pode ser reanimado.",
-      "NeedMM": "Nem o Manual dos Monstros nem o compêndio de criaturas do SRD do dnd5e têm este morto-vivo."
+      "NeedMM": "Nem o Manual dos Monstros nem o compêndio de criaturas do SRD do dnd5e têm este morto-vivo.",
+      "Busy": "Este cadáver já está sendo reanimado."
     },
     "Drop": {
       "QuantityTitle": "Largar: {name}",
@@ -300,7 +311,11 @@
       "Confirm": "Largar",
       "PileName": "Itens no chão",
       "NotOnScene": "Seu personagem não está nesta cena.",
-      "NotGear": "{item}: é um ataque de criatura, não um objeto — nada foi largado"
+      "NotGear": "{item}: é um ataque de criatura, não um objeto — nada foi largado",
+      "CoinsTitle": "Largar moedas",
+      "NoCoins": "Nenhuma moeda para largar.",
+      "Off": "Largar itens no chão está desativado.",
+      "CoinsCard": "{who} larga moedas no chão: {coins}."
     },
     "Trade": {
       "Title": "Troca: {a} ⇄ {b}",
@@ -322,12 +337,17 @@
       "Chat": "Troca entre {a} e {b} — {a} oferece: {gaveA}; {b} oferece: {gaveB}.",
       "Menu": "Trocar",
       "Impossible": "Você só pode trocar com outro personagem de jogador.",
-      "WindowFailed": "Não foi possível abrir a janela de troca: {reason}"
+      "WindowFailed": "Não foi possível abrir a janela de troca: {reason}",
+      "GMLeft": "Troca cancelada: o jogo do Mestre foi recarregado ou outro Mestre assumiu. Nada foi trocado — inicie a troca novamente.",
+      "Expired": "Troca cancelada: ninguém interagiu com ela por meia hora.",
+      "TooMany": "Você já tem várias propostas de troca abertas: conclua ou cancele uma antes.",
+      "Changed": "A oferta acabou de mudar: confira-a novamente antes de aceitar.",
+      "NotTradable": "Não pode ser trocado (não é um item físico ou está equipado — desequipe primeiro): {names}"
     },
     "Shop": {
       "Title": "Loja: {name}",
       "Menu": "Negociar",
-      "HudOpen": "Abrir a loja",
+      "HudOpen": "Ver a loja",
       "HudMake": "Transformar em comerciante",
       "Stall": "Banca",
       "EmptyStall": "Nada à venda.",
@@ -341,8 +361,8 @@
       "Deal": "Fechar negócio",
       "Clear": "Limpar",
       "Done": "Negócio concluído.",
-      "Hint": "Clique em um item para colocar uma unidade na bandeja (Shift: toda a pilha). Clique nele na bandeja para retirá-lo.",
-      "GMHint": "Clique com o botão direito em um item para alternar entre: exposto, mas fora de venda → oculto → à venda.",
+      "Hint": "Clique: uma unidade na bandeja (Shift: a pilha inteira). Clique na bandeja: devolva o item. Clique com o botão direito: detalhes.",
+      "GMHint": "Solte itens na loja para colocá-los à venda. Clique com o botão direito em um item: preço, quantidade, visibilidade, bloqueio e remoção.",
       "Configure": "Configurações",
       "Restock": "Reabastecer",
       "Sheet": "Ficha",
@@ -367,7 +387,96 @@
       "ChatPaid": "Paga {price}.",
       "ChatEarned": "Recebe {price}.",
       "Show": "Mostrar aos jogadores",
-      "Shown": "{name}: loja exibida para {count} jogador(es)."
+      "Shown": "{name}: loja exibida para {count} jogador(es).",
+      "Stuck": "{name} não pode ser vendido: não está marcado como equipamento na ficha do comerciante. Nada foi cobrado.",
+      "StuckNote": "Não pode ser vendido: não está marcado como equipamento (propriedade « Equipamento » do item).",
+      "NotShown": "Esta loja não está aberta para você agora: vá até o comerciante ou peça ao Mestre para mostrar a loja.",
+      "FloatPaid": "−{price}",
+      "FloatEarned": "+{price}",
+      "RestockTitle": "Reabastecer: {name}",
+      "RestockAsk": "Como reabastecer?",
+      "RestockMode": {
+        "full": "Estoque inteiro",
+        "add": "Adicionar",
+        "tables": "Somente sorteios"
+      },
+      "RestockHelp": {
+        "full": "itens sorteados ou comprados saem; o estoque fixo e o caixa voltam ao estado de referência; depois, as tabelas são sorteadas.",
+        "add": "nada sai: as tabelas são sorteadas e os itens são adicionados à banca.",
+        "tables": "somente os itens sorteados das tabelas saem e são sorteados novamente; o estoque fixo, os itens comprados e o caixa permanecem."
+      },
+      "RestockNoTables": "Este comerciante não tem tabela de reabastecimento: solte uma na loja ou adicione-a nas configurações.",
+      "NewMerchant": "Novo comerciante",
+      "NewMerchantMenu": "Criar um comerciante aqui",
+      "RemoveTitle": "Remover da banca",
+      "RemoveAsk": "Remover {name} da banca? O item será excluído da ficha do comerciante.",
+      "LinkCopied": "Link copiado: {text}. Cole-o em um diário.",
+      "StealNeedsTokens": "Para roubar da banca, o comerciante e seu personagem precisam estar na cena.",
+      "NotMerchant": "{name} não possui uma loja.",
+      "ToggleShop": "Abrir / fechar a loja",
+      "OpenShop": "Abrir a loja para clientes",
+      "CloseShop": "Fechar a loja",
+      "NowOpen": "{name}: loja aberta.",
+      "NowClosed": "{name}: loja fechada.",
+      "StatusOpen": "Aberta",
+      "StatusClosed": "Fechada",
+      "LockedNote": "Bloqueado: o reabastecimento não altera este item.",
+      "LockHint": "Bloquear: o reabastecimento não alterará este item.",
+      "FixedPriceNote": "Preço definido pelo Mestre.",
+      "Quantity": "Quantidade",
+      "PriceHint": "Preço pedido, em po (vazio: preço automático, {price}).",
+      "GoldAbbr": "po",
+      "RemoveItem": "Remover da banca",
+      "Search": "Buscar…",
+      "ViewGrid": "Ícones",
+      "ViewList": "Lista por categoria",
+      "DropHere": "Solte itens (ou uma pasta de itens) aqui para colocá-los à venda, ou uma tabela para reabastecer.",
+      "LogEmpty": "Ainda não houve venda nem roubo.",
+      "LogTheft": "Roubado: {item}",
+      "LogCaught": "Roubo fracassado: {item}",
+      "LogWhen": "Quando",
+      "LogWho": "Quem",
+      "LogWhat": "O quê",
+      "LogTill": "Caixa",
+      "LogClear": "Limpar o registro",
+      "LogCoins": "moedas",
+      "TabStall": "Banca",
+      "TabTrade": "Troca: {name}",
+      "TabLog": "Registro",
+      "Link": "Copiar o link para um diário",
+      "BadPrice": "Isso não é um preço: digite um número de peças de ouro (12,5, por exemplo) ou deixe vazio para usar o preço automático.",
+      "SetPriceTitle": "Preço: {name}",
+      "SetPriceAsk": "Preço pedido em peças de ouro (atual: {price}). Deixe vazio para usar o preço automático.",
+      "SetQuantityTitle": "Quantidade: {name}",
+      "TableAdded": "Tabela adicionada ao reabastecimento.",
+      "Added": "À venda: {names}.",
+      "Saved": "{name}: configurações salvas.",
+      "Details": "Detalhes",
+      "AddOne": "Adicionar ao carrinho",
+      "AddAll": "Adicionar tudo ao carrinho",
+      "Steal": "Roubar",
+      "ItemSheet": "Ficha do item",
+      "SetPrice": "Alterar o preço…",
+      "AutoPrice": "Voltar ao preço automático",
+      "SetQuantity": "Alterar a quantidade…",
+      "ForSale": "À venda",
+      "HideItem": "Ocultar dos jogadores",
+      "Lock": "Bloquear (reabastecimento)",
+      "Unlock": "Desbloquear (reabastecimento)",
+      "MakeSellable": "Tornar vendável (propriedade « Equipamento »)",
+      "NoDescription": "Sem descrição.",
+      "Price": "Preço",
+      "Weight": "Peso",
+      "Close": "Fechar",
+      "StuckCount": "{count} item(ns) invendável(is): não marcado(s) como « Equipamento » na ficha (muitas vezes criados com o ator). Os jogadores não os veem.",
+      "MakeAllSellable": "Tornar todos vendáveis",
+      "MarkNotForSale": "Mostrar, mas não vender",
+      "Unmake": "Desfazer a loja",
+      "UnmakeTitle": "Desfazer a loja: {name}",
+      "UnmakeAsk": "{name} volta a ser um NPC comum: as configurações de comerciante, o registro de vendas e as configurações da banca (preços, bloqueios, itens ocultos) são apagados. Os itens e moedas permanecem na ficha. Continuar?",
+      "Unmade": "{name} não possui mais uma loja.",
+      "ShutTitle": "Esta loja está fechada.",
+      "ShutText": "Volte mais tarde."
     },
     "Merchant": {
       "Title": "Comerciante: {name}",
@@ -420,7 +529,10 @@
       "ItemPiles": "Este ator é um comerciante do Item Piles.",
       "Convert": "Importar suas configurações",
       "Converted": "{name}: configurações do Item Piles importadas.",
-      "Menu": "Configurações do comerciante"
+      "Menu": "Configurações do comerciante",
+      "Name": "Nome",
+      "Remote": "Abrir de qualquer lugar",
+      "RemoteHint": "Os jogadores negociam sem estar ao lado do comerciante: link no diário ou botão na ficha. Caso contrário, o Mestre precisa mostrar a loja primeiro."
     },
     "Zone": {
       "FIELDS": {
@@ -1136,6 +1248,97 @@
       "Reset": "Redefinir: {name}",
       "Configure": "Configurações: {name}",
       "ResetDone": "{name} voltou à posição inicial."
+    },
+    "Op": {
+      "Failed": "Loot & Trade — a operação falhou: {label}",
+      "Error": "Erro: {error}",
+      "Written": "O que já havia sido registrado:",
+      "AllUndone": "Tudo voltou ao estado anterior. Nada a corrigir.",
+      "NotUndone": "Não foi possível reverter — corrija manualmente:",
+      "FailedUndone": "A operação falhou; tudo voltou ao estado anterior (o Mestre tem os detalhes).",
+      "FailedPartly": "A operação falhou e parte dela não pôde ser revertida: o Mestre tem os detalhes.",
+      "Interrupted": "Loot & Trade — operação interrompida por um recarregamento: {label}",
+      "Planned": "O que estava prestes a ser registrado:",
+      "Check": "Parte da operação pode ter sido concluída e outra parte não: confira as fichas envolvidas.",
+      "Take": "{to} pega de {from}",
+      "Move": "{from} → {to}",
+      "Trade": "troca entre {a} e {b}",
+      "Gives": "{who} dá: {what}",
+      "Raise": "reanimar {corpse}",
+      "RaisePlan": "{corpse} ({scene}) é substituído por um morto-vivo; seus pertences caem no chão.",
+      "BelongingsStay": "eles permanecem na pilha no chão",
+      "Step": {
+        "Received": "{who} recebeu: {what}",
+        "Removed": "removido de {who}: {what}",
+        "CoinsIn": "moedas adicionadas a {who}",
+        "CoinsOut": "moedas removidas de {who}",
+        "Purse": "bolsa de {who} reescrita",
+        "Created": "ator criado: {what}",
+        "Placed": "token colocado: {what}",
+        "Belongings": "pertences de {who} largados no chão"
+      }
+    },
+    "Share": {
+      "Button": "Dividir",
+      "Tooltip": "Dividir as moedas entre {count} personagens: {names}",
+      "Alone": "Não há com quem dividir: o grupo tem menos de dois personagens aqui.",
+      "TooFew": "Não há moedas suficientes para dar uma a cada um dos {count} personagens: pegue-as em vez de dividi-las.",
+      "Card": "Moedas divididas entre {names}: {each} para cada um.",
+      "CardBonus": "{who} fica com o restante: {rest}.",
+      "CardLeft": "Restante deixado no local: {rest}.",
+      "Plan": "{names} recebem {each} cada",
+      "Op": "moedas de {from} divididas com o grupo",
+      "ForcedWhat": "{who} dividiu moedas",
+      "Settings": {
+        "ShareWith": {
+          "Name": "Divisão: quem recebe uma parte",
+          "Hint": "Personagens dos jogadores do grupo principal do dnd5e. Sem um grupo principal: personagens controlados por jogadores com um token na cena.",
+          "Party": "O grupo inteiro, incluindo personagens ausentes",
+          "Scene": "Somente personagens com um token na cena"
+        },
+        "ShareRemainder": {
+          "Name": "Divisão: moedas que sobram",
+          "Hint": "As moedas são divididas uma a uma, sem conversão: 10 po entre 3 personagens dão 3 po a cada um e sobra 1 po.",
+          "Source": "Permanecem onde foram encontradas",
+          "Sharer": "Vão para o personagem que faz a divisão"
+        }
+      }
+    },
+    "Force": {
+      "Title": "Não é possível",
+      "Question": "Fazer mesmo assim? O Mestre será avisado.",
+      "Anyway": "Fazer mesmo assim",
+      "GiveUp": "Desistir",
+      "Told": "{user} ignorou uma regra — {what}. Motivo desconsiderado: {reason}"
+    },
+    "Give": {
+      "QuantityTitle": "Dar {name} para {to}",
+      "Quantity": "Quantos?",
+      "CoinsTitle": "Dar moedas para {to}",
+      "Confirm": "Dar",
+      "Nothing": "Nada para dar.",
+      "NoCoins": "Nenhuma moeda para dar.",
+      "Off": "Dar itens está desativado.",
+      "NotTo": "{name} não pode receber um presente.",
+      "Far": "Muito longe: aproxime-se do personagem para dar.",
+      "NobodyThere": "Ninguém pode responder por {name}.",
+      "Declined": "{name} não aceitou.",
+      "OfferTitle": "Um presente",
+      "Offer": "{giver} quer dar a {receiver}: {what}.",
+      "Accept": "Aceitar",
+      "Refuse": "Recusar",
+      "Card": "{giver} dá a {receiver}: {what}.",
+      "Op": "{from} dá a {to}",
+      "ForcedWhat": "{who} deu algo a {to}",
+      "Settings": {
+        "Mode": {
+          "Name": "Dar um item ou moedas",
+          "Hint": "Arraste um item, ou moedas da ficha, até o token de outro personagem. Os dois personagens precisam estar ao alcance um do outro.",
+          "Direct": "Entregar imediatamente",
+          "Ask": "O destinatário precisa aceitar (o Mestre responde por um jogador ausente)",
+          "Off": "Desativado"
+        }
+      }
     }
   },
   "TYPES": {
