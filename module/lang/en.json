@@ -138,6 +138,20 @@
       "NpcTheftNotice": {
         "Name": "The player notices a successful theft",
         "Hint": "When an NPC steals from a character, its player gets a private message. Otherwise only the GM is told."
+      },
+      "PileFrame": {
+        "Name": "Ground pile look",
+        "Hint": "How the icon of an item dropped on the ground is drawn. Display only: the pile keeps its image, so changing this setting changes every pile at once.",
+        "Gold": "Rounded corners and a thin gold rim",
+        "Rounded": "Rounded corners",
+        "Off": "Plain square icon"
+      },
+      "LootGlint": {
+        "Name": "Glint on corpses with loot",
+        "Hint": "A corpse that still has something to take (items, coins, or treasure not rolled yet) gives off a few golden motes. Each player only sees it on corpses they can search and see.",
+        "Peace": "Outside combat",
+        "Always": "Always, combat included",
+        "Off": "Never"
       }
     },
     "SettingsWindow": {

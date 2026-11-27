@@ -138,6 +138,20 @@
       "NpcTheftNotice": {
         "Name": "Le joueur s'aperçoit d'un vol réussi",
         "Hint": "Quand un PNJ réussit à voler un personnage, son joueur reçoit un message privé. Sinon, seul le MJ est prévenu."
+      },
+      "PileFrame": {
+        "Name": "Aspect des tas au sol",
+        "Hint": "La façon dont s'affiche l'icône d'un objet posé au sol. Affichage seulement : le tas garde son image, ce réglage change donc tous les tas à la fois.",
+        "Gold": "Coins arrondis et filet doré",
+        "Rounded": "Coins arrondis",
+        "Off": "Icône carrée, sans cadre"
+      },
+      "LootGlint": {
+        "Name": "Scintillement des cadavres à fouiller",
+        "Hint": "Un cadavre qui a encore quelque chose à prendre (objets, pièces, ou trésor pas encore tiré) laisse monter quelques paillettes dorées. Chaque joueur ne le voit que sur les cadavres qu'il peut fouiller et qu'il voit.",
+        "Peace": "Hors combat",
+        "Always": "Toujours, combat compris",
+        "Off": "Jamais"
       }
     },
     "SettingsWindow": {

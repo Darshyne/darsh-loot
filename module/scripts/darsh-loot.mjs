@@ -5,6 +5,8 @@ import { MODULE_ID, log } from "./shared.mjs";
 import { registerSettings } from "./runtime/settings.mjs";
 import { registerSettingsWindow } from "./runtime/settings-window.mjs";
 import { registerObjectSize } from "./runtime/object-size.mjs";
+import { registerPileFrame } from "./runtime/pile-frame.mjs";
+import { registerGlint } from "./runtime/glint.mjs";
 import { registerTake, requestTake } from "./runtime/take.mjs";
 import { registerOperations, reportInterrupted } from "./runtime/operations.mjs";
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
@@ -45,6 +47,7 @@ const actorOf = thing => { const d = doc(thing); return (d instanceof Actor) ? d
 // la première dans `refreshTile` / `refreshToken` : un voisin qui relève l'échelle de l'image à ce moment-là (la perspective de
 // DAS · Shadows & Ambience) multiplie alors la taille réduite au lieu de l'écraser.
 registerObjectSize();
+registerPileFrame();
 
 Hooks.once("init", () => {
   registerSettings();
@@ -79,6 +82,7 @@ Hooks.once("ready", () => {
   registerFeedback();
   registerPick();
   registerHighlight();
+  registerGlint();
   registerStolenMark();
   registerNecromancy();
   registerDrop();

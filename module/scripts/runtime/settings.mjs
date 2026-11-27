@@ -99,6 +99,19 @@ export function registerSettings() {
     range: { min: 50, max: 100, step: 5 },
     onChange: () => Hooks.callAll(`${MODULE_ID}.objectSize`)
   });
+  // 2026-11-27: ground piles drawn as cards - rounded corners, with or without a thin gold rim (display only, runtime/pile-frame.mjs).
+  game.settings.register(MODULE_ID, "pileFrame", {
+    name: "DLO.Settings.PileFrame.Name", hint: "DLO.Settings.PileFrame.Hint",
+    scope: "world", config: true, type: String, default: "gold",
+    choices: { gold: "DLO.Settings.PileFrame.Gold", rounded: "DLO.Settings.PileFrame.Rounded", off: "DLO.Settings.PileFrame.Off" },
+    onChange: () => Hooks.callAll(`${MODULE_ID}.pileFrame`)
+  });
+  // 2026-11-27: golden motes over a corpse that still has something to take (runtime/glint.mjs).
+  game.settings.register(MODULE_ID, "lootGlint", {
+    name: "DLO.Settings.LootGlint.Name", hint: "DLO.Settings.LootGlint.Hint",
+    scope: "world", config: true, type: String, default: "peace",
+    choices: { peace: "DLO.Settings.LootGlint.Peace", always: "DLO.Settings.LootGlint.Always", off: "DLO.Settings.LootGlint.Off" }
+  });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
     scope: "world", config: true, type: String, default: "all",

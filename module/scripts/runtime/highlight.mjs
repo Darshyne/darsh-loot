@@ -126,8 +126,8 @@ function drawDoor(g, wall, color) {
   g.moveTo(a.x, a.y).lineTo(b.x, b.y);
 }
 
-/** Les cadavres qu'on peut fouiller, visibles pour ce client. */
-function corpsesToDraw() {
+/** Les cadavres qu'on peut fouiller, visibles pour ce client. Also the corpses that glint (runtime/glint.mjs). */
+export function corpsesToDraw() {
   if ( !game.user.isGM && (setting("whoLoots") === "gm") ) return [];
   return (canvas.tokens?.placeables ?? []).filter(t => t.visible && corpseToken(t.document) && t.actor
     && (!lootView(t.actor).empty || (setting("autoTreasure") && mayHaveTreasure(t.actor))));
