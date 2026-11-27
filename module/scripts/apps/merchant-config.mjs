@@ -4,7 +4,7 @@
  * `actions.convert(actor)`.
  */
 import { MODULE_ID, loc } from "../shared.mjs";
-import { merchantOf, itemPilesMerchant } from "../adapter/shop.mjs";
+import { merchantOf, itemPilesPending } from "../adapter/shop.mjs";
 import { merchantFormContext, merchantFormHTML, readMerchantForm, wireTables } from "./merchant-form.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -46,7 +46,7 @@ export class MerchantConfig extends ApplicationV2 {
 
   async _prepareContext() {
     this.tables ??= merchantOf(this.actor).tables.map(t => ({ ...t }));
-    return { ...(await merchantFormContext(this.actor, this.tables)), itemPiles: itemPilesMerchant(this.actor) };
+    return { ...(await merchantFormContext(this.actor, this.tables)), itemPiles: itemPilesPending(this.actor) };
   }
 
   async _renderHTML(context) {

@@ -363,7 +363,7 @@ export async function unmakeMerchant(actor) {
   const marked = actor.items.filter(i => i.getFlag(MODULE_ID, "shop") !== undefined)
     .map(i => ({ _id: i.id, [`flags.${MODULE_ID}.-=shop`]: null }));
   if ( marked.length ) await actor.updateEmbeddedDocuments("Item", marked);
-  await actor.update({ [`flags.${MODULE_ID}.-=merchant`]: null, [`flags.${MODULE_ID}.-=log`]: null });
+  await actor.update({ [`flags.${MODULE_ID}.-=merchant`]: null, [`flags.${MODULE_ID}.-=log`]: null, [`flags.${MODULE_ID}.-=itemPilesDone`]: null });
   return !isMerchant(actor);
 }
 
@@ -420,6 +420,15 @@ export function itemPilesMerchant(actor) {
 }
 
 /**
+ * An Item Piles merchant whose settings were not taken over yet. Its flags stay on the sheet after the takeover (they are Item Piles'
+ * own): the takeover is noted in `flags.darsh-loot.itemPilesDone` (its time), else the notice would show for ever (user report,
+ * 2026-11-27).
+ */
+export function itemPilesPending(actor) {
+  return itemPilesMerchant(actor) && !actor.getFlag(MODULE_ID, "itemPilesDone");
+}
+
+/**
  * Reprend tous les marchands d'Item Piles du monde — chez le MJ. Un marchand déjà repris (notre drapeau présent) est
  * laissé tel quel, sauf `force`. `dry` : rien n'est écrit, le bilan dit ce qui serait repris (`todo`) d'après les
  * drapeaux d'Item Piles (étal = objets de la fiche).
@@ -469,5 +478,6 @@ export async function convertItemPiles(actor) {
   }
   if ( updates.length ) await actor.updateEmbeddedDocuments("Item", updates);
   await memorizeStock(actor);
+  await actor.setFlag(MODULE_ID, "itemPilesDone", Date.now());
   return merchantOf(actor);
 }

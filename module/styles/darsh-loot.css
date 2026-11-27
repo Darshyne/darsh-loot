@@ -368,7 +368,7 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-merchant-config .dlo-merchant-table-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dlo-merchant-config .dlo-merchant-rolls { width: 80px; flex: none; }
 .dlo-merchant-config .dlo-merchant-drop { border: 1px dashed var(--dlo-edge); border-radius: 4px; padding: 6px; text-align: center; color: var(--dlo-muted); margin-bottom: 6px; }
-.dlo-merchant-config .dlo-merchant-piles { color: var(--dlo-caution); display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.dlo-merchant-config .dlo-merchant-piles, .dlo-shop .dlo-merchant-piles { color: var(--dlo-caution); display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
 
 /* ---- Foundry core windows the module adds to (they keep the core look) ---- */
 /* A wall's window (0.16.0): with the DAS sections (Core lock, hidden wall, trapped door), the form goes past the screen.

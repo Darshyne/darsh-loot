@@ -269,6 +269,7 @@ export const SHOP_ACTIONS = {
   deal: requestDeal, restock: source => requestRestock(source), configure: configureMerchant, show: showShop,
   save: (actor, flag, name, token) => CONFIG_ACTIONS.save(actor, flag, name, token),
   memorize: actor => CONFIG_ACTIONS.memorize(actor),
+  convert: actor => CONFIG_ACTIONS.convert(actor),
   flag: (item, shop) => (gmOnly() ? setStallFlags(item, shop) : null),
   price: (item, cp) => (gmOnly() ? setStallPrice(item, cp) : null),
   quantity: (item, q) => (gmOnly() ? setStallQuantity(item, q) : null),
@@ -397,6 +398,7 @@ function syncSheetButton(app, element, openFor) {
   if ( !(actor instanceof Actor) ) return;
   const header = (element instanceof HTMLElement ? element : app.element)?.querySelector(".window-header");
   if ( !header ) return;
+  watchSheet(app, openFor);
   const present = header.querySelector(".dlo-sheet-shop");
   if ( !isMerchant(actor) ) return present?.remove();
   if ( present ) return;
@@ -413,6 +415,31 @@ function syncSheetButton(app, element, openFor) {
   const first = header.querySelector(".header-control");
   if ( first ) first.before(button);
   else header.append(button);
+}
+
+/**
+ * Something redraws the sheet's header after our hook and drops the button (user report, 2026-11-27: opening or closing the shop from
+ * the actors sidebar, in a world whose modules the bench does not have). A watcher on the sheet's window puts it back whenever it is
+ * missing — or takes it away when the actor no longer keeps a shop. One per window element, gone with it.
+ */
+const watched = new WeakSet();
+function watchSheet(app, openFor) {
+  const root = app.element;
+  if ( !(root instanceof HTMLElement) || watched.has(root) || (typeof MutationObserver === "undefined") ) return;
+  watched.add(root);
+  let pending = false;
+  const observer = new MutationObserver(() => {
+    if ( pending ) return;
+    pending = true;
+    requestAnimationFrame(() => {
+      pending = false;
+      if ( !root.isConnected ) return observer.disconnect();
+      const actor = app.document ?? app.actor;
+      const has = !!root.querySelector(".window-header .dlo-sheet-shop");
+      if ( has !== isMerchant(actor) ) syncSheetButton(app, root, openFor);
+    });
+  });
+  observer.observe(root, { childList: true, subtree: true });
 }
 
 /**

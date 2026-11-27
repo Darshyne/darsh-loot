@@ -14,7 +14,7 @@
  * the GM (`actions.deal`), who quotes again and carries it out. Every write is an action passed in (runtime/shop.mjs `SHOP_ACTIONS`).
  */
 import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
-import { merchantOf, stockView, waresView, quote, formatPrice, purseView, shopOpenTo, salesLog } from "../adapter/shop.mjs";
+import { merchantOf, stockView, waresView, quote, formatPrice, purseView, shopOpenTo, salesLog, itemPilesPending } from "../adapter/shop.mjs";
 import { byCategory, matchesSearch, parseGold, CP_PER } from "../core/shop.mjs";
 import { escape, itemPicture, showItemInfo } from "./shop-parts.mjs";
 import { coinAmount } from "./coin.mjs";
@@ -68,7 +68,8 @@ export class ShopWindow extends ApplicationV2 {
       sellableAll: ShopWindow.#onSellableAll,
       clearLog: ShopWindow.#onClearLog,
       removeTable: ShopWindow.#onRemoveTable,
-      memorize: ShopWindow.#onMemorize
+      memorize: ShopWindow.#onMemorize,
+      convert: ShopWindow.#onConvert
     }
   };
 
@@ -420,7 +421,9 @@ export class ShopWindow extends ApplicationV2 {
         <p class="dlo-shop-shut-title">${loc("Shop.ShutTitle")}</p><p>${loc("Shop.ShutText")}</p></div>`;
     }
     else if ( tab === "stall" ) body = this.#stall(context);
-    else if ( tab === "settings" ) body = `<form class="dlo-shop-settings dlo-merchant-config">${merchantFormHTML(context.form)}
+    else if ( tab === "settings" ) body = `${itemPilesPending(this.source.actor) ? `<p class="dlo-merchant-piles"><i class="fa-solid fa-circle-info"></i>
+        ${loc("Merchant.ItemPiles")} <button type="button" data-action="convert">${loc("Merchant.Convert")}</button></p>` : ""}
+      <form class="dlo-shop-settings dlo-merchant-config">${merchantFormHTML(context.form)}
         <footer class="dlo-foot"><button type="submit"><i class="fa-solid fa-floppy-disk"></i> ${loc("Merchant.Save")}</button></footer></form>`;
     else if ( tab === "log" ) body = this.#log(context);
     else body = this.#trade(context);
@@ -448,6 +451,19 @@ export class ShopWindow extends ApplicationV2 {
 
   _onFirstRender(context, options) {
     super._onFirstRender?.(context, options);
+    // GM: the merchant's sheet, in the title bar beside the window's own controls (user's request, 2026-11-27).
+    const header = this.element.querySelector(".window-header");
+    if ( game.user.isGM && header && !header.querySelector(".dlo-shop-sheet") ) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "header-control icon fa-solid fa-address-card dlo-shop-sheet";
+      button.dataset.action = "sheet";
+      button.dataset.tooltip = loc("Shop.Sheet");
+      button.setAttribute("aria-label", loc("Shop.Sheet"));
+      const first = header.querySelector(".header-control");
+      if ( first ) first.before(button);
+      else header.append(button);
+    }
     // The item menu, on a right click: the shop's own (no image under the pointer, see apps/shop-parts.mjs).
     this._createContextMenu(() => this.#menu(), ".dlo-shop-item[data-item-id]", { hookName: "getShopWindowItemOptions",
       parentClassHooks: false, fixed: true });
@@ -774,6 +790,13 @@ export class ShopWindow extends ApplicationV2 {
 
   static #onRemoveTable(event, target) {
     this.tables?.splice(Number(target.dataset.index), 1);
+    return this.render();
+  }
+
+  static async #onConvert() {
+    await this.actions.convert(this.source.actor);
+    this.tables = null;
+    ui.notifications.info(loc("Merchant.Converted", { name: this.source.actor.name }));
     return this.render();
   }
 

@@ -103,8 +103,14 @@ export default {
       ${shopWindow}
       const w = win();
       canvas.tokens.releaseAll();
-      return { labels, opened: !!w, tab: w?.tab ?? null, tabs: [...(w?.element.querySelectorAll(".dlo-shop-tabs button") ?? [])].length,
+      const actor = fromUuidSync(args.token).actor;
+      w?.element.querySelector(".window-header .dlo-shop-sheet")?.click();
+      await new Promise(r => setTimeout(r, 1200));
+      const titleSheet = !!actor.sheet.rendered;
+      await actor.sheet.close();
+      return { titleSheet, labels, opened: !!w, tab: w?.tab ?? null, tabs: [...(w?.element.querySelectorAll(".dlo-shop-tabs button") ?? [])].length,
         status: !!w?.element.querySelector(".dlo-shop-status") };`, setup);
+    ctx.expect(menu?.titleSheet, `the shop window's title bar has a button that opens the merchant's sheet (${JSON.stringify(menu)})`);
     ctx.expect(menu?.opened && (menu.tab === "stall") && (menu.tabs >= 3) && menu.status,
       `the Core's menu on the merchant's own token (GM): « Open the shop » opens the stall tab, with tabs and the open / closed button (${JSON.stringify(menu)})`);
     await closeAll();
@@ -131,6 +137,34 @@ export default {
     ctx.expect(sheet?.button && sheet.opened, `a shop button in the merchant's sheet header opens the shop (${JSON.stringify(sheet)})`);
     ctx.expect(sheet?.afterClose && sheet.afterOpen && (sheet.closedNow === false),
       `the sheet header keeps its shop button when the shop is closed then reopened (${JSON.stringify(sheet)})`);
+
+    // The same through the real actors sidebar: a right click on the merchant's entry, then « Close » / « Open » (user report, 2026-11-27).
+    const viaSidebar = await gm(`
+      const actor = game.actors.get(args.merchant);
+      await ui.sidebar.changeTab?.("actors", "primary");
+      await ui.actors.render({ force: true });
+      await actor.sheet.render({ force: true });
+      await new Promise(r => setTimeout(r, 1500));
+      const has = () => !!actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop");
+      const pick = async label => {
+        const entry = ui.actors.element.querySelector('[data-entry-id="' + args.merchant + '"]');
+        if ( !entry ) return false;
+        const r = entry.getBoundingClientRect();
+        entry.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5, button: 2 }));
+        await new Promise(r => setTimeout(r, 500));
+        const item = [...document.querySelectorAll("#context-menu li, .context-menu li")].find(li => li.textContent.trim() === game.i18n.localize(label));
+        item?.click();
+        await new Promise(r => setTimeout(r, 1800));
+        return !!item;
+      };
+      const closedPicked = await pick("DLO.Shop.CloseShop");
+      const afterClose = has(), closed = actor.getFlag("darsh-loot", "merchant")?.closed === true;
+      const openedPicked = await pick("DLO.Shop.OpenShop");
+      const afterOpen = has(), open = actor.getFlag("darsh-loot", "merchant")?.closed === false;
+      await actor.sheet.close();
+      return { closedPicked, afterClose, closed, openedPicked, afterOpen, open };`, setup);
+    ctx.expect(viaSidebar?.closedPicked && viaSidebar.closed && viaSidebar.afterClose && viaSidebar.openedPicked && viaSidebar.open && viaSidebar.afterOpen,
+      `closing then opening from the actors sidebar's right-click menu keeps the sheet's shop button (${JSON.stringify(viaSidebar)})`);
     await closeAll();
 
     const link = await gm(`
@@ -296,6 +330,28 @@ export default {
     const log = await gm(`return game.modules.get("darsh-loot").api.salesLog(fromUuidSync(args.token));`, setup);
     const last = log?.at?.(-1);
     ctx.expect(last?.kind === "deal" && last.bought?.length === 1 && (last.net === 750), `the sales log keeps the deal (${JSON.stringify(last)})`);
+
+    // 4 b. An Item Piles merchant: the notice offers the takeover until it is done, then goes (user report, 2026-11-27).
+    const piles = await gm(`
+      const actor = await Actor.implementation.create({ name: "DAS test piles merchant", type: "npc",
+        flags: { "darsh-loot": { test: true }, "item-piles": { data: { enabled: true, type: "merchant", buyPriceModifier: 1.5, sellPriceModifier: 0.4 } } },
+        items: [{ name: "DAS test piles ware", type: "loot", system: { quantity: 2, price: { value: 1, denomination: "gp" } },
+          flags: { "item-piles": { item: { hidden: true } } } }] });
+      const api = game.modules.get("darsh-loot").api;
+      await api.configureMerchant(actor);
+      await new Promise(r => setTimeout(r, 1000));
+      const config = () => [...foundry.applications.instances.values()].find(a => a.rendered && a.id?.includes(actor.id) && a.element.querySelector(".dlo-merchant-body"));
+      const before = !!config()?.element.querySelector(".dlo-merchant-piles [data-action=convert]");
+      config()?.element.querySelector(".dlo-merchant-piles [data-action=convert]")?.click();
+      await new Promise(r => setTimeout(r, 1500));
+      const after = !!config()?.element.querySelector(".dlo-merchant-piles");
+      const flag = actor.getFlag("darsh-loot", "merchant") ?? {};
+      const ware = actor.items.find(i => i.name === "DAS test piles ware");
+      await config()?.close();
+      return { before, after, enabled: flag.enabled, buy: flag.buy, sell: flag.sell, hidden: ware?.getFlag("darsh-loot", "shop")?.hidden ?? null,
+        done: !!actor.getFlag("darsh-loot", "itemPilesDone") };`);
+    ctx.expect(piles?.before && !piles.after && piles.done && piles.enabled && (piles.buy === 1.5) && (piles.sell === 0.4) && piles.hidden,
+      `an Item Piles merchant: the notice offers the takeover, which keeps its prices and hidden items, then the notice is gone (${JSON.stringify(piles)})`);
 
     // 5. « Cancel the shop » from the actors sidebar, confirmed: a plain NPC again, its items kept, its sheet without the button.
     const cancel = await gm(`
