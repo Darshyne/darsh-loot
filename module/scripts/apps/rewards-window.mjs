@@ -265,7 +265,7 @@ export class RewardsWindow extends ApplicationV2 {
 
 /** The GM's end-of-combat loot is on (`lootManage`). */
 function lootOn() {
-  try { return setting("lootManage") !== false; } catch { return false; }
+  try { return (setting("lootManage") !== false) && (setting("corpseLoot") !== false); } catch { return false; }
 }
 
 /** A record's state in the picker: its XP state, and its loot state when it has one. */

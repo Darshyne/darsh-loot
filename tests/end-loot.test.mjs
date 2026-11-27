@@ -170,7 +170,7 @@ beforeEach(async () => {
   game.user = { id: "gm", isGM: true, name: "MJ" };
   game.combats = new FakeCollection();
   globalThis.canvas = {};
-  Object.assign(settings, { xpManage: false, xpWhen: "semi", levelingMode: "xp", operations: {}, lootManage: true, lootWhen: "semi", lootMode: "individual",
+  Object.assign(settings, { xpManage: false, xpWhen: "semi", levelingMode: "xp", operations: {}, corpseLoot: true, lootManage: true, lootWhen: "semi", lootMode: "individual",
     keepSpecial: false, pockets: true, autoTreasure: true, reach: 50, lootRules: { rules: [] } });
   await game.settings.set("darsh-loot", "rewards", { records: [] });
   registerOperations();
@@ -208,6 +208,21 @@ describe("end of combat — the loot part", () => {
     expect(rewardsApi.records()).toEqual([]);
     expect(opened).toEqual([]);
     expect(endLootApi.heldBy(t.tokens.g1)).toBeNull();
+  });
+
+  it("searching corpses off: no end-of-combat loot, and a corpse cannot be taken from at all", async () => {
+    settings.corpseLoot = false;
+    try {
+      const t = table();
+      t.g1.system.currency = { gp: 7 };
+      ended(t);
+      await new Promise(r => setTimeout(r, 30));
+      expect(rewardsApi.records()).toEqual([]);
+      expect(opened).toEqual([]);
+      expect(endLootApi.enabled()).toBe(false);
+      await expect(take(t, t.tokens.g1)).rejects.toThrow("DLO.Refus.Introuvable");
+      expect(t.pc.system.currency?.gp ?? 0).toBe(0);
+    } finally { settings.corpseLoot = true; }
   });
 
   it("a player cannot take from a held corpse before the GM distributes", async () => {

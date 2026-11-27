@@ -9,7 +9,7 @@
 import { route, routeClaim } from "./router.mjs";
 import { openSource, visitSource } from "./open.mjs";
 import { setting, sceneSetting, loc } from "../shared.mjs";
-import { corpseToken, actingToken, lootView } from "../adapter/dnd5e.mjs";
+import { searchableCorpse, actingToken, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { corpseSource, containerSource, merchantSource, zoneSource, trapSource, leverSource } from "../adapter/sources.mjs";
 import { knownTrapPlaces, requestDisarm, gmTrapEntries } from "./traps.mjs";
@@ -43,7 +43,7 @@ const LONG_PRESS_MS = 350;
  */
 function tokenAt(point) {
   const under = (canvas.tokens?.placeables ?? []).filter(t => t.visible && t.bounds.contains(point.x, point.y));
-  return under.find(t => corpseToken(t.document)) ?? under[0] ?? null;
+  return under.find(t => searchableCorpse(t.document)) ?? under[0] ?? null;
 }
 
 /**
@@ -97,7 +97,7 @@ function sourceAt(event) {
     // 0.14.2 (retour de séance) : chez le MJ, le clic gauche sur un token reste celui du cœur — sélection, HUD. Fouiller un corps :
     // « Fouiller le corps » au clic droit (menu du moteur).
     if ( game.user.isGM ) return null;
-    if ( corpseToken(token.document) ) return corpseSource(token.document);
+    if ( searchableCorpse(token.document) ) return corpseSource(token.document);
     // Un marchand qu'on ne tient pas : sa boutique (§3.7). Le MJ, qui tient tout, passe par le HUD ou le menu.
     if ( plain(event) && merchantToken(token.document) && !token.document.isOwner ) return merchantSource(token.document);
     // Un token à soi garde son clic (le sélectionner) ; un token qu'on ne contrôle pas laisse voir le conteneur dessous
@@ -276,7 +276,7 @@ function onPointerMove(event) {
 /** Survol d'un token : le curseur change aussi sans bouger la souris (token qui meurt sous le pointeur). */
 function onHoverToken(token, hovered) {
   if ( !hovered ) return showSource(null);
-  showSource(corpseToken(token.document) ? corpseSource(token.document) : null);
+  showSource(searchableCorpse(token.document) ? corpseSource(token.document) : null);
 }
 
 /* ---- clic ---- */
@@ -382,7 +382,7 @@ function onTokenMenu(entries, { token, target }) {
     entries.push(...gmTrapEntries(h));
     return;
   }
-  if ( !token?.actor || !target || (target === token) || inCombat() || !corpseToken(target) ) return;
+  if ( !token?.actor || !target || (target === token) || inCombat() || !searchableCorpse(target) ) return;
   entries.push({ icon: "fa-solid fa-sack", label: loc("Window.SearchCorpse"), run: () => visitSource(corpseSource(target), token) });
 }
 

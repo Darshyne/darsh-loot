@@ -1,7 +1,7 @@
 /**
  * Ce qui connaît dnd5e et le canevas : lecture d'un cadavre, distance, transfert d'objets (exécuté par le MJ).
  */
-import { MODULE_ID, loc } from "../shared.mjs";
+import { MODULE_ID, loc, setting } from "../shared.mjs";
 import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, takenQuantity, COINS } from "../core/loot.mjs";
 import { sizeOfSpan } from "../core/traps.mjs";
 import { nextStolenMark } from "../core/theft.mjs";
@@ -12,6 +12,17 @@ export function corpseToken(tokenDoc) {
   const actor = tokenDoc?.actor;
   if ( !actor ) return false;
   return isCorpse({ actorType: actor.type, statuses: actor.statuses });
+}
+
+/**
+ * A corpse the players may search: a dead NPC, while searching corpses is on (world setting `corpseLoot`, user's request of
+ * 2026-11-27: « like pickpocketing », off = no menu, cursor, treasure or « Loot » status on corpses). Necromancy still uses
+ * `corpseToken`: raising the dead does not depend on looting them.
+ */
+export function searchableCorpse(tokenDoc) {
+  let on = true;
+  try { on = setting("corpseLoot") !== false; } catch { on = true; }
+  return on && corpseToken(tokenDoc);
 }
 
 /** Sur un PNJ, seul l'équipement (`gear`) se prend ; dans un coffre (acteur Groupe), tout objet physique. */

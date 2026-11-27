@@ -31,8 +31,8 @@ const RELEASE_QUERY = `${MODULE_ID}.releaseCorpse`;
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-/** The GM's end-of-combat loot is on (`lootManage`, on by default). */
-export const lootEnabled = () => setting("lootManage") !== false;
+/** The GM's end-of-combat loot is on (`lootManage`, on by default) — and searching corpses too (`corpseLoot`). */
+export const lootEnabled = () => (setting("lootManage") !== false) && (setting("corpseLoot") !== false);
 
 /** Adds (or completes) the loot part of a record from its defeated foes, with the world's defaults. Changes the record. */
 export function withLoot(record) {

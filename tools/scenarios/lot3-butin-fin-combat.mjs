@@ -29,7 +29,7 @@ export default {
       const player = game.users.find(u => u.name === "claude player");
       let actor = game.actors.find(a => (a.type === "character") && player && a.testUserPermission(player, "OWNER"));
       const TEST = { "darsh-loot": { test: true } };
-      const KEYS = ["xpManage", "lootManage", "lootWhen", "lootMode", "keepSpecial", "lootRules", "rewards", "reach", "autoTreasure", "whoLoots", "pockets"];
+      const KEYS = ["corpseLoot", "xpManage", "lootManage", "lootWhen", "lootMode", "keepSpecial", "lootRules", "rewards", "reach", "autoTreasure", "whoLoots", "pockets"];
       const previous = { scene: canvas.scene?.id ?? null, level: canvas.level?.id ?? null, active: game.scenes.active?.id ?? null,
         settings: Object.fromEntries(KEYS.map(k => [k, game.settings.get("darsh-loot", k)])),
         purse: actor ? { ...actor.system.currency } : null, items: actor ? actor.items.map(i => i.id) : [] };
@@ -243,6 +243,21 @@ export default {
     ctx.expect(scimitars.length >= 1 && scimitars.every(i => i.preserve === true) && (grouped?.storeItems ?? []).some(i => i.name === "DAS test trinket"),
       `the chest holds the scimitars (kept special) and the rule's trinkets (${JSON.stringify(grouped?.storeItems)})`);
     ctx.expect(grouped?.storeGp >= 10 && grouped.g3 && grouped.g4, `the coins went in too (${grouped?.storeGp} gp) and both corpses are empty`);
+
+    // 3 bis. « Searching corpses » off (user's request): the corpse with loot left loses its « Loot » status and cannot be opened.
+    const off = await gm(`
+      const api = game.modules.get("darsh-loot").api;
+      const scene = game.scenes.get(args.scene);
+      const g2 = scene.tokens.get(args.tokens.g2);
+      const before = g2.actor.statuses.has("darsh-loot-loot");
+      await game.settings.set("darsh-loot", "corpseLoot", false);
+      for ( let i = 0; i < 20 && g2.actor.statuses.has("darsh-loot-loot"); i++ ) await new Promise(r => setTimeout(r, 200));
+      const opened = await api.open(g2, scene.tokens.get(args.tokens.actor));
+      const status = g2.actor.statuses.has("darsh-loot-loot");
+      await game.settings.set("darsh-loot", "corpseLoot", true);
+      return { before, status, opened: !!opened, endLoot: api.endLoot.enabled() };`, setup);
+    ctx.expect(off && off.before && !off.status && !off.opened,
+      `« Searching corpses » off: the « Loot » status goes, the corpse does not open (${JSON.stringify(off)})`);
 
     // 4. The player takes everything from the encounter chest.
     if ( !setup.ownedByPlayer || !grouped?.behavior ) return;

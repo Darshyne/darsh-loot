@@ -149,6 +149,10 @@
       "LootMark": {
         "Name": "État « Butin » sur les cadavres",
         "Hint": "Une créature morte qui a encore quelque chose à prendre (objets, pièces, ou trésor pas encore tiré) porte une bourse dorée parmi ses icônes d'état ; elle disparaît quand le corps est vide. Vue de tous, comme tout état."
+      },
+      "CorpseLoot": {
+        "Name": "Fouille des cadavres",
+        "Hint": "Coupé : les cadavres ne se fouillent plus du tout — ni entrée « Fouiller », ni curseur, ni trésor tiré, ni état « Butin », et pas de butin de fin de combat. Les coffres, les tas au sol, le vol à la tire et la nécromancie ne changent pas."
       }
     },
     "SettingsWindow": {

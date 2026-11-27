@@ -10,7 +10,7 @@
  */
 import { MODULE_ID, setting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
-import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
+import { searchableCorpse, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { lootMarkWanted } from "../core/loot-visuals.mjs";
 
@@ -30,7 +30,7 @@ export function lootMarkFor(tokenDoc) {
   const actor = tokenDoc?.actor;
   return lootMarkWanted({
     enabled: setting("lootMark") !== false,
-    corpse: !!(actor && corpseToken(tokenDoc)),
+    corpse: !!(actor && searchableCorpse(tokenDoc)),
     hasLoot: !!actor && !lootView(actor).empty,
     unrolled: !!actor && !!setting("autoTreasure") && mayHaveTreasure(actor)
   });

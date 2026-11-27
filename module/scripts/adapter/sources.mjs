@@ -3,7 +3,7 @@
  * région), les poches d'un PNJ vivant, la boutique d'un marchand. La fenêtre, la prise et les contrôles du MJ ne connaissent que cette forme commune.
  */
 import { loc } from "../shared.mjs";
-import { corpseToken, tokenDistance, regionDistance } from "./dnd5e.mjs";
+import { searchableCorpse, tokenDistance, regionDistance } from "./dnd5e.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
 import { ZONE_TYPES } from "./zone-behaviors.mjs";
 import { TRAP_ZONE } from "./trap-behavior.mjs";
@@ -37,7 +37,7 @@ export function corpseSource(token) {
       return (game.user.isGM || shown) ? token.name : loc("Window.Corpse");
     },
     get img() { return token.texture?.src; },
-    exists: () => !!token.parent?.tokens.get(token.id) && corpseToken(token),
+    exists: () => !!token.parent?.tokens.get(token.id) && searchableCorpse(token),
     locked: () => false,
     box: () => tokenBox(token),
     distance: looter => ((looter.parent === token.parent) ? tokenDistance(looter, token) : Infinity)

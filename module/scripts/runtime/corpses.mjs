@@ -3,18 +3,18 @@
  */
 import { route } from "./router.mjs";
 import { openSource } from "./open.mjs";
-import { corpseToken, actingToken } from "../adapter/dnd5e.mjs";
+import { searchableCorpse, actingToken } from "../adapter/dnd5e.mjs";
 import { corpseSource } from "../adapter/sources.mjs";
 
 /** Ouvre la fenêtre de fouille de ce cadavre pour le token qui agit. */
 export function openLoot(corpse, looter=actingToken()) {
-  if ( !corpseToken(corpse) ) return null;
+  if ( !searchableCorpse(corpse) ) return null;
   return openSource(corpseSource(corpse), looter);
 }
 
 function onRenderTokenHUD(hud, html) {
   const tokenDoc = hud.document;
-  if ( !game.user.isGM || !corpseToken(tokenDoc) ) return;
+  if ( !game.user.isGM || !searchableCorpse(tokenDoc) ) return;
   const column = html.querySelector(".col.left");
   if ( !column || column.querySelector(".dlo-hud") ) return;
   const button = document.createElement("button");

@@ -19,7 +19,7 @@ import { sceneContainers, CONTAINER_TYPE } from "../adapter/container-behavior.m
 import { sceneZones } from "../adapter/zone-behaviors.mjs";
 import { behaviorConcealed, tilesIn } from "../adapter/hidden.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
-import { corpseToken, lootView } from "../adapter/dnd5e.mjs";
+import { searchableCorpse, lootView } from "../adapter/dnd5e.mjs";
 import { mayHaveTreasure } from "../adapter/treasure.mjs";
 import { trappedThings, handleKnown, sourceKnown, allTraps, wallEnds, clickTrapsOn } from "../adapter/trapped.mjs";
 import { concealed } from "../core/hidden.mjs";
@@ -129,7 +129,7 @@ function drawDoor(g, wall, color) {
 /** Les cadavres qu'on peut fouiller, visibles pour ce client. */
 function corpsesToDraw() {
   if ( !game.user.isGM && (setting("whoLoots") === "gm") ) return [];
-  return (canvas.tokens?.placeables ?? []).filter(t => t.visible && corpseToken(t.document) && t.actor
+  return (canvas.tokens?.placeables ?? []).filter(t => t.visible && searchableCorpse(t.document) && t.actor
     && (!lootView(t.actor).empty || (setting("autoTreasure") && mayHaveTreasure(t.actor))));
 }
 

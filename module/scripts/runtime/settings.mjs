@@ -112,6 +112,13 @@ export function registerSettings() {
     scope: "world", config: true, type: Boolean, default: true,
     onChange: () => Hooks.callAll(`${MODULE_ID}.lootMark`)
   });
+  // 2026-11-27 (user's request): searching corpses on or off altogether, like pickpocketing. Off: no menu entry, cursor, treasure
+  // roll or « Loot » status on corpses, and no end-of-combat loot; necromancy, chests and ground piles are unchanged.
+  game.settings.register(MODULE_ID, "corpseLoot", {
+    name: "DLO.Settings.CorpseLoot.Name", hint: "DLO.Settings.CorpseLoot.Hint",
+    scope: "world", config: true, type: Boolean, default: true,
+    onChange: () => { Hooks.callAll(`${MODULE_ID}.lootMark`); ui.controls?.render({ reset: true }); }
+  });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
     scope: "world", config: true, type: String, default: "all",

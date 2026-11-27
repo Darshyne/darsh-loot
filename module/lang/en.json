@@ -149,6 +149,10 @@
       "LootMark": {
         "Name": "« Loot » status on corpses",
         "Hint": "A dead creature that still has something to take (items, coins, or treasure not rolled yet) wears a golden purse among its status icons; it goes away once the corpse is empty. Seen by everyone, like any status."
+      },
+      "CorpseLoot": {
+        "Name": "Searching corpses",
+        "Hint": "Off: corpses cannot be searched at all — no « Search » entry, cursor, treasure roll or « Loot » status, and no end-of-combat loot. Chests, ground piles, pickpocketing and necromancy are unchanged."
       }
     },
     "SettingsWindow": {
