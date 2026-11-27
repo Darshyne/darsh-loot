@@ -291,7 +291,8 @@ export const SHOP_ACTIONS = {
  * The Core's token menu:
  *  - on a merchant, for the character in hand (another token): « Trade » (players and GM — the GM then trades for that token);
  *  - GM, on the merchant's own token (nothing else in hand: the Core shows the token's own menu): « Open the shop » (the stall to
- *    manage) and « Open / Close the shop »; on an NPC that is not a merchant: « Make it a merchant ».
+ *    manage) and « Open / Close the shop », « Cancel the shop ». Making a merchant is not offered on tokens (user's request, 2026-11-27: it
+ *    cluttered the menu): the actors sidebar and the sheet's header menu do it.
  * `visit`: walk within reach first, then open (runtime/open.mjs).
  */
 function tokenMenu({ open, visit }) {
@@ -304,8 +305,6 @@ function tokenMenu({ open, visit }) {
         entries.push({ icon: closed ? "fa-solid fa-door-open" : "fa-solid fa-door-closed", label: loc(closed ? "Shop.OpenShop" : "Shop.CloseShop"),
           run: () => toggleClosed(target.actor) });
         entries.push({ icon: "fa-solid fa-store-slash", label: loc("Shop.Unmake"), run: () => cancelMerchant(target.actor) });
-      } else if ( (target.actor.type === "npc") && !isMerchant(target.actor) ) {
-        entries.push({ icon: "fa-solid fa-store", label: loc("Shop.HudMake"), run: () => makeMerchant(target.actor, open) });
       }
       return;
     }
@@ -315,21 +314,23 @@ function tokenMenu({ open, visit }) {
   };
 }
 
-/** GM: the token HUD button — its shop if it is a merchant, else make it one. */
+/**
+ * GM: the token HUD button of a merchant, to its shop. No button on other NPCs (user's request, 2026-11-27: « Make it a merchant »
+ * cluttered the HUD; the actors sidebar and the sheet's header menu do it).
+ */
 function hudButton(open) {
   return (hud, html) => {
     const tokenDoc = hud.document;
-    if ( !game.user.isGM || (tokenDoc?.actor?.type !== "npc") ) return;
+    if ( !game.user.isGM || (tokenDoc?.actor?.type !== "npc") || !isMerchant(tokenDoc.actor) ) return;
     const column = html.querySelector(".col.left");
     if ( !column || column.querySelector(".dlo-hud-shop") ) return;
-    const merchant = isMerchant(tokenDoc.actor);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "control-icon dlo-hud dlo-hud-shop";
-    button.dataset.tooltip = loc(merchant ? "Shop.HudOpen" : "Shop.HudMake");
+    button.dataset.tooltip = loc("Shop.HudOpen");
     button.innerHTML = `<i class="fa-solid fa-store"></i>`;
     // The GM opens the stall without a character (to manage it); to trade for a character: « Trade » in the menu.
-    button.addEventListener("click", () => (merchant ? open(merchantSource(tokenDoc), null) : makeMerchant(tokenDoc.actor, open)));
+    button.addEventListener("click", () => open(merchantSource(tokenDoc), null));
     column.append(button);
   };
 }

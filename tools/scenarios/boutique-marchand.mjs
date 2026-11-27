@@ -196,6 +196,31 @@ export default {
       await actor.sheet.close();
       return { labels, make: labels?.includes(L("DLO.Shop.HudMake")), view: labels?.includes(L("DLO.Shop.HudOpen")) };`, setup);
     ctx.expect(npcSheet?.make && !npcSheet.view, `a plain NPC's sheet header menu offers « Make it a merchant » only (${JSON.stringify(npcSheet)})`);
+
+    // A plain NPC's token: neither the Core's token menu nor the HUD offers « Make it a merchant » (user's request, 2026-11-27); the
+    // merchant's HUD keeps its shop button.
+    const npcToken = await gm(`
+      const scene = game.scenes.get(args.scene);
+      const [doc] = await scene.createEmbeddedDocuments("Token", [{ name: "DAS test villager", actorId: args.npc, actorLink: true, x: 700, y: 300 }]);
+      await new Promise(r => setTimeout(r, 800));
+      const L = game.i18n.localize("DLO.Shop.HudMake");
+      canvas.tokens.releaseAll();
+      doc.object.control({ releaseOthers: true });
+      const labels = (game.modules.get("dnd5e-combat").api.ui.tokenMenu(doc) ?? []).map(e => e.label);
+      const hudButton = async d => {
+        await canvas.hud.token.bind(d.object);
+        await new Promise(r => setTimeout(r, 500));
+        const has = !!canvas.hud.token.element?.querySelector(".dlo-hud-shop");
+        await canvas.hud.token.close();
+        return has;
+      };
+      const npcHud = await hudButton(doc);
+      const merchantHud = await hudButton(fromUuidSync(args.token));
+      canvas.tokens.releaseAll();
+      await doc.delete();
+      return { labels, menuMake: labels.includes(L), npcHud, merchantHud };`, setup);
+    ctx.expect(npcToken && !npcToken.menuMake && !npcToken.npcHud && npcToken.merchantHud,
+      `a plain NPC's token offers no « Make it a merchant » (menu, HUD); the merchant's HUD keeps its shop button (${JSON.stringify(npcToken)})`);
     await closeAll();
 
     const link = await gm(`
