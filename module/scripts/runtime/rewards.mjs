@@ -140,6 +140,8 @@ function onCombatEnd({ combat, defeated }={}) {
     if ( xp ) record.status = "pending";
     else if ( !kept ) record.status = "none";
     withLoot(record);
+    // XP off and no corpse to loot: nothing to keep.
+    if ( !xp && !kept && (record.loot?.status !== "pending") ) return null;
     await putRecord(record);
     return record;
   }).then(async record => {
