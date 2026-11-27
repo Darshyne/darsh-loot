@@ -7,7 +7,8 @@
  *  2. the GM window — tabs, open / closed in the header, an item dropped on the window joins the stall, price and quantity typed in
  *     the list, lock, search, the right-click menu, the settings tab renames the merchant;
  *  3. restocks — « full » removes what was drawn but leaves a locked item, « add » removes nothing;
- *  4. a real player buys: the deal goes through, the sales log keeps it.
+ *  4. a real player buys: the deal goes through, the sales log keeps it; a closed shop refuses the purchase;
+ *  5. « Cancel the shop », confirmed: back to a plain NPC.
  * Without the bench's player client, part 4 is skipped. Restored: scene, actors, items, settings, windows.
  *
  * Run with the Core's runner: `node tools/scenario.mjs "../Foundry dnd5e butin et commerce/tools/scenarios/boutique-marchand.mjs"`
@@ -85,9 +86,10 @@ export default {
       li.dataset.entryId = args.npc;
       const npcEntries = options.filter(o => o.label?.startsWith("DLO.") && (typeof o.visible !== "function" || o.visible(li))).map(o => o.label);
       return { merchantEntries, npcEntries };`, setup);
-    ctx.expect(sidebar?.merchantEntries?.includes("DLO.Shop.HudOpen") && sidebar.merchantEntries.includes("DLO.Shop.ToggleShop")
+    ctx.expect(sidebar?.merchantEntries?.includes("DLO.Shop.HudOpen") && sidebar.merchantEntries.includes("DLO.Shop.CloseShop")
+      && !sidebar.merchantEntries.includes("DLO.Shop.OpenShop") && sidebar.merchantEntries.includes("DLO.Shop.Unmake")
       && sidebar.npcEntries?.includes("DLO.Shop.HudMake") && !sidebar.npcEntries.includes("DLO.Shop.HudOpen"),
-      `actors sidebar: « Open the shop » / « Open / close » on a merchant, « Make it a merchant » on another NPC (${JSON.stringify(sidebar)})`);
+      `actors sidebar: « View the shop », « Close the shop » (open shop) and « Cancel the shop » on a merchant, « Make it a merchant » on another NPC (${JSON.stringify(sidebar)})`);
 
     const menu = await gm(`
       const token = fromUuidSync(args.token);
@@ -115,9 +117,20 @@ export default {
       button?.click();
       await new Promise(r => setTimeout(r, 800));
       const opened = [...foundry.applications.instances.values()].some(a => a.id?.startsWith("darsh-loot-merchant") && a.rendered);
+      // Closing then reopening the shop, sheet open: the button stays (user report, 2026-11-27).
+      const api = game.modules.get("darsh-loot").api;
+      const has = () => !!actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop");
+      await api.toggleShop(actor);
+      await new Promise(r => setTimeout(r, 1200));
+      const afterClose = has();
+      await api.toggleShop(actor);
+      await new Promise(r => setTimeout(r, 1200));
+      const afterOpen = has();
       await actor.sheet.close();
-      return { button: !!button, opened };`, setup);
+      return { button: !!button, opened, afterClose, afterOpen, closedNow: actor.getFlag("darsh-loot", "merchant")?.closed };`, setup);
     ctx.expect(sheet?.button && sheet.opened, `a shop button in the merchant's sheet header opens the shop (${JSON.stringify(sheet)})`);
+    ctx.expect(sheet?.afterClose && sheet.afterOpen && (sheet.closedNow === false),
+      `the sheet header keeps its shop button when the shop is closed then reopened (${JSON.stringify(sheet)})`);
     await closeAll();
 
     const link = await gm(`
@@ -243,6 +256,27 @@ export default {
     const who = await ctx.asPlayer(`return { gm: game.user.isGM, activeGM: game.users.activeGM?.name ?? null };`);
     if ( !who || who.gm || !who.activeGM ) { ctx.log("no player client: part 4 not played"); return; }
     const rope = await gm(`return fromUuidSync(args.token).actor.items.find(i => i.name === "DAS test rope")?.id;`, setup);
+    // A closed shop sells nothing, even when the request is sent by hand.
+    await gm(`await game.modules.get("darsh-loot").api.toggleShop(fromUuidSync(args.token).actor); return true;`, setup);
+    const refused = await ctx.asPlayer(`
+      const api = game.modules.get("darsh-loot").api;
+      const merchant = fromUuidSync(args.token);
+      const before = merchant.actor.items.get(args.rope)?.system.quantity;
+      await api.shop(merchant, fromUuidSync(args.looter));
+      await new Promise(r => setTimeout(r, 800));
+      const win = [...foundry.applications.instances.values()].find(a => a.id === "darsh-loot-merchant-" + args.tokenId && a.rendered);
+      const screen = { shut: !!win?.element.querySelector(".dlo-shop-shut"), items: win?.element.querySelectorAll(".dlo-shop-item").length ?? -1 };
+      await win?.close();
+      let result = null, error = null;
+      try { result = await api.deal(merchant, fromUuidSync(args.looter), { buy: [{ id: args.rope, quantity: 1 }], sell: [] }); }
+      catch(err) { error = err.message; }
+      await new Promise(r => setTimeout(r, 500));
+      return { screen, bought: result?.bought?.length ?? 0, error, before, after: merchant.actor.items.get(args.rope)?.system.quantity };`, { ...setup, rope });
+    await gm(`await game.modules.get("darsh-loot").api.toggleShop(fromUuidSync(args.token).actor); return true;`, setup);
+    ctx.expect(refused && !refused.bought && (refused.before === refused.after),
+      `a closed shop refuses a player's purchase (${JSON.stringify(refused)})`);
+    ctx.expect(refused?.screen?.shut && (refused.screen.items === 0),
+      `a closed shop shows the player a « closed, come back later » screen, no stall (${JSON.stringify(refused?.screen)})`);
     const bought = await ctx.asPlayer(`
       const api = game.modules.get("darsh-loot").api;
       const merchant = fromUuidSync(args.token);
@@ -262,5 +296,31 @@ export default {
     const log = await gm(`return game.modules.get("darsh-loot").api.salesLog(fromUuidSync(args.token));`, setup);
     const last = log?.at?.(-1);
     ctx.expect(last?.kind === "deal" && last.bought?.length === 1 && (last.net === 750), `the sales log keeps the deal (${JSON.stringify(last)})`);
+
+    // 5. « Cancel the shop » from the actors sidebar, confirmed: a plain NPC again, its items kept, its sheet without the button.
+    const cancel = await gm(`
+      const actor = game.actors.get(args.merchant);
+      const items = actor.items.size;
+      await actor.sheet.render({ force: true });
+      await new Promise(r => setTimeout(r, 1200));
+      const options = [];
+      Hooks.callAll("getActorContextOptions", ui.actors, options);
+      const li = document.createElement("li");
+      li.dataset.entryId = args.merchant;
+      const entry = options.find(o => o.label === "DLO.Shop.Unmake");
+      const running = entry?.onClick(new Event("click"), li);
+      await new Promise(r => setTimeout(r, 800));
+      const dialog = [...foundry.applications.instances.values()].find(a => (a instanceof foundry.applications.api.DialogV2) && a.rendered);
+      dialog?.element.querySelector("[data-action=yes]")?.click();
+      await running;
+      await new Promise(r => setTimeout(r, 1200));
+      const out = { asked: !!dialog, merchant: game.modules.get("darsh-loot").api.isMerchant?.(actor) ?? actor.getFlag("darsh-loot", "merchant")?.enabled === true,
+        flag: actor.getFlag("darsh-loot", "merchant") ?? null, log: actor.getFlag("darsh-loot", "log") ?? null,
+        marks: actor.items.filter(i => i.getFlag("darsh-loot", "shop")).length, items: actor.items.size, itemsBefore: items,
+        button: !!actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop") };
+      await actor.sheet.close();
+      return out;`, setup);
+    ctx.expect(cancel?.asked && !cancel.merchant && !cancel.flag && !cancel.log && (cancel.marks === 0) && (cancel.items === cancel.itemsBefore) && !cancel.button,
+      `« Cancel the shop » asks first, then makes a plain NPC: no merchant flag, log or stall marks, items kept, no sheet button (${JSON.stringify(cancel)})`);
   }
 };

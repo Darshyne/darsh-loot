@@ -412,7 +412,13 @@ export class ShopWindow extends ApplicationV2 {
         </span>
       </div>` : "";
     let body;
-    if ( tab === "stall" ) body = this.#stall(context);
+    // A closed shop shows its players a closed door, not its stall (user's request, 2026-11-27); it opens again with the shop.
+    if ( !gm && closed ) {
+      this.#empty();
+      body = `<div class="dlo-shop-shut"><i class="fa-solid fa-door-closed"></i>
+        <p class="dlo-shop-shut-title">${loc("Shop.ShutTitle")}</p><p>${loc("Shop.ShutText")}</p></div>`;
+    }
+    else if ( tab === "stall" ) body = this.#stall(context);
     else if ( tab === "settings" ) body = `<form class="dlo-shop-settings dlo-merchant-config">${merchantFormHTML(context.form)}
         <footer class="dlo-foot"><button type="submit"><i class="fa-solid fa-floppy-disk"></i> ${loc("Merchant.Save")}</button></footer></form>`;
     else if ( tab === "log" ) body = this.#log(context);

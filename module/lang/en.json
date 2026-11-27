@@ -360,7 +360,7 @@
     "Shop": {
       "Title": "Shop: {name}",
       "Menu": "Trade",
-      "HudOpen": "Open the shop",
+      "HudOpen": "View the shop",
       "HudMake": "Make a merchant",
       "Stall": "Stall",
       "EmptyStall": "Nothing for sale.",
@@ -483,7 +483,13 @@
       "Close": "Close",
       "StuckCount": "{count} unsellable item(s): not marked « Gear » on the sheet (often created with the actor). Players do not see them.",
       "MakeAllSellable": "Make all sellable",
-      "MarkNotForSale": "Show, not for sale"
+      "MarkNotForSale": "Show, not for sale",
+      "Unmake": "Cancel the shop",
+      "UnmakeTitle": "Cancel the shop: {name}",
+      "UnmakeAsk": "{name} goes back to a plain NPC: its merchant settings, its sales log and its stall settings (prices, locks, hidden items) are erased. Its items and coins stay on its sheet. Go on?",
+      "Unmade": "{name} no longer keeps a shop.",
+      "ShutTitle": "This shop is closed.",
+      "ShutText": "Come back later."
     },
     "Merchant": {
       "Title": "Merchant: {name}",

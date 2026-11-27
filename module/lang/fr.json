@@ -360,7 +360,7 @@
     "Shop": {
       "Title": "Boutique : {name}",
       "Menu": "Commercer",
-      "HudOpen": "Ouvrir la boutique",
+      "HudOpen": "Afficher la boutique",
       "HudMake": "En faire un marchand",
       "Stall": "Étal",
       "EmptyStall": "Rien à vendre.",
@@ -483,7 +483,13 @@
       "Close": "Fermer",
       "StuckCount": "{count} objet(s) invendable(s) : pas marqués « Équipement » sur la fiche (souvent créés avec l'acteur). Les joueurs ne les voient pas.",
       "MakeAllSellable": "Tout rendre vendable",
-      "MarkNotForSale": "Exposer sans vendre"
+      "MarkNotForSale": "Exposer sans vendre",
+      "Unmake": "Annuler la boutique",
+      "UnmakeTitle": "Annuler la boutique : {name}",
+      "UnmakeAsk": "{name} redevient un PNJ ordinaire : ses réglages de marchand, son journal des ventes et les réglages de son étal (prix, verrous, objets cachés) sont effacés. Ses objets et ses pièces restent sur sa fiche. Continuer ?",
+      "Unmade": "{name} ne tient plus boutique.",
+      "ShutTitle": "Cette boutique est fermée.",
+      "ShutText": "Revenez plus tard."
     },
     "Merchant": {
       "Title": "Marchand : {name}",

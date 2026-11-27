@@ -356,6 +356,17 @@ export async function setClosed(actor, closed) {
   return !!closed;
 }
 
+/**
+ * Back to a plain NPC: the merchant settings, the sales log and the stall marks of its items go; the items, coins and tokens stay.
+ */
+export async function unmakeMerchant(actor) {
+  const marked = actor.items.filter(i => i.getFlag(MODULE_ID, "shop") !== undefined)
+    .map(i => ({ _id: i.id, [`flags.${MODULE_ID}.-=shop`]: null }));
+  if ( marked.length ) await actor.updateEmbeddedDocuments("Item", marked);
+  await actor.update({ [`flags.${MODULE_ID}.-=merchant`]: null, [`flags.${MODULE_ID}.-=log`]: null });
+  return !isMerchant(actor);
+}
+
 /* -------------------------------------------- */
 /*  Sales log                                   */
 /* -------------------------------------------- */

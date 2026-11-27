@@ -9,7 +9,7 @@ import { ZONE_TYPES } from "./zone-behaviors.mjs";
 import { TRAP_ZONE } from "./trap-behavior.mjs";
 import { trapHandle, placeDistance, clickTrapsOn } from "./trapped.mjs";
 import { livingNPC, livingPC } from "./theft.mjs";
-import { merchantToken, merchantAlive } from "./shop.mjs";
+import { merchantToken, merchantAlive, isMerchant } from "./shop.mjs";
 
 /** Emprise d'un token, en cases (positions de `_source`). */
 function tokenBox(token) {
@@ -177,7 +177,7 @@ export function merchantSource(token) {
       get actor() { return actor; },
       get name() { return actor.name; },
       get img() { return actor.img; },
-      exists: () => !!game.actors.get(actor.id) && merchantAlive(actor),
+      exists: () => !!game.actors.get(actor.id) && isMerchant(actor) && merchantAlive(actor),
       locked: () => false,
       box: () => null,
       distance: () => 0

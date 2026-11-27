@@ -16,7 +16,7 @@ import { boxInSight } from "../adapter/hidden.mjs";
 import {
   merchantOf, merchantToken, isMerchant, quote, executeDeal, unsellable, restock, memorizeStock, convertItemPiles, formatPrice,
   shopOpenTo, SHOWN_VALID_MS, setStallPrice, setStallQuantity, setStallFlags, makeSellable, addToStall, removeFromStall,
-  renameMerchant, setClosed, recordSale, clearSalesLog
+  renameMerchant, setClosed, recordSale, clearSalesLog, unmakeMerchant
 } from "../adapter/shop.mjs";
 import { MerchantConfig } from "../apps/merchant-config.mjs";
 import { escape } from "../apps/shop-parts.mjs";
@@ -206,6 +206,22 @@ export async function toggleClosed(actor) {
 }
 
 /**
+ * GM: back to a plain NPC, after a confirmation (user's request, 2026-11-27): settings, log and stall marks go, items and coins stay.
+ */
+export async function cancelMerchant(actor) {
+  if ( !gmOnly() || !isMerchant(actor) ) return false;
+  const ok = await foundry.applications.api.DialogV2.confirm({
+    window: { title: loc("Shop.UnmakeTitle", { name: actor.name }), icon: "fa-solid fa-store-slash" },
+    content: `<p>${loc("Shop.UnmakeAsk", { name: escape(actor.name) })}</p>`,
+    rejectClose: false
+  });
+  if ( !ok ) return false;
+  await unmakeMerchant(actor);
+  ui.notifications.info(loc("Shop.Unmade", { name: actor.name }));
+  return true;
+}
+
+/**
  * GM: show the shop to the connected players — it opens for each, for their character (their token on the scene, else their
  * assigned character). Mostly for shops **without a token** (a merchant played without a map).
  */
@@ -286,6 +302,7 @@ function tokenMenu({ open, visit }) {
         entries.push({ icon: "fa-solid fa-store", label: loc("Shop.HudOpen"), run: () => open(merchantSource(target), null) });
         entries.push({ icon: closed ? "fa-solid fa-door-open" : "fa-solid fa-door-closed", label: loc(closed ? "Shop.OpenShop" : "Shop.CloseShop"),
           run: () => toggleClosed(target.actor) });
+        entries.push({ icon: "fa-solid fa-store-slash", label: loc("Shop.Unmake"), run: () => cancelMerchant(target.actor) });
       } else if ( (target.actor.type === "npc") && !isMerchant(target.actor) ) {
         entries.push({ icon: "fa-solid fa-store", label: loc("Shop.HudMake"), run: () => makeMerchant(target.actor, open) });
       }
@@ -336,13 +353,21 @@ function directoryMenu(open) {
       visible: li => game.user.isGM && (actorOfEntry(li)?.type === "npc") && !isMerchant(actorOfEntry(li)),
       onClick: (event, li) => makeMerchant(actorOfEntry(li), open)
     }, {
-      label: "DLO.Shop.ToggleShop", icon: "<i class=\"fa-solid fa-door-open\"></i>",
-      visible: li => game.user.isGM && isMerchant(actorOfEntry(li)),
+      label: "DLO.Shop.OpenShop", icon: "<i class=\"fa-solid fa-door-open\"></i>",
+      visible: li => game.user.isGM && isMerchant(actorOfEntry(li)) && merchantOf(actorOfEntry(li)).closed,
+      onClick: (event, li) => toggleClosed(actorOfEntry(li))
+    }, {
+      label: "DLO.Shop.CloseShop", icon: "<i class=\"fa-solid fa-door-closed\"></i>",
+      visible: li => game.user.isGM && isMerchant(actorOfEntry(li)) && !merchantOf(actorOfEntry(li)).closed,
       onClick: (event, li) => toggleClosed(actorOfEntry(li))
     }, {
       label: "DLO.Merchant.Menu", icon: "<i class=\"fa-solid fa-gear\"></i>",
       visible: li => game.user.isGM && isMerchant(actorOfEntry(li)),
       onClick: (event, li) => configureMerchant(actorOfEntry(li))
+    }, {
+      label: "DLO.Shop.Unmake", icon: "<i class=\"fa-solid fa-store-slash\"></i>",
+      visible: li => game.user.isGM && isMerchant(actorOfEntry(li)),
+      onClick: (event, li) => cancelMerchant(actorOfEntry(li))
     });
   };
 }
@@ -363,24 +388,46 @@ function folderMenu(open) {
  * looks — the GM to manage it, a player for their character.
  */
 function sheetButton(openFor) {
-  return (app, element) => {
-    const actor = app.document ?? app.actor;
-    if ( !(actor instanceof Actor) || !isMerchant(actor) ) return;
-    const header = (element instanceof HTMLElement ? element : app.element)?.querySelector(".window-header");
-    if ( !header || header.querySelector(".dlo-sheet-shop") ) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "header-control icon fa-solid fa-store dlo-sheet-shop";
-    button.dataset.tooltip = loc("Shop.HudOpen");
-    button.setAttribute("aria-label", loc("Shop.HudOpen"));
-    button.addEventListener("click", event => {
-      event.preventDefault();
-      event.stopPropagation();
-      openFor(app.token ?? actor);
-    });
-    const first = header.querySelector(".header-control");
-    if ( first ) first.before(button);
-    else header.append(button);
+  return (app, element) => syncSheetButton(app, element, openFor);
+}
+
+/** Add the shop button to a sheet's header when its actor keeps a shop, remove it when not. */
+function syncSheetButton(app, element, openFor) {
+  const actor = app.document ?? app.actor;
+  if ( !(actor instanceof Actor) ) return;
+  const header = (element instanceof HTMLElement ? element : app.element)?.querySelector(".window-header");
+  if ( !header ) return;
+  const present = header.querySelector(".dlo-sheet-shop");
+  if ( !isMerchant(actor) ) return present?.remove();
+  if ( present ) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "header-control icon fa-solid fa-store dlo-sheet-shop";
+  button.dataset.tooltip = loc("Shop.HudOpen");
+  button.setAttribute("aria-label", loc("Shop.HudOpen"));
+  button.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    openFor(app.token ?? actor);
+  });
+  const first = header.querySelector(".header-control");
+  if ( first ) first.before(button);
+  else header.append(button);
+}
+
+/**
+ * When an actor's merchant flag changes (opened, closed, made or unmade a merchant), its open sheets get their button back — or
+ * lose it. A sheet re-rendered on such an update lost the button (user report, 2026-11-27): this puts it back once the render is
+ * over, whatever removed it.
+ */
+function resyncSheets(openFor) {
+  return (actor, changes) => {
+    if ( !foundry.utils.hasProperty(changes, `flags.${MODULE_ID}`) ) return;
+    setTimeout(() => {
+      for ( const app of Object.values(actor.apps ?? {}) ) {
+        if ( app.rendered && (app.element instanceof HTMLElement) ) syncSheetButton(app, app.element, openFor);
+      }
+    }, 250);
   };
 }
 
@@ -458,7 +505,9 @@ export function registerShopInit(open) {
 export function registerShop({ open, visit }) {
   route(TOKEN_MENU_HOOK, "menu: Shop", tokenMenu({ open, visit }));
   route("renderTokenHUD", "Shop button", hudButton(open));
-  route("renderActorSheetV2", "sheet: Shop button", sheetButton(doc => openShopOf(doc, open)));
+  const openFor = doc => openShopOf(doc, open);
+  route("renderActorSheetV2", "sheet: Shop button", sheetButton(openFor));
+  route("updateActor", "sheet: Shop button after a merchant change", resyncSheets(openFor));
 }
 
 /** How long a shown shop stays open to its players (re-exported for the tests and the API). */
