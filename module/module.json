@@ -2,7 +2,7 @@
   "id": "darsh-loot",
   "title": "DAS · Loot & Trade",
   "description": "Loot and trade for dnd5e: lootable corpses, containers, items dropped on the ground, pickpocketing, necromancy, thrown weapons, trading between players and merchants, in windows that wear the dnd5e system's look (light and dark themes).",
-  "version": "0.22.6",
+  "version": "0.23.0",
   "authors": [
     {
       "name": "Darshyne"
@@ -31,7 +31,7 @@
         "id": "dnd5e-combat",
         "type": "module",
         "compatibility": {
-          "minimum": "0.144.0"
+          "minimum": "0.295.0"
         }
       }
     ],
