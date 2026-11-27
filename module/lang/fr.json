@@ -162,7 +162,8 @@
         "search": "Fouille",
         "loot": "Butin et vol",
         "containers": "Conteneurs",
-        "traps": "Pièges"
+        "traps": "Pièges",
+        "rewards": "Récompenses"
       },
       "Tool": {
         "tables": {
@@ -1353,6 +1354,99 @@
     },
     "LootMark": {
       "Status": "Butin"
+    },
+    "Rewards": {
+      "Title": "Récompenses",
+      "Tool": "Récompenses (XP)",
+      "Menu": "Récompenses…",
+      "Count": "Compter dans les récompenses",
+      "Encounter": "Rencontre",
+      "New": "Nouvelle",
+      "NewHint": "Une récompense hors combat : défi, négociation, étape importante. Tous les personnages du groupe sont cochés.",
+      "None": "Aucune rencontre notée. Elles apparaissent ici à la fin d'un combat ; « Nouvelle » en crée une à la main.",
+      "Off": "L'XP est coupée dans dnd5e (montée de niveau sans XP) : rien n'est donné.",
+      "CombatName": "Combat — {scene}, round {round}",
+      "ManualName": "Récompense hors combat",
+      "Status": {
+        "pending": "à donner",
+        "open": "en cours",
+        "awarded": "donnée",
+        "dismissed": "écartée"
+      },
+      "Foes": "Créatures surmontées",
+      "FoesHint": "Cochez aussi une créature qui a fui, s'est rendue ou a été capturée : le DMG la compte comme vaincue.",
+      "NoFoes": "Aucune créature.",
+      "Defeated": "vaincue",
+      "NotDefeated": "pas vaincue",
+      "Given": "donnée",
+      "Bonus": "Bonus (défi hors combat, étape)",
+      "Reason": "Pourquoi (facultatif)",
+      "ChallengeHint": "Règle du DMG : un défi hors combat ou une étape vaut l'XP d'une rencontre de cette difficulté pour les personnages cochés.",
+      "Challenge": {
+        "low": "Faible",
+        "moderate": "Modéré",
+        "high": "Élevé"
+      },
+      "Members": "Personnages",
+      "NoMembers": "Aucun personnage.",
+      "Level": "Niv. {level}",
+      "Absent": "absent",
+      "WeightHint": "Coefficient de ce personnage (1 = part normale, 0 = rien). Retenu pour les prochaines rencontres.",
+      "Allies": "PNJ alliés",
+      "AllyTag": "prend une part",
+      "AlliesHint": "Règle du DMG : un PNJ qui a vraiment aidé compte comme une part, mais ne reçoit rien (sa part est perdue). Décochez-le sinon.",
+      "Split": "Répartition",
+      "SplitMode": {
+        "equal": "Parts égales (DMG)",
+        "level": "Même progression vers le niveau suivant",
+        "weight": "Coefficient par personnage"
+      },
+      "Total": "Total : {xp} XP",
+      "ToParty": "{xp} XP de reste vers la réserve du groupe",
+      "Lost": "{xp} XP perdus",
+      "Give": "Donner l'XP",
+      "Dismiss": "Écarter",
+      "Nothing": "Rien à donner : aucune créature cochée et pas de bonus.",
+      "NoOne": "Personne ne reçoit d'XP : cochez au moins un personnage.",
+      "Already": "L'XP de cette rencontre a déjà été donnée.",
+      "Kept": "Rencontre notée : « {name} ». Ouvrez Récompenses pour donner l'XP.",
+      "Card": "{name} : {xp} XP — {shares}.",
+      "CardShare": "{who} +{xp}",
+      "CardParty": "{xp} XP vont à la réserve du groupe.",
+      "CardLost": "{xp} XP perdus.",
+      "CardLevelUp": "Niveau supérieur possible : {names} !",
+      "Float": "+{xp} XP",
+      "FloatLevelUp": "+{xp} XP — niveau supérieur !",
+      "Op": "Récompense « {name} »",
+      "PlanLine": "{who} : +{xp} XP",
+      "Step": "{xp} XP donnés à {who}",
+      "StepRecord": "relevé de rencontre mis à jour",
+      "Settings": {
+        "When": {
+          "Name": "Quand donner l'XP",
+          "Hint": "Semi-automatique : à la fin d'un combat, la fenêtre Récompenses s'ouvre chez le MJ, qui ajuste puis valide. Automatique : donnée à la fin du combat sans fenêtre. À chaque créature vaincue : son XP est donnée aussitôt (jamais deux fois). Manuel : la rencontre est notée, le MJ ouvre la fenêtre quand il veut. Rien ne se passe si dnd5e monte de niveau sans XP.",
+          "Semi": "Semi-automatique (fin de combat, le MJ valide)",
+          "Auto": "Automatique (fin de combat)",
+          "Kill": "À chaque créature vaincue",
+          "Manual": "Manuel"
+        },
+        "Split": {
+          "Name": "Répartition de l'XP",
+          "Hint": "Parts égales : la règle du DMG. Même progression : chacun avance du même pourcentage vers son niveau suivant (option maison). Coefficient : un nombre par personnage, réglé dans la fenêtre (option maison). Modifiable pour chaque rencontre."
+        },
+        "Remainder": {
+          "Name": "XP qui ne se divise pas",
+          "Hint": "Le reste d'une division (100 XP pour 3 : 1 XP) va dans la réserve d'XP du groupe principal de dnd5e, ou est perdu comme avec /award. Sans groupe principal, il est perdu.",
+          "Party": "Réserve du groupe",
+          "Lost": "Perdu"
+        },
+        "Recipients": {
+          "Name": "Qui reçoit l'XP après un combat",
+          "Hint": "Cochés par défaut dans la fenêtre : les personnages qui ont combattu (les absents sont listés, décochés), ou tout le groupe principal.",
+          "Present": "Ceux qui ont combattu",
+          "Party": "Tout le groupe"
+        }
+      }
     }
   },
   "TYPES": {

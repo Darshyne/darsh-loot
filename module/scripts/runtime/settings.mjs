@@ -179,6 +179,39 @@ export function registerSettings() {
     scope: "world", config: true, type: String, default: "direct",
     choices: { direct: "DLO.Give.Settings.Mode.Direct", ask: "DLO.Give.Settings.Mode.Ask", off: "DLO.Give.Settings.Mode.Off" }
   });
+  // Lot 2 (2026-11-27): XP rewards — when XP is given: at the end of a combat with the « Rewards » window (the GM validates), at
+  // the end of a combat without it, at each hostile creature defeated, or only when the GM opens the window. Silent when dnd5e
+  // levels up without XP.
+  game.settings.register(MODULE_ID, "xpWhen", {
+    name: "DLO.Rewards.Settings.When.Name", hint: "DLO.Rewards.Settings.When.Hint",
+    scope: "world", config: true, type: String, default: "semi",
+    choices: { semi: "DLO.Rewards.Settings.When.Semi", auto: "DLO.Rewards.Settings.When.Auto", kill: "DLO.Rewards.Settings.When.Kill",
+      manual: "DLO.Rewards.Settings.When.Manual" }
+  });
+  // Lot 2: how XP divides by default (the window may change it per encounter) — equal shares (DMG), the same progression towards
+  // the next level, or a coefficient per character.
+  game.settings.register(MODULE_ID, "xpSplit", {
+    name: "DLO.Rewards.Settings.Split.Name", hint: "DLO.Rewards.Settings.Split.Hint",
+    scope: "world", config: true, type: String, default: "equal",
+    choices: { equal: "DLO.Rewards.SplitMode.equal", level: "DLO.Rewards.SplitMode.level", weight: "DLO.Rewards.SplitMode.weight" }
+  });
+  // Lot 2: the XP that does not divide — into the XP pool of dnd5e's primary party (a Group actor), or lost like dnd5e's /award.
+  game.settings.register(MODULE_ID, "xpRemainder", {
+    name: "DLO.Rewards.Settings.Remainder.Name", hint: "DLO.Rewards.Settings.Remainder.Hint",
+    scope: "world", config: true, type: String, default: "party",
+    choices: { party: "DLO.Rewards.Settings.Remainder.Party", lost: "DLO.Rewards.Settings.Remainder.Lost" }
+  });
+  // Lot 2: who is ticked to receive XP after a combat — the characters who fought, or the whole party (absent ones too).
+  game.settings.register(MODULE_ID, "xpRecipients", {
+    name: "DLO.Rewards.Settings.Recipients.Name", hint: "DLO.Rewards.Settings.Recipients.Hint",
+    scope: "world", config: true, type: String, default: "present",
+    choices: { present: "DLO.Rewards.Settings.Recipients.Present", party: "DLO.Rewards.Settings.Recipients.Party" }
+  });
+  // Lot 2: the encounter records (adapter/xp.mjs), hidden, written by a GM. Every client redraws its window when they change.
+  game.settings.register(MODULE_ID, "rewards", {
+    scope: "world", config: false, type: Object, default: { records: [] },
+    onChange: () => Hooks.callAll(`${MODULE_ID}.rewards`)
+  });
   // Lot 0: the journal of multi-write gestures in progress (runtime/operations.mjs), hidden. Empty unless a GM reloaded mid-gesture.
   game.settings.register(MODULE_ID, "operations", { scope: "world", config: false, type: Object, default: {} });
 }

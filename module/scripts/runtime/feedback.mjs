@@ -28,7 +28,9 @@ export const SOUNDS = Object.freeze({
   lever: "sounds/doors/industrial/lock.ogg",
   click: "sounds/lock.wav",
   page: `modules/${MODULE_ID}/assets/sounds/drop-soft.mp3`,
-  nothing: "sounds/doors/metal/test.ogg"
+  nothing: "sounds/doors/metal/test.ogg",
+  // Lot 2 (2026-11-27): XP given — a horn of Foundry's combat sounds.
+  xp: "sounds/combat/epic-next-horn.ogg"
 });
 
 /** Une carte plus vieille que ça (chargement du journal) ne refait pas son texte flottant. */

@@ -162,7 +162,8 @@
         "search": "Searching",
         "loot": "Loot & theft",
         "containers": "Containers",
-        "traps": "Traps"
+        "traps": "Traps",
+        "rewards": "Rewards"
       },
       "Tool": {
         "tables": {
@@ -1353,6 +1354,99 @@
     },
     "LootMark": {
       "Status": "Loot"
+    },
+    "Rewards": {
+      "Title": "Rewards",
+      "Tool": "Rewards (XP)",
+      "Menu": "Rewards…",
+      "Count": "Count in the rewards",
+      "Encounter": "Encounter",
+      "New": "New",
+      "NewHint": "A reward outside combat: a challenge, a negotiation, a milestone. Every character of the party is ticked.",
+      "None": "No encounter recorded. They show here at the end of a combat; « New » makes one by hand.",
+      "Off": "XP is switched off in dnd5e (level advancement without XP): nothing is given.",
+      "CombatName": "Combat — {scene}, round {round}",
+      "ManualName": "Reward outside combat",
+      "Status": {
+        "pending": "to give",
+        "open": "in progress",
+        "awarded": "given",
+        "dismissed": "dismissed"
+      },
+      "Foes": "Creatures overcome",
+      "FoesHint": "Also tick a creature that fled, surrendered or was captured: the DMG counts it as overcome.",
+      "NoFoes": "No creature.",
+      "Defeated": "defeated",
+      "NotDefeated": "not defeated",
+      "Given": "given",
+      "Bonus": "Bonus (noncombat challenge, milestone)",
+      "Reason": "Why (optional)",
+      "ChallengeHint": "DMG rule: a noncombat challenge or a milestone is worth the XP of an encounter of this difficulty for the ticked characters.",
+      "Challenge": {
+        "low": "Low",
+        "moderate": "Moderate",
+        "high": "High"
+      },
+      "Members": "Characters",
+      "NoMembers": "No character.",
+      "Level": "Lvl {level}",
+      "Absent": "absent",
+      "WeightHint": "This character's coefficient (1 = a normal share, 0 = nothing). Kept for the next encounters.",
+      "Allies": "NPC allies",
+      "AllyTag": "takes a share",
+      "AlliesHint": "DMG rule: an NPC who gave substantial help counts as a share but receives nothing (its share is lost). Untick it otherwise.",
+      "Split": "Division",
+      "SplitMode": {
+        "equal": "Equal shares (DMG)",
+        "level": "Same progression towards the next level",
+        "weight": "Coefficient per character"
+      },
+      "Total": "Total: {xp} XP",
+      "ToParty": "{xp} XP left over to the party's pool",
+      "Lost": "{xp} XP lost",
+      "Give": "Give the XP",
+      "Dismiss": "Dismiss",
+      "Nothing": "Nothing to give: no creature ticked and no bonus.",
+      "NoOne": "Nobody receives XP: tick at least one character.",
+      "Already": "The XP of this encounter was already given.",
+      "Kept": "Encounter recorded: « {name} ». Open Rewards to give the XP.",
+      "Card": "{name}: {xp} XP — {shares}.",
+      "CardShare": "{who} +{xp}",
+      "CardParty": "{xp} XP go to the party's pool.",
+      "CardLost": "{xp} XP lost.",
+      "CardLevelUp": "Can level up: {names}!",
+      "Float": "+{xp} XP",
+      "FloatLevelUp": "+{xp} XP — level up!",
+      "Op": "Reward « {name} »",
+      "PlanLine": "{who}: +{xp} XP",
+      "Step": "{xp} XP given to {who}",
+      "StepRecord": "encounter record updated",
+      "Settings": {
+        "When": {
+          "Name": "When XP is given",
+          "Hint": "Semi-automatic: at the end of a combat the Rewards window opens at the GM, who adjusts and confirms. Automatic: given at the end of the combat, no window. At each creature defeated: its XP is given at once (never twice). Manual: the encounter is recorded, the GM opens the window when they want. Nothing happens when dnd5e levels up without XP.",
+          "Semi": "Semi-automatic (end of combat, the GM confirms)",
+          "Auto": "Automatic (end of combat)",
+          "Kill": "At each creature defeated",
+          "Manual": "Manual"
+        },
+        "Split": {
+          "Name": "XP division",
+          "Hint": "Equal shares: the DMG rule. Same progression: everyone moves the same percentage towards their next level (house option). Coefficient: a number per character, set in the window (house option). Can be changed for each encounter."
+        },
+        "Remainder": {
+          "Name": "XP that does not divide",
+          "Hint": "What is left of a division (100 XP for 3: 1 XP) goes to the XP pool of dnd5e's primary party, or is lost as with /award. Without a primary party it is lost.",
+          "Party": "Party's pool",
+          "Lost": "Lost"
+        },
+        "Recipients": {
+          "Name": "Who receives XP after a combat",
+          "Hint": "Ticked by default in the window: the characters who fought (absent ones are listed, unticked), or the whole primary party.",
+          "Present": "Those who fought",
+          "Party": "The whole party"
+        }
+      }
     }
   },
   "TYPES": {

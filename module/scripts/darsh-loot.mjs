@@ -15,6 +15,7 @@ import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
 import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
 import { registerShareInit, requestShareCoins } from "./runtime/share.mjs";
 import { registerGiveInit, requestGive } from "./runtime/give.mjs";
+import { registerRewardsInit, registerRewards, rewardsApi } from "./runtime/rewards.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerMechanismsInit, actuate, resetMechanism } from "./runtime/mechanisms.mjs";
@@ -56,6 +57,7 @@ Hooks.once("init", () => {
   registerTake();
   registerShareInit();
   registerGiveInit();
+  registerRewardsInit();
   registerTreasure();
   registerContainersInit();
   registerZonesInit();
@@ -94,6 +96,7 @@ Hooks.once("ready", () => {
   registerTrade();
   registerTheftMenu(visitSource);
   registerShop({ open: openSource, visit: visitSource });
+  registerRewards();
   game.modules.get(MODULE_ID).api = {
     /* ---- marchands (SPEC §3.7) ---- */
     /**
@@ -222,6 +225,11 @@ Hooks.once("ready", () => {
       const actor = actorOrToken?.actor ?? actorOrToken;
       return uuid ? actor.setFlag(MODULE_ID, "table", uuid) : actor.unsetFlag(MODULE_ID, "table");
     },
+    /**
+     * Lot 2 — XP rewards: `open(id?)` (GM: the « Rewards » window), `records()`, `record(id)`, `preview(id)`, `award(id, { force })`,
+     * `recordCombat(combat)`, `update(id, changes)`, `create()`, `remove(id)`, `count(token)`, `enabled()`.
+     */
+    rewards: rewardsApi,
     routes: listRoutes,
     /** Fonctions de test pour le connecteur MCP (`call-module-api`, monde de test seulement). */
     mcp: testApi

@@ -12,6 +12,7 @@ import { discoveryKey } from "../module/scripts/core/hidden.mjs";
 import { difficultyOf } from "../module/scripts/core/theft.mjs";
 import { TABS } from "../module/scripts/core/settings-tabs.mjs";
 import { ACTIVATIONS, MECHANISM_MODES, ACTION_TYPES, ACTION_MODES } from "../module/scripts/core/mechanisms.mjs";
+import { DIFFICULTIES, XP_SPLIT } from "../module/scripts/core/xp.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 const lang = l => JSON.parse(readFileSync(join(ROOT, "module", "lang", `${l}.json`), "utf8"));
@@ -69,6 +70,10 @@ const DYNAMIC = {
   // 2026-10-30 : la fenêtre de réglages (runtime/settings-window.mjs) : un libellé par onglet, trois textes par outil.
   "DLO.SettingsWindow.Tab": TABS.map(t => t.id),
   "DLO.SettingsWindow.Tool": TABS.flatMap(t => t.tools ?? []).flatMap(t => ["Name", "Hint", "Button"].map(k => `${t.id}.${k}`)),
+  // Lot 2 (2026-11-27): the « Rewards » window — a record's status, the challenge difficulties, the division modes.
+  "DLO.Rewards.Status": ["pending", "open", "awarded", "dismissed"],
+  "DLO.Rewards.Challenge": [...DIFFICULTIES],
+  "DLO.Rewards.SplitMode": [...XP_SPLIT],
   "TYPES.RegionBehavior": Object.keys(manifest.documentTypes?.RegionBehavior ?? {}).map(t => `${manifest.id}.${t}`)
 };
 // Préfixes d'aide locale (`const L = key => … \`DLO.TileZone.${key}\``) : leurs appels L("X") sont des clés littérales.

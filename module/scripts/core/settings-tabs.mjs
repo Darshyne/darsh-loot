@@ -10,5 +10,6 @@ export const TABS = Object.freeze([
     "shareWith", "shareRemainder", "giveMode"] },
   { id: "containers", icon: "fa-solid fa-box-open", keys: ["objectSize", "pileFrame", "dropMode", "deleteStores", "thrownWeapons"],
     tools: [{ id: "tables", icon: "fa-solid fa-table-list" }] },
-  { id: "traps", icon: "fa-solid fa-burst", keys: ["advancedTraps", "trapPause", "disarmDuration", "trapImmunities"] }
+  { id: "traps", icon: "fa-solid fa-burst", keys: ["advancedTraps", "trapPause", "disarmDuration", "trapImmunities"] },
+  { id: "rewards", icon: "fa-solid fa-trophy", keys: ["xpWhen", "xpSplit", "xpRemainder", "xpRecipients"] }
 ]);

@@ -5,7 +5,7 @@ import { setting } from "../shared.mjs";
 import { pickMembers, coinsText } from "../core/share.mjs";
 
 /** The player characters of dnd5e's primary party (setting `dnd5e.primaryParty`, a Group actor), or none. */
-function primaryPartyCharacters() {
+export function primaryPartyCharacters() {
   try { return [...(game.actors.party?.system?.playerCharacters ?? [])].filter(Boolean); }
   catch { return []; }
 }

@@ -432,3 +432,38 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-coin-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dlo-coin-field input { width: 6em; text-align: right; }
 .dlo-coin-field em { opacity: 0.7; font-style: normal; }
+
+/* Lot 2 (2026-11-27) — the « Rewards » window: sections like the shop's columns, one line per creature / character. */
+.dlo-rewards .dlo-rw-top { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.dlo-rewards .dlo-rw-top select { flex: 1; min-width: 0; }
+.dlo-rewards .dlo-rw-section {
+  margin: 0 0 8px; padding: 0 0 6px;
+  background: var(--dlo-card); border: 1px solid var(--dlo-edge); border-radius: 4px; box-shadow: 0 0 4px var(--dlo-shadow);
+}
+.dlo-rewards .dlo-rw-section h3 {
+  margin: 0 0 4px; padding: 3px 8px; font-size: 0.9rem; color: var(--dlo-on-text); border: none; border-radius: 3px 3px 0 0;
+  background: linear-gradient(to right, var(--dlo-head-1), var(--dlo-head-2));
+}
+.dlo-rewards .dlo-rw-section h3 i { color: var(--dlo-on-text); }
+.dlo-rewards .dlo-rw-section h4 { margin: 6px 8px 2px; font-size: 0.85rem; color: var(--dlo-title); border: none; }
+.dlo-rewards .dlo-rw-section > p, .dlo-rewards .dlo-rw-section > input[type="text"], .dlo-rewards .dlo-rw-section > label { margin-left: 8px; margin-right: 8px; }
+.dlo-rewards .dlo-rw-section > input[type="text"] { width: calc(100% - 16px); }
+.dlo-rewards .dlo-rw-list { list-style: none; margin: 0; padding: 0 4px; }
+.dlo-rewards .dlo-rw-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 3px; }
+.dlo-rewards .dlo-rw-row:nth-child(odd) { background: var(--dlo-row); }
+.dlo-rewards .dlo-rw-row img { width: 28px; height: 28px; object-fit: cover; border: 1px solid var(--dlo-edge); border-radius: 3px; flex: none; }
+.dlo-rewards .dlo-rw-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dlo-text); }
+.dlo-rewards a.dlo-rw-name { cursor: pointer; }
+.dlo-rewards a.dlo-rw-name:hover { color: var(--dlo-gold); text-shadow: none; }
+.dlo-rewards .dlo-rw-tag { color: var(--dlo-muted); font-size: 0.8rem; white-space: nowrap; }
+.dlo-rewards .dlo-rw-xp { min-width: 5.5em; text-align: right; font-weight: bold; color: var(--dlo-title); white-space: nowrap; }
+.dlo-rewards .dlo-rw-done { opacity: 0.6; }
+.dlo-rewards .dlo-rw-done .dlo-rw-tag { color: var(--dlo-ok); }
+.dlo-rewards .dlo-rw-weight { width: 4.5em; text-align: right; }
+.dlo-rewards .dlo-rw-bonus { display: flex; gap: 4px; align-items: center; margin: 2px 8px 4px; }
+.dlo-rewards .dlo-rw-bonus input { width: 6em; text-align: right; }
+.dlo-rewards .dlo-rw-sum { padding-top: 6px; }
+.dlo-rewards .dlo-rw-sum label { display: flex; gap: 6px; align-items: center; }
+.dlo-rewards .dlo-rw-sum select { flex: 1; }
+.dlo-rewards .dlo-rw-total { margin: 6px 8px 0; color: var(--dlo-text); }
+.dlo-rewards input, .dlo-rewards select { color: var(--dlo-text); background: var(--dlo-field); border: 1px solid var(--dlo-edge); }

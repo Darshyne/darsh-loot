@@ -228,6 +228,17 @@ export function thrownAttack(resolution) {
  * La passe de test (runtime/selftest.mjs, 2026-10-28) lit le moteur comme un joueur le verrait : ses fonctions de test (`api.mcp` :
  * menus, chemin) et sa vision (`api.vision.canHear`). Null sans moteur.
  */
+/**
+ * Lot 2: how two tokens stand towards each other for the engine (`api.factions.relation`): "hostile", "neutral" or "allied"
+ * (its faction matrix, else the dispositions). Null without the engine, or when it fails: the caller reads the dispositions.
+ */
+export function engineRelation(a, b) {
+  const fn = engineApi()?.factions?.relation;
+  if ( (typeof fn !== "function") || !a || !b ) return null;
+  try { return fn(a, b) ?? null; }
+  catch { return null; }
+}
+
 export function engineTestApi() {
   const api = game.modules.get(ENGINE_ID)?.api;
   return api ? { mcp: api.mcp ?? null, canHear: api.vision?.canHear ?? null } : null;
