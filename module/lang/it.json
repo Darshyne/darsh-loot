@@ -11,7 +11,11 @@
       "Container": "Contenitore",
       "SearchCorpse": "Perquisisci il corpo",
       "SearchContainer": "Perquisisci",
-      "OpenStore": "Scheda del contenuto"
+      "OpenStore": "Scheda del contenuto",
+      "QuantityTitle": "Prendi: {name}",
+      "Quantity": "Quanti?",
+      "TakeSome": "Prendi",
+      "StackHint": "{name} — clic per scegliere quanti, Maiusc+clic per prenderli tutti"
     },
     "Hud": {
       "Search": "Perquisisci il cadavere"
@@ -21,11 +25,14 @@
       "PasCadavre": "Questa creatura non è un cadavere.",
       "PasAToi": "Questo personaggio non ti appartiene.",
       "MJSeul": "Solo il GM può perquisire i cadaveri.",
-      "Loin": "Troppo lontano: avvicinati per perquisire."
+      "Loin": "Troppo lontano: avvicinati per perquisire.",
+      "Mur": "C'è un muro in mezzo."
     },
     "Notice": {
       "NoGM": "Nessun GM connesso: la perquisizione richiede un GM attivo.",
-      "Refused": "Impossibile: {reason}"
+      "Refused": "Impossibile: {reason}",
+      "StillWaiting": "Il gioco del GM non ha ancora risposto: attesa in corso…",
+      "NoAnswer": "Nessuna risposta dal gioco del GM. L'azione potrebbe essere stata comunque eseguita: controlla prima di riprovare."
     },
     "Chat": {
       "Took": "{looter} prende da {corpse}: {what}.",
@@ -53,8 +60,8 @@
         "None": "Nessun messaggio"
       },
       "AutoTreasure": {
-        "Name": "Tirare il tesoro dei cadaveri",
-        "Hint": "Alla prima perquisizione di un cadavere, tira il suo tesoro individuale in base al GS (DMG 2024): monete, oppure gemme (Arcano) e oggetti d'arte (Reliquie) se il modulo della Guida del Dungeon Master è attivo. Una creatura senza preferenza di tesoro non ha nulla."
+        "Name": "Tesoro delle creature (DMG)",
+        "Hint": "Tira il tesoro individuale di una creatura in base al suo GS (DMG 2024): monete, oppure gemme (Arcano) e oggetti d'arte (Reliquie) se il modulo della Guida del Dungeon Master è attivo. Una creatura senza preferenza di tesoro non ha nulla. Tirato quando il GM distribuisce il bottino di fine combattimento, altrimenti alla prima perquisizione del cadavere."
       },
       "Pockets": {
         "Name": "Tasche degli umanoidi",
@@ -131,6 +138,21 @@
       "NpcTheftNotice": {
         "Name": "Il giocatore si accorge di un furto riuscito",
         "Hint": "Quando un PNG riesce a derubare un personaggio, il suo giocatore riceve un messaggio privato. Altrimenti viene avvisato solo il GM."
+      },
+      "PileFrame": {
+        "Name": "Aspetto dei mucchi a terra",
+        "Hint": "Come viene disegnata l'icona di un oggetto posato a terra. Solo visualizzazione: il mucchio mantiene la sua immagine, quindi cambiare questa impostazione cambia tutti i mucchi in una volta.",
+        "Gold": "Angoli arrotondati e un sottile bordo dorato",
+        "Rounded": "Angoli arrotondati",
+        "Off": "Icona quadrata semplice"
+      },
+      "LootMark": {
+        "Name": "Stato «Bottino» sui cadaveri",
+        "Hint": "Una creatura morta che ha ancora qualcosa da prendere (oggetti, monete o tesoro non ancora tirato) porta un borsellino dorato tra le icone di stato; sparisce quando il cadavere è vuoto. Visibile a tutti, come ogni stato."
+      },
+      "CorpseLoot": {
+        "Name": "Perquisizione dei cadaveri",
+        "Hint": "Disattivato: i cadaveri non si possono perquisire affatto — niente voce «Perquisisci», cursore, tiro del tesoro o stato «Bottino», e niente bottino di fine combattimento. Forzieri, mucchi a terra, borseggio e negromanzia restano invariati."
       }
     },
     "SettingsWindow": {
@@ -142,15 +164,24 @@
       },
       "Tab": {
         "search": "Perquisizione",
-        "loot": "Bottino e furti",
+        "loot": "Perquisizione dei cadaveri",
         "containers": "Contenitori",
-        "traps": "Trappole"
+        "traps": "Trappole",
+        "rewards": "PE",
+        "endLoot": "Bottino di fine combattimento",
+        "share": "Spartizione e doni",
+        "theft": "Borseggio"
       },
       "Tool": {
         "tables": {
           "Name": "Tabelle generiche dei contenitori",
           "Hint": "Sette tabelle del bottino (forziere, barile, cassa, libreria, scrivania, altare, sacca da accampamento) in «Bottino — tabelle». Oggetti del Manuale del Giocatore, oppure gli stessi dell'SRD di dnd5e in sua assenza.",
           "Button": "Crea le tabelle"
+        },
+        "lootRules": {
+          "Name": "Tabelle del bottino per GS, tipo e taglia",
+          "Hint": "Tabelle tirate su una creatura in base al suo GS, tipo e taglia, in aggiunta al tesoro del DMG o al suo posto.",
+          "Button": "Imposta le tabelle"
         }
       }
     },
@@ -171,7 +202,9 @@
       "Folder": "Bottino — contenitori",
       "ActorName": "Contenitore: {name}",
       "ConvertMenu": "Converti in contenitore",
-      "Converted": "{name} è ora un contenitore (tile e regione)."
+      "Converted": "{name} è ora un contenitore (tile e regione).",
+      "StoreMissing": "Il contenitore «{name}» ({scene}) aveva perso l'attore che custodisce il suo contenuto (eliminato, o non importato con la scena). Ne è stato creato uno nuovo, vuoto. Per riempirlo, apri il contenitore e trascinaci degli oggetti, oppure togli la spunta a «Già tirato» nelle sue impostazioni per tirare di nuovo la sua tabella.",
+      "StoreShared": "Il contenitore «{name}» ({scene}) condivideva il suo contenuto con un altro contenitore (scena duplicata). Ora ha il proprio, con una copia di ciò che conteneva l'altro."
     },
     "ContainerBehavior": {
       "Hoard": {
@@ -298,7 +331,8 @@
       "AlreadyTriedNpc": "Questo PNG ci ha già provato con questo oggetto.",
       "NpcCaughtCard": "{victim} sorprende {thief} con una mano nelle sue tasche!",
       "FloatNoticed": "Ehi!",
-      "NoticeVictim": "Senti che una mano ha frugato nelle tue tasche: {what}."
+      "NoticeVictim": "Senti che una mano ha frugato nelle tue tasche: {what}.",
+      "Gone": "Qualcun altro è arrivato prima: non è più in queste tasche."
     },
     "Necro": {
       "Hud": "Rianima il morto",
@@ -313,7 +347,8 @@
       "Chat": "{caster} rianima {corpse}: {undead} si rialza.",
       "Someone": "Qualcuno",
       "NotRaisable": "Si può rianimare solo il cadavere di un umanoide di taglia Piccola o Media.",
-      "NeedMM": "Né il Manuale dei Mostri né il compendio delle creature dell'SRD di dnd5e contengono questo non morto."
+      "NeedMM": "Né il Manuale dei Mostri né il compendio delle creature dell'SRD di dnd5e contengono questo non morto.",
+      "Busy": "Questo cadavere è già in corso di rianimazione."
     },
     "Drop": {
       "QuantityTitle": "Posa: {name}",
@@ -321,7 +356,11 @@
       "Confirm": "Posa",
       "PileName": "Oggetti a terra",
       "NotOnScene": "Il tuo personaggio non è in questa scena.",
-      "NotGear": "{item}: è un attacco di una creatura, non un oggetto — non viene posato nulla"
+      "NotGear": "{item}: è un attacco di una creatura, non un oggetto — non viene posato nulla",
+      "CoinsTitle": "Posa delle monete",
+      "NoCoins": "Nessuna moneta da posare.",
+      "Off": "Posare a terra è disattivato.",
+      "CoinsCard": "{who} posa delle monete a terra: {coins}."
     },
     "Trade": {
       "Title": "Scambio: {a} ⇄ {b}",
@@ -343,7 +382,12 @@
       "Chat": "Scambio tra {a} e {b} — {a} dà: {gaveA}; {b} dà: {gaveB}.",
       "Menu": "Scambia",
       "Impossible": "Si può scambiare solo con il personaggio di un altro giocatore.",
-      "WindowFailed": "Impossibile aprire la finestra di scambio: {reason}"
+      "WindowFailed": "Impossibile aprire la finestra di scambio: {reason}",
+      "GMLeft": "Scambio annullato: il gioco del GM è stato ricaricato o è passato di mano. Non è stato scambiato nulla — ricomincia lo scambio.",
+      "Expired": "Scambio annullato: nessuno lo ha toccato per mezz'ora.",
+      "TooMany": "Hai già diverse proposte di scambio aperte: concludine o annullane una prima.",
+      "Changed": "L'offerta è appena cambiata: riguardala prima di accettare.",
+      "NotTradable": "Non scambiabile (non è un oggetto fisico, oppure è equipaggiato — toglilo prima): {names}"
     },
     "Shop": {
       "Title": "Bottega: {name}",
@@ -388,7 +432,98 @@
       "ChatPaid": "Paga {price}.",
       "ChatEarned": "Riceve {price}.",
       "Show": "Mostra ai giocatori",
-      "Shown": "{name}: bottega mostrata a {count} giocatore/i."
+      "Shown": "{name}: bottega mostrata a {count} giocatore/i.",
+      "Stuck": "{name} non può essere venduto: non è contrassegnato come equipaggiamento sulla scheda del mercante. Non è stato addebitato nulla.",
+      "StuckNote": "Non vendibile: non contrassegnato come equipaggiamento (proprietà «Gear» dell'oggetto).",
+      "NotShown": "Questa bottega non è aperta per te in questo momento: va' dal mercante, oppure chiedi al GM di mostrare la bottega.",
+      "FloatPaid": "−{price}",
+      "FloatEarned": "+{price}",
+      "RestockTitle": "Rifornimento: {name}",
+      "RestockAsk": "Quale rifornimento?",
+      "RestockMode": {
+        "full": "Scorte intere",
+        "add": "Aggiungi",
+        "tables": "Solo estrazioni"
+      },
+      "RestockHelp": {
+        "full": "ciò che era stato estratto o acquistato viene rimosso, le scorte fisse e la cassa tornano al loro riferimento, poi si tira sulle tabelle.",
+        "add": "non viene rimosso nulla: si tira sulle tabelle e il risultato si aggiunge al banco.",
+        "tables": "solo gli oggetti estratti dalle tabelle vengono rimossi ed estratti di nuovo; scorte fisse, oggetti acquistati e cassa restano."
+      },
+      "RestockNoTables": "Questo mercante non ha una tabella di rifornimento: trascinane una sulla bottega o nelle sue impostazioni.",
+      "NewMerchant": "Nuovo mercante",
+      "NewMerchantMenu": "Crea un mercante qui",
+      "RemoveTitle": "Rimuovi dal banco",
+      "RemoveAsk": "Rimuovere {name} dal banco? L'oggetto viene eliminato dalla scheda del mercante.",
+      "LinkCopied": "Link copiato: {text}. Incollalo in un diario.",
+      "StealNeedsTokens": "Per rubare dal banco, il mercante e il tuo personaggio devono essere nella scena.",
+      "NotMerchant": "{name} non gestisce una bottega.",
+      "ToggleShop": "Apri / chiudi la bottega",
+      "OpenShop": "Apri la bottega ai clienti",
+      "CloseShop": "Chiudi la bottega",
+      "NowOpen": "{name}: bottega aperta.",
+      "NowClosed": "{name}: bottega chiusa.",
+      "StatusOpen": "Aperta",
+      "StatusClosed": "Chiusa",
+      "LockedNote": "Bloccato: i rifornimenti non lo toccano.",
+      "LockHint": "Blocca: i rifornimenti non lo toccheranno.",
+      "FixedPriceNote": "Prezzo fissato dal GM.",
+      "Quantity": "Quantità",
+      "PriceHint": "Prezzo richiesto, in mo (vuoto: prezzo automatico, {price}).",
+      "GoldAbbr": "mo",
+      "RemoveItem": "Rimuovi dal banco",
+      "Search": "Cerca…",
+      "ViewGrid": "Icone",
+      "ViewList": "Elenco per categoria",
+      "DropHere": "Trascina qui degli oggetti (o una cartella di oggetti) per metterli in vendita, oppure una tabella per i rifornimenti.",
+      "LogEmpty": "Ancora nessuna vendita e nessun furto.",
+      "LogTheft": "Rubato: {item}",
+      "LogCaught": "Furto fallito: {item}",
+      "LogWhen": "Quando",
+      "LogWho": "Chi",
+      "LogWhat": "Cosa",
+      "LogTill": "Cassa",
+      "LogClear": "Svuota il registro",
+      "LogCoins": "monete",
+      "TabStall": "Banco",
+      "TabTrade": "Commercio: {name}",
+      "TabLog": "Registro",
+      "Link": "Copia il link per un diario",
+      "BadPrice": "Questo non è un prezzo: scrivi un numero di monete d'oro (12.5 per esempio), oppure niente per il prezzo automatico.",
+      "SetPriceTitle": "Prezzo: {name}",
+      "SetPriceAsk": "Prezzo richiesto in monete d'oro (attuale: {price}). Vuoto: prezzo automatico.",
+      "SetQuantityTitle": "Quantità: {name}",
+      "TableAdded": "Tabella aggiunta ai rifornimenti.",
+      "Added": "In vendita: {names}.",
+      "Saved": "{name}: impostazioni salvate.",
+      "Details": "Dettagli",
+      "AddOne": "Aggiungi al carrello",
+      "AddAll": "Aggiungi tutto al carrello",
+      "Steal": "Ruba",
+      "ItemSheet": "Scheda dell'oggetto",
+      "SetPrice": "Cambia il prezzo…",
+      "AutoPrice": "Torna al prezzo automatico",
+      "SetQuantity": "Cambia la quantità…",
+      "ForSale": "In vendita",
+      "HideItem": "Nascondi ai giocatori",
+      "Lock": "Blocca (rifornimenti)",
+      "Unlock": "Sblocca (rifornimenti)",
+      "MakeSellable": "Rendilo vendibile (proprietà «Gear»)",
+      "NoDescription": "Nessuna descrizione.",
+      "Price": "Prezzo",
+      "Weight": "Peso",
+      "Close": "Chiudi",
+      "StuckCount": "{count} oggetto/i non vendibile/i: non contrassegnato/i «Gear» sulla scheda (spesso creato/i con l'attore). I giocatori non li vedono.",
+      "MakeAllSellable": "Rendi tutto vendibile",
+      "MarkNotForSale": "Esponi, non in vendita",
+      "Unmake": "Annulla la bottega",
+      "UnmakeTitle": "Annulla la bottega: {name}",
+      "UnmakeAsk": "{name} torna a essere un semplice PNG: le sue impostazioni di mercante, il suo registro delle vendite e le impostazioni del banco (prezzi, blocchi, oggetti nascosti) vengono cancellati. I suoi oggetti e le sue monete restano sulla scheda. Continuare?",
+      "Unmade": "{name} non gestisce più una bottega.",
+      "ShutTitle": "Questa bottega è chiusa.",
+      "ShutText": "Torna più tardi.",
+      "LessOne": "Uno in meno",
+      "MoreOne": "Uno in più"
     },
     "Merchant": {
       "Title": "Mercante: {name}",
@@ -441,7 +576,10 @@
       "ItemPiles": "Questo attore è un mercante di Item Piles.",
       "Convert": "Importa le sue impostazioni",
       "Converted": "{name}: impostazioni di Item Piles importate.",
-      "Menu": "Impostazioni del mercante"
+      "Menu": "Impostazioni del mercante",
+      "Name": "Nome",
+      "Remote": "Apribile da ovunque",
+      "RemoteHint": "I giocatori commerciano senza stare vicino al mercante: link nel diario, pulsante sulla scheda. Altrimenti il GM deve prima mostrare la bottega."
     },
     "Zone": {
       "FIELDS": {
@@ -1136,6 +1274,302 @@
       "Reset": "Reimposta: {name}",
       "Configure": "Impostazioni: {name}",
       "ResetDone": "{name} è tornato nella sua posizione iniziale."
+    },
+    "Op": {
+      "Failed": "Loot & Trade — operazione non riuscita: {label}",
+      "Error": "Errore: {error}",
+      "Written": "Ciò che era già stato scritto:",
+      "AllUndone": "Tutto è stato rimesso com'era. Niente da correggere.",
+      "NotUndone": "Non è stato possibile ripristinare — da correggere a mano:",
+      "FailedUndone": "Non è riuscito; tutto è stato rimesso com'era (il GM ha i dettagli).",
+      "FailedPartly": "Non è riuscito, e una parte non è stata ripristinata: il GM ha i dettagli.",
+      "Interrupted": "Loot & Trade — interrotto da un ricaricamento: {label}",
+      "Planned": "Ciò che stava per scrivere:",
+      "Check": "Una parte potrebbe essere stata fatta e il resto no: controlla le schede coinvolte.",
+      "Take": "{to} prende da {from}",
+      "Move": "{from} → {to}",
+      "Trade": "scambio tra {a} e {b}",
+      "Gives": "{who} dà: {what}",
+      "Raise": "rianimazione di {corpse}",
+      "RaisePlan": "{corpse} ({scene}) viene sostituito da un non morto; i suoi averi cadono a terra.",
+      "BelongingsStay": "restano nel mucchio a terra",
+      "Step": {
+        "Received": "{who} ha ricevuto: {what}",
+        "Removed": "tolto a {who}: {what}",
+        "CoinsIn": "monete aggiunte a {who}",
+        "CoinsOut": "monete tolte a {who}",
+        "Purse": "borsellino di {who} riscritto",
+        "Created": "attore creato: {what}",
+        "Placed": "token piazzato: {what}",
+        "Belongings": "averi di {who} lasciati cadere a terra"
+      }
+    },
+    "Share": {
+      "Button": "Spartisci",
+      "Tooltip": "Spartisci le monete tra {count} personaggi: {names}",
+      "Alone": "Nessuno con cui spartire: qui il gruppo ha meno di due personaggi.",
+      "TooFew": "Non ci sono abbastanza monete per darne una a ciascuno dei {count} personaggi: prendile invece.",
+      "Card": "Monete spartite tra {names}: {each} a testa.",
+      "CardBonus": "{who} tiene il resto: {rest}.",
+      "CardLeft": "Lasciato lì: {rest}.",
+      "Plan": "{names} ricevono {each} a testa",
+      "Op": "monete di {from} spartite con il gruppo",
+      "ForcedWhat": "{who} ha spartito delle monete",
+      "Settings": {
+        "ShareWith": {
+          "Name": "Spartizione: chi riceve una parte",
+          "Hint": "I personaggi giocanti del gruppo principale di dnd5e. Senza gruppo principale: i personaggi dei giocatori con un token nella scena.",
+          "Party": "Tutto il gruppo, compresi i personaggi assenti",
+          "Scene": "Solo i personaggi con un token nella scena"
+        },
+        "ShareRemainder": {
+          "Name": "Spartizione: monete che non si dividono",
+          "Hint": "Le monete si dividono moneta per moneta, senza conversione: 10 mo tra 3 personaggi fanno 3 mo a testa e 1 mo avanzata.",
+          "Source": "Restano dove sono state trovate",
+          "Sharer": "Vanno al personaggio che spartisce"
+        }
+      }
+    },
+    "Force": {
+      "Title": "Impossibile",
+      "Question": "Farlo comunque? Il GM verrà avvisato.",
+      "Anyway": "Fallo comunque",
+      "GiveUp": "Rinuncia",
+      "Told": "{user} ha forzato una regola — {what}. Motivo ignorato: {reason}"
+    },
+    "Give": {
+      "QuantityTitle": "Dai {name} a {to}",
+      "Quantity": "Quanti?",
+      "CoinsTitle": "Dai monete a {to}",
+      "Confirm": "Dai",
+      "Nothing": "Niente da dare.",
+      "NoCoins": "Nessuna moneta da dare.",
+      "Off": "Il dono è disattivato.",
+      "NotTo": "{name} non può ricevere un dono.",
+      "Far": "Troppo lontano: avvicinati al personaggio per dare.",
+      "NobodyThere": "Nessuno può rispondere per {name}.",
+      "Declined": "{name} non ha accettato.",
+      "OfferTitle": "Un dono",
+      "Offer": "{giver} vuole dare a {receiver}: {what}.",
+      "Accept": "Accetta",
+      "Refuse": "Rifiuta",
+      "Card": "{giver} dà a {receiver}: {what}.",
+      "Op": "{from} dà a {to}",
+      "ForcedWhat": "{who} ha dato qualcosa a {to}",
+      "Settings": {
+        "Mode": {
+          "Name": "Dare un oggetto o delle monete",
+          "Hint": "Trascina un oggetto, o delle monete dalla scheda, sul token di un altro personaggio. I due personaggi devono essere a portata l'uno dell'altro.",
+          "Direct": "Consegnato subito",
+          "Ask": "Chi riceve deve accettare (il GM risponde per un giocatore assente)",
+          "Off": "Disattivato"
+        }
+      }
+    },
+    "LootMark": {
+      "Status": "Bottino"
+    },
+    "Rewards": {
+      "Title": "PE",
+      "Tool": "PE",
+      "Menu": "PE…",
+      "Count": "Conta per i PE",
+      "Encounter": "Incontro",
+      "New": "Nuovo",
+      "NewHint": "PE fuori dal combattimento: una sfida, una negoziazione, una tappa. Tutti i personaggi del gruppo sono spuntati.",
+      "None": "Nessun incontro registrato. Compaiono qui alla fine di un combattimento; «Nuovo» ne crea uno a mano.",
+      "Off": {
+        "das": "La gestione dei PE è disattivata in DAS (impostazioni di DAS, scheda PE).",
+        "dnd5e": "I PE sono disattivati in dnd5e (avanzamento di livello senza PE): non viene dato nulla."
+      },
+      "CombatName": "Combattimento — {scene}, round {round}",
+      "ManualName": "PE fuori dal combattimento",
+      "Status": {
+        "pending": "da dare",
+        "open": "in corso",
+        "awarded": "dati",
+        "dismissed": "scartato"
+      },
+      "Foes": "Creature superate",
+      "FoesHint": "Spunta anche una creatura fuggita, arresa o catturata: il DMG la considera superata.",
+      "NoFoes": "Nessuna creatura.",
+      "Defeated": "sconfitta",
+      "NotDefeated": "non sconfitta",
+      "Given": "dati",
+      "Bonus": "Bonus (sfida non di combattimento, tappa)",
+      "Reason": "Motivo (facoltativo)",
+      "ChallengeHint": "Regola del DMG: una sfida non di combattimento o una tappa vale i PE di un incontro di questa difficoltà per i personaggi spuntati.",
+      "Challenge": {
+        "low": "Bassa",
+        "moderate": "Moderata",
+        "high": "Alta"
+      },
+      "Members": "Personaggi",
+      "NoMembers": "Nessun personaggio.",
+      "Level": "Liv. {level}",
+      "Absent": "assente",
+      "WeightHint": "Il coefficiente di questo personaggio (1 = una parte normale, 0 = niente). Mantenuto per gli incontri successivi.",
+      "Allies": "PNG alleati",
+      "AllyTag": "conta come una parte",
+      "AlliesHint": "Regola del DMG: un PNG che ha dato un aiuto sostanziale conta come una parte ma non riceve nulla (la sua parte va persa). Altrimenti togli la spunta.",
+      "Split": "Divisione",
+      "SplitMode": {
+        "equal": "Parti uguali (DMG)",
+        "level": "Stessa progressione verso il livello successivo",
+        "weight": "Coefficiente per personaggio"
+      },
+      "Total": "Totale: {xp} PE",
+      "ToParty": "{xp} PE avanzati vanno alla riserva del gruppo",
+      "Lost": "{xp} PE persi",
+      "Give": "Dai i PE",
+      "Dismiss": "Scarta",
+      "Nothing": "Niente da dare: nessuna creatura spuntata e nessun bonus.",
+      "NoOne": "Nessuno riceve PE: spunta almeno un personaggio.",
+      "Already": "I PE di questo incontro sono già stati dati.",
+      "Kept": "Incontro registrato: «{name}». Apri la finestra dei PE per darli.",
+      "Card": "{name}: {xp} PE — {shares}.",
+      "CardShare": "{who} +{xp}",
+      "CardParty": "{xp} PE vanno alla riserva del gruppo.",
+      "CardLost": "{xp} PE persi.",
+      "CardLevelUp": "Può salire di livello: {names}!",
+      "Float": "+{xp} PE",
+      "FloatLevelUp": "+{xp} PE — sale di livello!",
+      "Op": "PE «{name}»",
+      "PlanLine": "{who}: +{xp} PE",
+      "Step": "{xp} PE dati a {who}",
+      "StepRecord": "registro dell'incontro aggiornato",
+      "Settings": {
+        "When": {
+          "Name": "Quando vengono dati i PE",
+          "Hint": "Semiautomatico: alla fine di un combattimento la finestra dei PE si apre al GM, che regola e conferma. Automatico: dati alla fine del combattimento, senza finestra. A ogni creatura sconfitta: i suoi PE vengono dati subito (mai due volte). Manuale: l'incontro viene registrato, il GM apre la finestra quando vuole.",
+          "Semi": "Semiautomatico (fine del combattimento, il GM conferma)",
+          "Auto": "Automatico (fine del combattimento)",
+          "Kill": "A ogni creatura sconfitta",
+          "Manual": "Manuale"
+        },
+        "Split": {
+          "Name": "Divisione dei PE",
+          "Hint": "Parti uguali: la regola del DMG. Stessa progressione: ognuno avanza della stessa percentuale verso il proprio livello successivo (opzione della casa). Coefficiente: un numero per personaggio, impostato nella finestra (opzione della casa). Si può cambiare per ogni incontro."
+        },
+        "Remainder": {
+          "Name": "PE che non si dividono",
+          "Hint": "Il resto di una divisione (100 PE per 3: 1 PE) va alla riserva di PE del gruppo principale di dnd5e, oppure va perso come con /award. Senza gruppo principale va perso.",
+          "Party": "Riserva del gruppo",
+          "Lost": "Persi"
+        },
+        "Recipients": {
+          "Name": "Chi riceve i PE dopo un combattimento",
+          "Hint": "Spuntati per impostazione predefinita nella finestra: i personaggi che hanno combattuto (quelli assenti sono elencati, non spuntati), oppure tutto il gruppo principale.",
+          "Present": "Chi ha combattuto",
+          "Party": "Tutto il gruppo"
+        },
+        "Manage": {
+          "Name": "Gestisci i PE con DAS",
+          "Hint": "Disattivato per impostazione predefinita: DAS non tocca i PE (nessun registro degli incontri, nessuna finestra, nessun pulsante). Attivato: la finestra dei PE, le sue scorciatoie e le impostazioni qui sotto. Non succede nulla nemmeno quando dnd5e fa salire di livello senza PE."
+        },
+        "Toolbar": {
+          "Name": "Pulsante PE nella barra degli strumenti",
+          "Hint": "Il pulsante a forma di trofeo nella barra degli strumenti dei token (GM). Le altre scorciatoie restano: scheda del Gruppo, clic destro su un personaggio, macro."
+        }
+      },
+      "GMOnly": "Solo il GM può dare PE."
+    },
+    "EndLoot": {
+      "Title": {
+        "both": "Bottino e PE",
+        "loot": "Bottino"
+      },
+      "Count": "Conta nel bottino dell'incontro",
+      "Menu": "Bottino dell'incontro…",
+      "ChestName": "Bottino dell'incontro",
+      "Already": "Il bottino di questo incontro è già stato distribuito.",
+      "NoCorpse": "{name}: nessun cadavere da perquisire (sparito o rianimato).",
+      "CardGrouped": "{name}: il bottino di {count} creatura/e è raccolto in un forziere.",
+      "CardEmpty": "{name}: le creature non avevano nulla con sé.",
+      "CardIndividual": "{name}: {count} cadavere/i pronto/i da perquisire.",
+      "Float": "Bottino!",
+      "FloatGrouped": "Bottino raccolto!",
+      "Held": "Il GM sta preparando il bottino di questo scontro: aspetta che venga distribuito.",
+      "ForcedWhat": "perquisire {name} prima della distribuzione del bottino (tolto dal bottino dell'incontro)",
+      "ChestGone": "Il forziere dell'incontro è stato svuotato.",
+      "OpenChest": "Apri il forziere",
+      "Section": "Bottino",
+      "Dismissed": "Bottino messo da parte: i cadaveri si perquisiscono come al solito (tesoro tirato alla prima perquisizione).",
+      "Done": {
+        "individual": "Distribuito da {by}: {count} cadavere/i, il bottino resta su ciascuno.",
+        "grouped": "Distribuito da {by}: il bottino di {count} cadavere/i è nel forziere dell'incontro."
+      },
+      "Released": "perquisito forzatamente da {user}",
+      "Gone": "sparito",
+      "Rolled": "tesoro già tirato",
+      "ToRoll": "da tirare",
+      "Mode": {
+        "individual": "Lasciato su ogni cadavere",
+        "grouped": "Raccolto in un unico forziere comune per il gruppo"
+      },
+      "ModeHint": {
+        "individual": "Il tesoro di ogni creatura viene tirato ora e resta sul suo cadavere: i giocatori li perquisiscono uno per uno.",
+        "grouped": "Tutto viene tirato e poi raccolto in un forziere posato tra i cadaveri, che vengono svuotati. Il forziere si perquisisce e si spartisce come un mucchio a terra, e sparisce quando è vuoto."
+      },
+      "NoCorpses": "Nessun cadavere in questo incontro.",
+      "KeepSpecial": "Mantieni le armi speciali (altrimenti diventano l'arma comune equivalente)",
+      "HeldHint": "Finché il bottino non è distribuito, a un giocatore che perquisisce uno di questi cadaveri viene detto che il GM lo sta preparando (può forzare: il GM viene avvisato).",
+      "Distribute": {
+        "individual": "Distribuisci il bottino",
+        "grouped": "Raccogli il bottino"
+      },
+      "Status": {
+        "pending": "bottino da distribuire",
+        "done": "bottino distribuito",
+        "dismissed": "bottino messo da parte",
+        "none": "niente da fare"
+      },
+      "Rules": {
+        "Title": "Tabelle del bottino",
+        "Button": "Tabelle del bottino…",
+        "Hint": "Tabelle tirate su una creatura in base al suo GS, tipo e taglia. Si applica la prima regola che corrisponde (l'ordine conta). «Aggiunge»: in aggiunta al tesoro del DMG; «Sostituisce»: al posto del tesoro del DMG e delle tasche. Una tabella impostata sul PNG stesso viene sempre aggiunta. Trascina una tabella (barra laterale o compendio) su una riga per sceglierla.",
+        "None": "Nessuna regola: viene tirato solo il tesoro del DMG.",
+        "Add": "Aggiungi una regola",
+        "Remove": "Rimuovi la regola",
+        "Up": "Sposta su (controllata prima)",
+        "Down": "Sposta giù",
+        "CrMin": "GS min",
+        "CrMax": "GS max",
+        "Type": "Tipo",
+        "Size": "Taglia",
+        "Table": "Tabella",
+        "Draws": "Estrazioni",
+        "Any": "Qualsiasi",
+        "NoTable": "— scegli una tabella —",
+        "Open": "Apri la tabella",
+        "DropHint": "Trascina qui una tabella",
+        "Effect": {
+          "Label": "Effetto",
+          "add": "Aggiunge",
+          "replace": "Sostituisce"
+        }
+      },
+      "Settings": {
+        "When": {
+          "Name": "Chi convalida il bottino di fine combattimento",
+          "Hint": "Il GM: alla fine del combattimento gli si apre la finestra «Bottino», spunta i cadaveri e sceglie dove va il bottino. Automatico: distribuito subito, senza finestra, secondo l'impostazione qui sotto.",
+          "Semi": "Il GM, nella finestra «Bottino» (consigliato)",
+          "Auto": "Automatico, senza finestra"
+        },
+        "Mode": {
+          "Name": "Dove va il bottino di fine combattimento (predefinito)",
+          "Hint": "Lasciato su ogni cadavere, che i giocatori perquisiscono uno per uno, oppure raccolto in un unico forziere comune posato tra i cadaveri, per tutto il gruppo. Il GM può cambiarlo per ogni combattimento nella finestra."
+        },
+        "KeepSpecial": {
+          "Name": "Armi speciali dei PNG mantenute così come sono",
+          "Hint": "L'arma di un PNG resta com'è sulla sua scheda («Scimitarra del capo») invece di diventare l'arma comune del compendio. Vale per ogni perquisizione; il GM può anche sceglierlo per ogni combattimento nella finestra «Bottino». Disattivato per impostazione predefinita."
+        },
+        "Manage": {
+          "Name": "Bottino di fine combattimento, gestito dal GM",
+          "Hint": "Alla fine di un combattimento, il GM trova le creature sconfitte nella finestra «Bottino». I loro cadaveri restano chiusi ai giocatori finché il GM non distribuisce il bottino al gruppo: lasciato su ogni cadavere, oppure raccolto in un unico forziere comune. Disattivato: alla fine di un combattimento non succede nulla, ogni cadavere si perquisisce liberamente e il suo tesoro viene tirato alla prima perquisizione."
+        }
+      },
+      "None": "Nessun bottino di fine combattimento in attesa. La finestra si apre da sola alla fine di un combattimento."
     }
   },
   "TYPES": {
