@@ -33,7 +33,7 @@ export default {
       const TEST = { "darsh-loot": { test: true } };
       const previous = { scene: canvas.scene?.id ?? null, level: canvas.level?.id ?? null,
         party: game.settings.get("dnd5e", "primaryParty")?.actor?.id ?? null, active: game.scenes.active?.id ?? null, leveling: game.settings.get("dnd5e", "levelingMode"),
-        settings: Object.fromEntries(["xpManage", "xpToolbar", "xpWhen", "xpSplit", "xpRemainder", "xpRecipients", "rewards"].map(k => [k, game.settings.get("darsh-loot", k)])),
+        settings: Object.fromEntries(["xpManage", "xpToolbar", "xpWhen", "xpSplit", "xpRemainder", "xpRecipients", "rewards", "lootWhen"].map(k => [k, game.settings.get("darsh-loot", k)])),
         xp: actor?.system.details.xp.value ?? null };
       const pc = name => Actor.implementation.create({ name, type: "character", img: "icons/svg/mystery-man.svg", flags: TEST });
       if ( !actor ) actor = await pc("DAS test hero");
@@ -58,7 +58,8 @@ export default {
         at(ally, 400, 700, { disposition: F }), at(g3, 1100, 400, { disposition: H })]);
       await actor.update({ "system.details.xp.value": 0 });
       await companion.update({ "system.details.xp.value": 280 });
-      await S("xpManage", true); await S("xpToolbar", true);
+      // Lot 3: this scenario is about XP alone — the end-of-combat loot (on by default) would keep the shortcuts and the window.
+      await S("xpManage", true); await S("xpToolbar", true); await S("lootWhen", "first");
       await S("xpWhen", "semi"); await S("xpSplit", "equal"); await S("xpRemainder", "party"); await S("xpRecipients", "present");
       await S("rewards", { records: [] });
       // Activated, so that the player's client views it too (its right-click menu is read there).
@@ -119,7 +120,8 @@ export default {
         foes: record?.foes.map(f => [f.name, f.defeated, f.include]), members: record?.members.map(m => [m.name, m.present, m.include]),
         allies: record?.allies.map(a => [a.name, a.include]) };`, { ...setup, combatId });
     ctx.expect(ended?.open && ended.dnd5e, `the end of the combat opened the « Rewards » window at the GM, in the dnd5e look (${JSON.stringify({ open: ended?.open, dnd5e: ended?.dnd5e })})`);
-    ctx.expect(JSON.stringify(ended?.foes) === JSON.stringify([["DAS goblin 1", true, true], ["DAS goblin 2", true, true], ["DAS orc", false, false]]),
+    // Sorted: the server does not always give the combatants back in the order they were created.
+    ctx.expect(JSON.stringify([...(ended?.foes ?? [])].sort()) === JSON.stringify([["DAS goblin 1", true, true], ["DAS goblin 2", true, true], ["DAS orc", false, false]]),
       `goblins (dead, 0 hp) ticked, the orc (alive) not (${JSON.stringify(ended?.foes)})`);
     ctx.expect(ended?.members?.find(m => m[0] === "DAS test absent")?.[2] === false && ended.members.filter(m => m[2]).length === 2,
       `the two characters who fought are ticked, the absent one is listed unticked (${JSON.stringify(ended?.members)})`);
