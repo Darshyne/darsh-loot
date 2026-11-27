@@ -6,7 +6,7 @@
 export const TABS = Object.freeze([
   { id: "search", icon: "fa-solid fa-magnifying-glass",
     keys: ["clickToLoot", "reach", "searchMenu", "searchRadius", "searchDuration", "searchCooldown"] },
-  { id: "loot", icon: "fa-solid fa-sack-dollar", keys: ["whoLoots", "autoTreasure", "lootGlint", "pockets", "announce", "pickpocket", "theftHostile", "npcTheftNotice",
+  { id: "loot", icon: "fa-solid fa-sack-dollar", keys: ["whoLoots", "autoTreasure", "lootMark", "pockets", "announce", "pickpocket", "theftHostile", "npcTheftNotice",
     "shareWith", "shareRemainder", "giveMode"] },
   { id: "containers", icon: "fa-solid fa-box-open", keys: ["objectSize", "pileFrame", "dropMode", "deleteStores", "thrownWeapons"],
     tools: [{ id: "tables", icon: "fa-solid fa-table-list" }] },

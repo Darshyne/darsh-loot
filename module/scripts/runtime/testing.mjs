@@ -14,7 +14,7 @@ import { runZone } from "./zones.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { requestSearch, passiveCheck } from "./hidden.mjs";
 import { highlightState } from "./highlight.mjs";
-import { glintState } from "./glint.mjs";
+import { LOOT_STATUS } from "./loot-mark.mjs";
 import { pileFramed } from "./pile-frame.mjs";
 import { fireTrap, requestDisarm, applyTrapChecks, springTrap } from "./traps.mjs";
 import { trapHandle, concealedTraps } from "../adapter/trapped.mjs";
@@ -337,10 +337,11 @@ async function theftOpen({ thiefId, victimId }) {
 const theftNpc = ({ thiefId, victimId, itemId="random", total=null, allowCombat=false }) =>
   npcSteal({ thief: tokenOf(thiefId), victim: tokenOf(victimId), itemId, total, allowCombat });
 
-/** 2026-11-27: the two loot cues — corpses glinting now, and which pile tiles of the scene show a framed icon. */
+/** 2026-11-27: the two loot cues — tokens of the scene wearing the « Loot » status, and which pile tiles show a framed icon. */
 function visualsState() {
   const piles = (canvas.scene?.tiles ?? []).filter(t => t.getFlag(MODULE_ID, "pileTile"));
-  return { glint: glintState(), piles: piles.map(t => ({ id: t.id, framed: pileFramed(t) })) };
+  const marked = (canvas.scene?.tokens ?? []).filter(t => t.actor?.statuses.has(LOOT_STATUS)).map(t => t.uuid);
+  return { marked, piles: piles.map(t => ({ id: t.id, framed: pileFramed(t) })) };
 }
 
 export const testApi = Object.freeze({ visualsState, theftMenu, theftState, theftNpc, theftOpen, trappedState, trappedSet, trappedSpring, trappedDisarm, doorSet, status, shopState, shopQuote, shopRestock, shopMemorize, shopConvert, shopOpen, shopClose, shopConvertAll, shopList, removeTestActors,

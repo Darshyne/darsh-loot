@@ -6,7 +6,7 @@ import { registerSettings } from "./runtime/settings.mjs";
 import { registerSettingsWindow } from "./runtime/settings-window.mjs";
 import { registerObjectSize } from "./runtime/object-size.mjs";
 import { registerPileFrame } from "./runtime/pile-frame.mjs";
-import { registerGlint } from "./runtime/glint.mjs";
+import { registerLootMarkInit, registerLootMark } from "./runtime/loot-mark.mjs";
 import { registerTake, requestTake } from "./runtime/take.mjs";
 import { registerOperations, reportInterrupted } from "./runtime/operations.mjs";
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
@@ -69,6 +69,9 @@ Hooks.once("init", () => {
   registerShopInit((source, looter) => openSource(source, looter));
 });
 
+// After dnd5e has built its status list (`i18nInit`).
+Hooks.once("setup", () => registerLootMarkInit());
+
 Hooks.once("ready", () => {
   // Active GM: gestures cut short by a reload (a trade, a deal, a corpse being raised) are told to the GMs.
   if ( game.users.activeGM?.isSelf ) reportInterrupted().catch(err => log.warn("operation journal:", err.message));
@@ -82,7 +85,7 @@ Hooks.once("ready", () => {
   registerFeedback();
   registerPick();
   registerHighlight();
-  registerGlint();
+  registerLootMark();
   registerStolenMark();
   registerNecromancy();
   registerDrop();

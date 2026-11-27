@@ -146,12 +146,9 @@
         "Rounded": "Rounded corners",
         "Off": "Plain square icon"
       },
-      "LootGlint": {
-        "Name": "Glint on corpses with loot",
-        "Hint": "A corpse that still has something to take (items, coins, or treasure not rolled yet) gives off a few golden motes. Each player only sees it on corpses they can search and see.",
-        "Peace": "Outside combat",
-        "Always": "Always, combat included",
-        "Off": "Never"
+      "LootMark": {
+        "Name": "« Loot » status on corpses",
+        "Hint": "A dead creature that still has something to take (items, coins, or treasure not rolled yet) wears a golden purse among its status icons; it goes away once the corpse is empty. Seen by everyone, like any status."
       }
     },
     "SettingsWindow": {
@@ -1353,6 +1350,9 @@
           "Off": "Switched off"
         }
       }
+    },
+    "LootMark": {
+      "Status": "Loot"
     }
   },
   "TYPES": {

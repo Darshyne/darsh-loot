@@ -146,12 +146,9 @@
         "Rounded": "Coins arrondis",
         "Off": "Icône carrée, sans cadre"
       },
-      "LootGlint": {
-        "Name": "Scintillement des cadavres à fouiller",
-        "Hint": "Un cadavre qui a encore quelque chose à prendre (objets, pièces, ou trésor pas encore tiré) laisse monter quelques paillettes dorées. Chaque joueur ne le voit que sur les cadavres qu'il peut fouiller et qu'il voit.",
-        "Peace": "Hors combat",
-        "Always": "Toujours, combat compris",
-        "Off": "Jamais"
+      "LootMark": {
+        "Name": "État « Butin » sur les cadavres",
+        "Hint": "Une créature morte qui a encore quelque chose à prendre (objets, pièces, ou trésor pas encore tiré) porte une bourse dorée parmi ses icônes d'état ; elle disparaît quand le corps est vide. Vue de tous, comme tout état."
       }
     },
     "SettingsWindow": {
@@ -1353,6 +1350,9 @@
           "Off": "Désactivé"
         }
       }
+    },
+    "LootMark": {
+      "Status": "Butin"
     }
   },
   "TYPES": {

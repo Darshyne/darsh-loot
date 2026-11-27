@@ -106,11 +106,11 @@ export function registerSettings() {
     choices: { gold: "DLO.Settings.PileFrame.Gold", rounded: "DLO.Settings.PileFrame.Rounded", off: "DLO.Settings.PileFrame.Off" },
     onChange: () => Hooks.callAll(`${MODULE_ID}.pileFrame`)
   });
-  // 2026-11-27: golden motes over a corpse that still has something to take (runtime/glint.mjs).
-  game.settings.register(MODULE_ID, "lootGlint", {
-    name: "DLO.Settings.LootGlint.Name", hint: "DLO.Settings.LootGlint.Hint",
-    scope: "world", config: true, type: String, default: "peace",
-    choices: { peace: "DLO.Settings.LootGlint.Peace", always: "DLO.Settings.LootGlint.Always", off: "DLO.Settings.LootGlint.Off" }
+  // 2026-11-27: the « Loot » status on a corpse that still has something to take (runtime/loot-mark.mjs).
+  game.settings.register(MODULE_ID, "lootMark", {
+    name: "DLO.Settings.LootMark.Name", hint: "DLO.Settings.LootMark.Hint",
+    scope: "world", config: true, type: Boolean, default: true,
+    onChange: () => Hooks.callAll(`${MODULE_ID}.lootMark`)
   });
   game.settings.register(MODULE_ID, "whoLoots", {
     name: "DLO.Settings.WhoLoots.Name", hint: "DLO.Settings.WhoLoots.Hint",
