@@ -1,9 +1,11 @@
 /**
  * End-of-combat loot (lot 3, 2026-11-27) — when the loot happens, who validates, and what the table sees.
  *
- * - **When** (world setting `lootWhen`): `semi` (default: at the end of a combat the encounter record gets a loot part and the
+ * - **On or off** (world setting `lootManage`, on by default): off, nothing happens at the end of a combat and each corpse is rolled at
+ *   its first search, as before lot 3.
+ * - **How** (world setting `lootWhen`): `semi` (default: at the end of a combat the encounter record gets a loot part and the
  *   « Rewards » window opens at the active GM; the corpses are held until the GM validates), `auto` (validated at the end of the
- *   combat with the default mode, no window), `first` (as before lot 3: nothing at the end, treasure rolled at the first search).
+ *   combat with the default mode, no window).
  * - **Validation** (GM only, request `darsh-loot.endLoot` to the active GM): each ticked corpse's treasure is rolled (DMG individual
  *   treasure, pockets, custom tables; once), its weapons kept special if asked, then in `grouped` mode everything is moved into an
  *   encounter chest put down among them (each corpse's loot seen flying in, by every client).
@@ -29,8 +31,8 @@ const RELEASE_QUERY = `${MODULE_ID}.releaseCorpse`;
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-/** The end-of-combat loot is on (`lootWhen` other than `first`). */
-export const lootEnabled = () => setting("lootWhen") !== "first";
+/** The GM's end-of-combat loot is on (`lootManage`, on by default). */
+export const lootEnabled = () => setting("lootManage") !== false;
 
 /** Adds (or completes) the loot part of a record from its defeated foes, with the world's defaults. Changes the record. */
 export function withLoot(record) {

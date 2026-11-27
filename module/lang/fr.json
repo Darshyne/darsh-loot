@@ -60,8 +60,8 @@
         "None": "Aucun message"
       },
       "AutoTreasure": {
-        "Name": "Tirer le trésor des cadavres",
-        "Hint": "À la première fouille d'un cadavre, tirer son trésor individuel selon son FP (DMG 2024) : des pièces, ou des gemmes (Arcanes) et des objets d'art (Reliques) si le module Guide du maître est actif. Une créature sans préférence de trésor n'a rien."
+        "Name": "Trésor des créatures (DMG)",
+        "Hint": "Tirer le trésor individuel d'une créature selon son FP (DMG 2024) : des pièces, ou des gemmes (Arcanes) et des objets d'art (Reliques) si le module Guide du maître est actif. Une créature sans préférence de trésor n'a rien. Tiré quand le MJ distribue le butin de fin de combat, sinon à la première fouille du cadavre."
       },
       "Pockets": {
         "Name": "Poches des humanoïdes",
@@ -160,10 +160,13 @@
       },
       "Tab": {
         "search": "Fouille",
-        "loot": "Butin et vol",
+        "loot": "Fouille des cadavres",
         "containers": "Conteneurs",
         "traps": "Pièges",
-        "rewards": "XP"
+        "rewards": "XP",
+        "endLoot": "Butin de fin de combat",
+        "share": "Partage et dons",
+        "theft": "Vol à la tire"
       },
       "Tool": {
         "tables": {
@@ -1497,8 +1500,8 @@
       "Rolled": "trésor déjà tiré",
       "ToRoll": "à tirer",
       "Mode": {
-        "individual": "Sur chaque cadavre",
-        "grouped": "Dans un coffre commun"
+        "individual": "Laissé sur chaque cadavre",
+        "grouped": "Rassemblé dans un coffre commun pour le groupe"
       },
       "ModeHint": {
         "individual": "Le trésor de chaque créature est tiré maintenant et reste sur son cadavre : les joueurs fouillent chacun.",
@@ -1544,19 +1547,22 @@
       },
       "Settings": {
         "When": {
-          "Name": "Butin de fin de combat",
-          "Hint": "Semi-automatique : à la fin d'un combat, la fenêtre s'ouvre chez le MJ avec les cadavres de la rencontre, retenus jusqu'à ce qu'il distribue le butin. Automatique : distribué à la fin du combat, sans fenêtre, dans le mode par défaut. Coupé : comme avant, le trésor est tiré à la première fouille.",
-          "Semi": "Semi-automatique (le MJ valide)",
-          "Auto": "Automatique",
-          "First": "Coupé (tirage à la première fouille)"
+          "Name": "Qui valide le butin de fin de combat",
+          "Hint": "Le MJ : la fenêtre « Butin » s'ouvre chez lui à la fin du combat, il coche les cadavres et choisit où va le butin. Automatique : distribué tout de suite, sans fenêtre, selon le réglage ci-dessous.",
+          "Semi": "Le MJ, dans la fenêtre « Butin » (recommandé)",
+          "Auto": "Automatique, sans fenêtre"
         },
         "Mode": {
-          "Name": "Où va le butin (par défaut)",
-          "Hint": "Sur chaque cadavre, ou rassemblé dans un coffre commun posé au milieu des cadavres. La fenêtre permet de changer pour chaque rencontre."
+          "Name": "Où va le butin de fin de combat (par défaut)",
+          "Hint": "Laissé sur chaque cadavre, que les joueurs fouillent un par un, ou rassemblé dans un coffre commun posé au milieu des cadavres, pour tout le groupe. Le MJ peut changer pour chaque combat dans la fenêtre."
         },
         "KeepSpecial": {
-          "Name": "Garder les armes spéciales",
-          "Hint": "Une arme d'un PNJ reste telle qu'elle est sur sa fiche (« Cimeterre du chef ») au lieu de devenir l'arme normale du compendium. Coupé par défaut."
+          "Name": "Armes spéciales des PNJ gardées telles quelles",
+          "Hint": "Une arme d'un PNJ reste telle qu'elle est sur sa fiche (« Cimeterre du chef ») au lieu de devenir l'arme normale du compendium. Vaut pour toute fouille ; le MJ peut aussi le choisir pour chaque combat dans la fenêtre « Butin ». Coupé par défaut."
+        },
+        "Manage": {
+          "Name": "Butin de fin de combat, géré par le MJ",
+          "Hint": "À la fin d'un combat, le MJ retrouve les créatures vaincues dans la fenêtre « Butin ». Leurs cadavres restent fermés aux joueurs jusqu'à ce qu'il distribue le butin au groupe : laissé sur chaque cadavre, ou rassemblé dans un coffre commun. Coupé : rien ne se passe à la fin du combat, chaque cadavre se fouille librement et son trésor est tiré à la première fouille."
         }
       }
     }

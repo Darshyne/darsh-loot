@@ -263,9 +263,9 @@ export class RewardsWindow extends ApplicationV2 {
   }
 }
 
-/** The end-of-combat loot is on (`lootWhen` other than `first`). */
+/** The GM's end-of-combat loot is on (`lootManage`). */
 function lootOn() {
-  try { return setting("lootWhen") !== "first"; } catch { return false; }
+  try { return setting("lootManage") !== false; } catch { return false; }
 }
 
 /** A record's state in the picker: its XP state, and its loot state when it has one. */

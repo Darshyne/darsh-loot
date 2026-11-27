@@ -60,8 +60,8 @@
         "None": "No message"
       },
       "AutoTreasure": {
-        "Name": "Roll treasure on corpses",
-        "Hint": "The first time a corpse is searched, roll its individual treasure by CR (DMG 2024): coins, or gemstones (Arcana) and art objects (Relics) when the Dungeon Master's Guide module is active. Creatures without a treasure preference have none."
+        "Name": "Creature treasure (DMG)",
+        "Hint": "Roll a creature's individual treasure by its CR (DMG 2024): coins, or gems (Arcana) and art objects (Relics) if the Dungeon Master's Guide module is active. A creature with no treasure preference has nothing. Rolled when the GM distributes the end-of-combat loot, otherwise at the first search of the corpse."
       },
       "Pockets": {
         "Name": "Humanoid pockets",
@@ -160,10 +160,13 @@
       },
       "Tab": {
         "search": "Searching",
-        "loot": "Loot & theft",
+        "loot": "Searching corpses",
         "containers": "Containers",
         "traps": "Traps",
-        "rewards": "XP"
+        "rewards": "XP",
+        "endLoot": "End-of-combat loot",
+        "share": "Sharing and gifts",
+        "theft": "Pickpocketing"
       },
       "Tool": {
         "tables": {
@@ -1497,8 +1500,8 @@
       "Rolled": "treasure already rolled",
       "ToRoll": "to roll",
       "Mode": {
-        "individual": "On each corpse",
-        "grouped": "In one shared chest"
+        "individual": "Left on each corpse",
+        "grouped": "Gathered in one shared chest for the party"
       },
       "ModeHint": {
         "individual": "Each creature's treasure is rolled now and stays on its corpse: the players search each one.",
@@ -1544,19 +1547,22 @@
       },
       "Settings": {
         "When": {
-          "Name": "End-of-combat loot",
-          "Hint": "Semi-automatic: at the end of a combat, the window opens at the GM with the encounter's corpses, held until the loot is distributed. Automatic: distributed at the end of the combat, no window, in the default mode. Off: as before, treasure is rolled at the first search.",
-          "Semi": "Semi-automatic (the GM validates)",
-          "Auto": "Automatic",
-          "First": "Off (rolled at the first search)"
+          "Name": "Who validates the end-of-combat loot",
+          "Hint": "The GM: the « Loot » window opens for them at the end of the combat, they tick the corpses and choose where the loot goes. Automatic: distributed at once, no window, following the setting below.",
+          "Semi": "The GM, in the « Loot » window (recommended)",
+          "Auto": "Automatic, no window"
         },
         "Mode": {
-          "Name": "Where the loot goes (default)",
-          "Hint": "On each corpse, or gathered in one shared chest put down among the corpses. The window can change it for each encounter."
+          "Name": "Where the end-of-combat loot goes (default)",
+          "Hint": "Left on each corpse, which the players search one by one, or gathered in one shared chest put down among the corpses, for the whole party. The GM can change it for each combat in the window."
         },
         "KeepSpecial": {
-          "Name": "Keep special weapons",
-          "Hint": "An NPC's weapon stays as it is on its sheet (« Chief's scimitar ») instead of becoming the plain weapon of the compendium. Off by default."
+          "Name": "NPCs' special weapons kept as they are",
+          "Hint": "An NPC's weapon stays as it is on its sheet (« Chief's scimitar ») instead of becoming the plain weapon of the compendium. Applies to every search; the GM can also choose it for each combat in the « Loot » window. Off by default."
+        },
+        "Manage": {
+          "Name": "End-of-combat loot, handled by the GM",
+          "Hint": "At the end of a combat, the GM finds the defeated creatures in the « Loot » window. Their corpses stay closed to the players until the GM distributes the loot to the party: left on each corpse, or gathered in one shared chest. Off: nothing happens at the end of a combat, each corpse is searched freely and its treasure is rolled at the first search."
         }
       }
     }

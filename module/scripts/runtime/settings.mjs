@@ -121,13 +121,18 @@ export function registerSettings() {
     name: "DLO.Settings.AutoTreasure.Name", hint: "DLO.Settings.AutoTreasure.Hint",
     scope: "world", config: true, type: Boolean, default: true
   });
-  // Lot 3 (2026-11-27, user's request): the end-of-combat loot — the GM validates in the « Rewards » window (default), done at the
-  // end of the combat without a window, or off (treasure rolled at the first search, as before).
+  // Lot 3 (2026-11-27, user's request): the GM's end-of-combat loot for the party, on or off altogether (like pickpocketing). Off:
+  // nothing happens at the end of a combat, each corpse is rolled at its first search, as before.
+  game.settings.register(MODULE_ID, "lootManage", {
+    name: "DLO.EndLoot.Settings.Manage.Name", hint: "DLO.EndLoot.Settings.Manage.Hint",
+    scope: "world", config: true, type: Boolean, default: true,
+    onChange: () => ui.controls?.render({ reset: true })
+  });
+  // Lot 3: how the GM validates it — in the window (default), or at once without a window.
   game.settings.register(MODULE_ID, "lootWhen", {
     name: "DLO.EndLoot.Settings.When.Name", hint: "DLO.EndLoot.Settings.When.Hint",
     scope: "world", config: true, type: String, default: "semi",
-    choices: { semi: "DLO.EndLoot.Settings.When.Semi", auto: "DLO.EndLoot.Settings.When.Auto", first: "DLO.EndLoot.Settings.When.First" },
-    onChange: () => ui.controls?.render({ reset: true })
+    choices: { semi: "DLO.EndLoot.Settings.When.Semi", auto: "DLO.EndLoot.Settings.When.Auto" }
   });
   // Lot 3: where the loot goes by default (the window may change it per encounter) — on each corpse, or into one encounter chest.
   game.settings.register(MODULE_ID, "lootMode", {

@@ -33,7 +33,7 @@ export default {
       const TEST = { "darsh-loot": { test: true } };
       const previous = { scene: canvas.scene?.id ?? null, level: canvas.level?.id ?? null,
         party: game.settings.get("dnd5e", "primaryParty")?.actor?.id ?? null, active: game.scenes.active?.id ?? null, leveling: game.settings.get("dnd5e", "levelingMode"),
-        settings: Object.fromEntries(["xpManage", "xpToolbar", "xpWhen", "xpSplit", "xpRemainder", "xpRecipients", "rewards", "lootWhen"].map(k => [k, game.settings.get("darsh-loot", k)])),
+        settings: Object.fromEntries(["xpManage", "xpToolbar", "xpWhen", "xpSplit", "xpRemainder", "xpRecipients", "rewards", "lootManage"].map(k => [k, game.settings.get("darsh-loot", k)])),
         xp: actor?.system.details.xp.value ?? null };
       const pc = name => Actor.implementation.create({ name, type: "character", img: "icons/svg/mystery-man.svg", flags: TEST });
       if ( !actor ) actor = await pc("DAS test hero");
@@ -59,7 +59,7 @@ export default {
       await actor.update({ "system.details.xp.value": 0 });
       await companion.update({ "system.details.xp.value": 280 });
       // Lot 3: this scenario is about XP alone — the end-of-combat loot (on by default) would keep the shortcuts and the window.
-      await S("xpManage", true); await S("xpToolbar", true); await S("lootWhen", "first");
+      await S("xpManage", true); await S("xpToolbar", true); await S("lootManage", false);
       await S("xpWhen", "semi"); await S("xpSplit", "equal"); await S("xpRemainder", "party"); await S("xpRecipients", "present");
       await S("rewards", { records: [] });
       // Activated, so that the player's client views it too (its right-click menu is read there).

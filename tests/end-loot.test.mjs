@@ -170,7 +170,7 @@ beforeEach(async () => {
   game.user = { id: "gm", isGM: true, name: "MJ" };
   game.combats = new FakeCollection();
   globalThis.canvas = {};
-  Object.assign(settings, { xpManage: false, xpWhen: "semi", levelingMode: "xp", operations: {}, lootWhen: "semi", lootMode: "individual",
+  Object.assign(settings, { xpManage: false, xpWhen: "semi", levelingMode: "xp", operations: {}, lootManage: true, lootWhen: "semi", lootMode: "individual",
     keepSpecial: false, pockets: true, autoTreasure: true, reach: 50, lootRules: { rules: [] } });
   await game.settings.set("darsh-loot", "rewards", { records: [] });
   registerOperations();
@@ -200,8 +200,8 @@ describe("end of combat — the loot part", () => {
     expect(rewardsApi.records()[0]).toMatchObject({ status: "pending", loot: { status: "pending" } });
   });
 
-  it("« first »: no loot part, nothing held, no window when XP is off", async () => {
-    settings.lootWhen = "first";
+  it("« end-of-combat loot » off: no loot part, nothing held, no window when XP is off", async () => {
+    settings.lootManage = false;
     const t = table();
     ended(t);
     await new Promise(r => setTimeout(r, 30));

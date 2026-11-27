@@ -12,8 +12,8 @@
  * table set on the NPC itself (`flags.darsh-loot.table`) comes on top, as before.
  */
 
-/** When the end-of-combat loot happens (world setting `lootWhen`). `first`: no end-of-combat step, treasure at the first search. */
-export const LOOT_WHEN = Object.freeze(["semi", "auto", "first"]);
+/** How the GM validates the end-of-combat loot (world setting `lootWhen`): in the window, or at once without it. */
+export const LOOT_WHEN = Object.freeze(["semi", "auto"]);
 
 /** Where the loot goes (world setting `lootMode`, and per encounter in the window). */
 export const LOOT_MODES = Object.freeze(["individual", "grouped"]);

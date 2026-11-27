@@ -29,7 +29,7 @@ export default {
       const player = game.users.find(u => u.name === "claude player");
       let actor = game.actors.find(a => (a.type === "character") && player && a.testUserPermission(player, "OWNER"));
       const TEST = { "darsh-loot": { test: true } };
-      const KEYS = ["xpManage", "lootWhen", "lootMode", "keepSpecial", "lootRules", "rewards", "reach", "autoTreasure", "whoLoots", "pockets"];
+      const KEYS = ["xpManage", "lootManage", "lootWhen", "lootMode", "keepSpecial", "lootRules", "rewards", "reach", "autoTreasure", "whoLoots", "pockets"];
       const previous = { scene: canvas.scene?.id ?? null, level: canvas.level?.id ?? null, active: game.scenes.active?.id ?? null,
         settings: Object.fromEntries(KEYS.map(k => [k, game.settings.get("darsh-loot", k)])),
         purse: actor ? { ...actor.system.currency } : null, items: actor ? actor.items.map(i => i.id) : [] };
@@ -51,7 +51,7 @@ export default {
         at(actor, 400, 300, { actorLink: true, disposition: F }),
         at(g1, 500, 300, { disposition: H }), at(g2, 500, 400, { disposition: H }),
         at(g3, 600, 300, { disposition: H }), at(g4, 700, 300, { disposition: H })]);
-      await S("xpManage", false); await S("lootWhen", "semi"); await S("lootMode", "individual"); await S("keepSpecial", false);
+      await S("xpManage", false); await S("lootManage", true); await S("lootWhen", "semi"); await S("lootMode", "individual"); await S("keepSpecial", false);
       await S("reach", 10); await S("autoTreasure", true); await S("whoLoots", "all"); await S("pockets", false);
       await S("lootRules", { rules: [{ id: "dastest", crMin: 0, crMax: 1, type: "humanoid", size: "", table: table.uuid, draws: 1, effect: "add" }] });
       await S("rewards", { records: [] });

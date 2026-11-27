@@ -194,7 +194,7 @@ beforeEach(async () => {
   CONFIG.DND5E.ENCOUNTER_DIFFICULTY = BUDGET;
   Object.assign(settings, { xpManage: true, xpToolbar: true, xpWhen: "semi", xpSplit: "equal", xpRemainder: "party", xpRecipients: "present", levelingMode: "xp", operations: {},
     // Lot 3: these tests are about XP alone; the end-of-combat loot has its own (end-loot.test.mjs).
-    lootWhen: "first" });
+    lootManage: false });
   await game.settings.set("darsh-loot", "rewards", { records: [] });
   registerOperations();
 });
