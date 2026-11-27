@@ -33,6 +33,7 @@ import { requestDeal } from "./shop.mjs";
 import { requestAnimate, raisable } from "./necromancy.mjs";
 import { TradeWindow } from "../apps/trade-window.mjs";
 import { requestShareCoins, sharersOf } from "./share.mjs";
+import { tileToZone } from "./tile-zone.mjs";
 import { isForceable } from "../core/force.mjs";
 
 const TEST = { [MODULE_ID]: { test: true } };
@@ -1126,7 +1127,7 @@ async function shareCoinsPart(b) {
     const names = sharersOf(source, looter).map(a => a.name);
     b.expect(names.length === 3, `the party of the share: the three characters of the primary party, the absent one included (${names.join(", ")})`);
     const menu = engineTestApi()?.mcp?.menu?.({ tokenId: looter.id, targetId: corpse.id });
-    if ( menu ) b.expect(menu.labels.includes(loc("Share.MenuCoins")), `right-click menu of the corpse: ${menu.labels.join(" | ")}`);
+    if ( menu ) b.expect(!menu.labels.some(l => /share|partag/i.test(l)), `right-click menu of the corpse has no sharing entry (the window's button only): ${menu.labels.join(" | ")}`);
     else b.note("the Core's test API is not there: the menu entry is not read");
 
     let since = Date.now() - 1;
@@ -1249,7 +1250,7 @@ async function dropCoinsPart(b) {
 
   const menu = engineTestApi()?.mcp?.placeMenu?.({ tokenId: dropper.id, ...b.center(1, 0) });
   const labels = (await menu)?.labels ?? null;
-  if ( labels ) b.expect(labels.includes(loc("Drop.CoinsMenu")), `right-click menu of a square: ${labels.join(" | ")}`);
+  if ( labels ) b.expect(!labels.some(l => /coins|pièces/i.test(l)), `right-click menu of a square has no coin entry (coins are dragged from the sheet): ${labels.join(" | ")}`);
   else b.note("the Core's test API is not there: the ground menu entry is not read");
 
   let since = Date.now() - 1;
@@ -1330,7 +1331,7 @@ async function givePart(b) {
       .then(r => ({ ok: r }), err => ({ error: err.message }));
 
     const menu = engineTestApi()?.mcp?.menu?.({ tokenId: giver.id, targetId: near.id });
-    if ( menu ) b.expect(menu.labels.includes(loc("Give.MenuItem")) && menu.labels.includes(loc("Give.MenuCoins")), `right-click menu of another character: ${menu.labels.join(" | ")}`);
+    if ( menu ) b.expect(!menu.labels.some(l => /^(give an item|give coins|donner un objet|donner des pi)/i.test(l)), `right-click menu of another character has no « give » entry (an item is dragged onto its token): ${menu.labels.join(" | ")}`);
     else b.note("the Core's test API is not there: the menu entries are not read");
 
     let since = Date.now() - 1;
@@ -1394,6 +1395,70 @@ async function givePart(b) {
   }
 }
 
+/**
+ * The zone follows its tile (2026-11-27, reported by the user): a container made from a tile, a ground pile — moved, raised
+ * or sent to another V14 level, the region goes with the tile.
+ */
+async function tileFollow(b) {
+  const scene = b.scene;
+  const [tile] = await scene.createEmbeddedDocuments("Tile", [{ texture: { src: "icons/svg/chest.svg", anchorX: 0.5, anchorY: 0.5 },
+    ...b.center(0, 0), width: b.G, height: b.G, flags: TEST }]);
+  await sleep(600);
+  const region = await tileToZone(tile, { kind: "container", name: "Test chest", openSheet: false });
+  if ( !region ) { await tile.delete().catch(() => {}); return b.note("the tile could not be turned into a zone here"); }
+  b.created.Region.push(region.id);
+  await sleep(600);
+  const centre = doc => { const r = doc.bounds; return { x: Math.round(r.x + (r.width / 2)), y: Math.round(r.y + (r.height / 2)) }; };
+  const offset = () => ({ x: centre(region).x - tile.x, y: centre(region).y - tile.y });
+  const start = offset();
+  const store = () => { const u = region.behaviors.contents[0]?.system.actor; return u ? fromUuidSync(u, { strict: false }) : null; };
+  await until(() => !!store(), 4000);
+  const chest = store();
+  if ( chest ) await chest.setFlag(MODULE_ID, "test", true);
+
+  await tile.update({ x: tile.x + (2 * b.G), y: tile.y + b.G });
+  await until(() => (offset().x === start.x) && (offset().y === start.y), 4000);
+  b.expect((offset().x === start.x) && (offset().y === start.y), `the tile moved two squares right and one down: its region followed (offset ${JSON.stringify(offset())}, was ${JSON.stringify(start)})`);
+  b.expect(store() === chest && !!chest, "it is still the same chest, with the same store");
+
+  // Another V14 level: the region takes the tile's levels.
+  let extra = null;
+  try {
+    [extra] = await scene.createEmbeddedDocuments("Level", [{ name: "Test upper level", elevation: { bottom: 20, top: 40 } }]);
+  } catch(err) { b.note(`no second level could be created here (${err.message}): the level is not played`); }
+  if ( extra ) {
+    await tile.update({ levels: [extra.id], elevation: 20 });
+    await until(() => [...(region._source.levels ?? [])].join() === extra.id, 4000);
+    b.expect([...(region._source.levels ?? [])].join() === extra.id, `the tile sent to another level: the region is on that level too (${JSON.stringify([...(region._source.levels ?? [])])})`);
+    b.expect((offset().x === start.x) && (offset().y === start.y), "and it did not move sideways");
+  }
+
+  // A ground pile moved by the GM.
+  const pack = game.packs.get("dnd5e.items");
+  const torch = pack?.index.find(e => /^torch$/i.test(e.name));
+  if ( torch ) {
+    const { region: uuid } = await requestGroundDrop(torch.uuid, b.center(0, 2));
+    const pile = fromUuidSync(uuid);
+    await sleep(900);
+    if ( pile ) {
+      b.created.Region.push(pile.id);
+      const st = fromUuidSync(pile.behaviors.contents[0]?.system.actor ?? "", { strict: false });
+      if ( st ) await st.setFlag(MODULE_ID, "test", true);
+      const pt = pileTile(pile);
+      const before = { x: centre(pile).x - pt.x, y: centre(pile).y - pt.y };
+      await pt.update({ x: pt.x + (3 * b.G) });
+      await until(() => (centre(pile).x - pt.x) === before.x, 4000);
+      b.expect(((centre(pile).x - pt.x) === before.x) && ((centre(pile).y - pt.y) === before.y), `a pile's tile moved three squares: the pile's region followed (${centre(pile).x - pt.x}, was ${before.x})`);
+    }
+  } else b.note("SRD torch not found: the pile is not played");
+
+  // Deleting the region still takes the tile with it; the extra level leaves last.
+  await region.delete();
+  await sleep(800);
+  b.expect(!scene.tiles.has(tile.id), "deleting the zone still deletes its tile");
+  if ( extra ) await extra.delete().catch(() => {});
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
@@ -1402,7 +1467,7 @@ const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap,
   shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4],
   // Lot 1 (2026-11-27)
   "share-coins": [shareCoinsPart, 7, 3], "partial-take": [partialTake, 4, 2],
-  "drop-coins": [dropCoinsPart, 8, 3], give: [givePart, 9, 2] };
+  "drop-coins": [dropCoinsPart, 8, 3], give: [givePart, 9, 2], "tile-follow": [tileFollow, 6, 4] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

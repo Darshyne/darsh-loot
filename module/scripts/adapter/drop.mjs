@@ -88,9 +88,10 @@ export async function realignPiles() {
     }
     if ( regions.length ) await scene.updateEmbeddedDocuments("Region", regions);
     if ( levelSync.length ) await scene.updateEmbeddedDocuments("Region", levelSync);
-    if ( tiles.length ) await scene.updateEmbeddedDocuments("Tile", tiles);
+    // `dloNoFollow`: the regions were just placed above — the zone must not follow these tile moves a second time (tile-zone.mjs).
+    if ( tiles.length ) await scene.updateEmbeddedDocuments("Tile", tiles, { dloNoFollow: true });
     if ( unseen.length ) await scene.updateEmbeddedDocuments("Tile", unseen);
-    if ( floors.length ) await scene.updateEmbeddedDocuments("Tile", floors);
+    if ( floors.length ) await scene.updateEmbeddedDocuments("Tile", floors, { dloNoFollow: true });
   }
 }
 

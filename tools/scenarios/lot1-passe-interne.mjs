@@ -12,6 +12,8 @@
  *  - `give`: an item, part of a stack or coins handed to another character at once, seen by all; a worn ring arrives unworn; a
  *    write that fails gives everything back; too far is forceable; in « ask » mode the GM answers for a character nobody
  *    plays (refused: nothing moves); switched off: refused.
+ *  - `tile-follow` (2026-11-27, reported by the user): the tile of a container or of a pile moved, or sent to another V14 level —
+ *    its region follows, and deleting the zone still deletes the tile.
  * Each part creates its own test documents and removes them. Restored: the viewed scene, the world's primary party and the
  * sharing settings; the test scene is deleted.
  *
@@ -19,7 +21,7 @@
  * (on the bench: `npm run banc:passe -- "<that path>"`). `PARTS=share-coins` in the environment plays only those.
  */
 const MODULE = "darsh-loot";
-const ALL = ["share-coins", "partial-take", "drop-coins", "give"];
+const ALL = ["share-coins", "partial-take", "drop-coins", "give", "tile-follow"];
 const PARTS = process.env.PARTS ? process.env.PARTS.split(",").filter(p => ALL.includes(p)) : ALL;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 

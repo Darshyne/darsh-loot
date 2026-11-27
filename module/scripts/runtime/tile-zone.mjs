@@ -11,7 +11,7 @@ import { MACRO_ZONE, SCENE_ZONE, DOCUMENT_ZONE, MECHANISM_ZONE } from "../adapte
 import { TRAP_ZONE } from "../adapter/trap-behavior.mjs";
 import { tileShape } from "../adapter/tile-outline.mjs";
 import { prettyName } from "../core/outline.mjs";
-import { tileRect, fitsTile } from "../core/tile-link.mjs";
+import { tileRect, fitsTile, tileShift, shiftShapes, shiftElevation, sameLevels } from "../core/tile-link.mjs";
 import { promptTileZone } from "../apps/tile-zone-dialog.mjs";
 
 /** Les zones que l'outil sait créer, dans l'ordre de la liste. */
@@ -116,6 +116,45 @@ async function onDeleteTile(tile) {
 }
 
 /**
+ * 2026-11-27 (reported by the user): the zone follows its tile. Deleting one already deleted the other, but a GM who moved the
+ * tile of a container — or sent it to another V14 level — left the region where it was: the image was in one place, the click
+ * and the reach in another.
+ *
+ * Where the tile was is only known before the update, on the client that moves it: `preUpdateTile` notes the shift in the
+ * update's options, which reach every client; the active GM then moves the linked regions by the same amount (`updateTile`).
+ * The levels are copied from the tile as they are. A move the module makes itself (pile realignment) says `dloNoFollow`.
+ */
+const FOLLOW = `${MODULE_ID}Follow`;
+
+function onPreUpdateTile(tile, changes, options) {
+  if ( options?.dloNoFollow ) return;
+  if ( !["x", "y", "elevation"].some(k => k in changes) ) return;
+  const src = tile._source;
+  const shift = tileShift(src, { x: changes.x ?? src.x, y: changes.y ?? src.y, elevation: changes.elevation ?? src.elevation });
+  if ( shift ) options[FOLLOW] = shift;
+}
+
+async function onUpdateTile(tile, changes, options) {
+  if ( !isActiveGM() || options?.dloNoFollow ) return;
+  const shift = options?.[FOLLOW] ?? null;
+  const levelsChanged = "levels" in changes;
+  if ( !shift && !levelsChanged ) return;
+  const scene = tile.parent;
+  const tileLevels = [...(tile._source.levels ?? [])];
+  const updates = [];
+  for ( const region of scene?.regions ?? [] ) {
+    if ( linkedTileId(region) !== tile.id ) continue;
+    const src = region._source;
+    const update = { _id: region.id };
+    if ( shift && (shift.dx || shift.dy) ) update.shapes = shiftShapes(src.shapes.map(s => ({ ...s })), shift.dx, shift.dy);
+    if ( shift?.dz && (Number.isFinite(src.elevation?.bottom) || Number.isFinite(src.elevation?.top)) ) update.elevation = shiftElevation(src.elevation, shift.dz);
+    if ( levelsChanged && !sameLevels(src.levels, tileLevels) ) update.levels = tileLevels;
+    if ( Object.keys(update).length > 1 ) updates.push(update);
+  }
+  if ( updates.length ) await scene.updateEmbeddedDocuments("Region", updates);
+}
+
+/**
  * Chez le MJ, au chargement : les zones faites d'une tuile avant la 0.15.5 n'avaient pas de lien. Une région DAS sans lien reçoit
  * celui de la seule tuile dont elle épouse l'image (core/tile-link.mjs `fitsTile`) ; ambigu ou rien : elle reste sans lien.
  */
@@ -140,5 +179,7 @@ export function registerTileZone() {
   route("renderTileHUD", "tile → zone button", onRenderTileHUD);
   route("deleteRegion", "zone and its tile", region => onDeleteRegion(region));
   route("deleteTile", "zone and its tile", tile => onDeleteTile(tile));
+  route("preUpdateTile", "zone follows its tile", onPreUpdateTile);
+  route("updateTile", "zone follows its tile", (tile, changes, options) => { onUpdateTile(tile, changes, options).catch(err => log.warn("zone not moved with its tile:", err.message)); });
   if ( isActiveGM() ) linkOldZones().catch(err => log.warn("linking zones to their tiles:", err.message));
 }
