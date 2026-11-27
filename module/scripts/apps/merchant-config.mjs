@@ -19,7 +19,7 @@ export class MerchantConfig extends ApplicationV2 {
 
   static DEFAULT_OPTIONS = {
     tag: "form",
-    classes: ["dlo-loot", "dlo-merchant-config"],
+    classes: ["dlo-loot", "dlo-merchant-config", "dnd5e2", "titlebar"],
     window: { icon: "fa-solid fa-store", resizable: true },
     position: { width: 560, height: "auto" },
     form: { handler: MerchantConfig.#onSubmit, closeOnSubmit: true },

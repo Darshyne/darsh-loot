@@ -18,7 +18,7 @@ export class StealWindow extends ApplicationV2 {
   }
 
   static DEFAULT_OPTIONS = {
-    classes: ["dlo-loot", "dlo-steal"],
+    classes: ["dlo-loot", "dlo-steal", "dnd5e2", "titlebar"],
     window: { icon: "fa-solid fa-hand-sparkles", resizable: true },
     position: { width: 360, height: "auto" },
     actions: { steal: StealWindow.#onSteal }

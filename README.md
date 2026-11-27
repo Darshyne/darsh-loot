@@ -6,8 +6,8 @@
 > between versions. If something doesn't behave as it should, tell us on [Discord](https://discord.gg/PDSq8dYdTP) or
 > [open an issue](https://github.com/Darshyne/darsh-loot/issues).
 
-Part of **Darshyne's Automation Suite (DAS)**. Loot and trade for **Foundry VTT V14** and **dnd5e 6.x**, with a
-Baldur's Gate 3-style interface:
+Part of **Darshyne's Automation Suite (DAS)**. Loot and trade for **Foundry VTT V14** and **dnd5e 6.x**. Its windows wear the dnd5e system's own look and follow
+each user's light or dark theme. It brings:
 
 - **lootable corpses** out of combat, with treasure rolled on the first search according to the creature's CR
   and treasure theme;

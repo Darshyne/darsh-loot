@@ -39,7 +39,7 @@ export function merchantFormHTML({ actor, merchant, tables, characters }) {
   const options = (keys, current, label) => keys.map(k => `<option value="${k}" ${k === current ? "selected" : ""}>${label(k)}</option>`).join("");
   const attitudes = current => options(Object.keys(ATTITUDES), current, k => loc(`Merchant.Attitude.${k}`));
   const row = (label, field, hint="") => `
-    <div class="dlo-field"><label>${label}</label><div class="dlo-field-input">${field}</div>${hint ? `<p class="dlo-hint">${hint}</p>` : ""}</div>`;
+    <div class="form-group dlo-field"><label>${label}</label><div class="form-fields dlo-field-input">${field}</div>${hint ? `<p class="hint dlo-hint">${hint}</p>` : ""}</div>`;
   return `
     <fieldset>
       <legend>${loc("Merchant.Shop")}</legend>

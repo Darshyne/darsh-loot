@@ -5,6 +5,7 @@
  */
 import { MODULE_ID, loc } from "../shared.mjs";
 import { COINS } from "../core/loot.mjs";
+import { coinAmount, coinIcon } from "./coin.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 const escape = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -17,7 +18,7 @@ export class TradeWindow extends ApplicationV2 {
   }
 
   static DEFAULT_OPTIONS = {
-    classes: ["dlo-loot", "dlo-trade"],
+    classes: ["dlo-loot", "dlo-trade", "dnd5e2", "titlebar"],
     window: { icon: "fa-solid fa-right-left", resizable: true },
     position: { width: 520, height: "auto" },
     actions: {
@@ -93,11 +94,11 @@ export class TradeWindow extends ApplicationV2 {
           : `<span class="dlo-trade-qty-ro">×${i.quantity}</span>`}
       </li>`;
     const coinsOf = (side, editable) => COINS.map(k => {
-      const cfg = CONFIG.DND5E.currencies[k] ?? {};
       const v = side.coins[k] ?? 0;
-      if ( !editable ) return v ? `<span class="dlo-coin">${v} ${cfg.abbreviation ?? k}</span>` : "";
-      return `<label class="dlo-trade-coin">${cfg.abbreviation ?? k}
-        <input type="number" min="0" value="${v}" data-coin="${k}" ${done ? "disabled" : ""}></label>`;
+      if ( !editable ) return v ? coinAmount(k, v) : "";
+      const label = foundry.utils.escapeHTML(game.i18n.localize(CONFIG.DND5E.currencies[k]?.label ?? k));
+      return `<label class="dlo-trade-coin" data-tooltip="${label}">
+        <input type="number" min="0" value="${v}" data-coin="${k}" ${done ? "disabled" : ""}> ${coinIcon(k)}</label>`;
     }).join("");
     const status = side => side.accepted
       ? `<span class="dlo-trade-ok"><i class="fa-solid fa-check"></i> ${loc("Trade.Accepted")}</span>`

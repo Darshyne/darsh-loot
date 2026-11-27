@@ -17,6 +17,7 @@ import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { merchantOf, stockView, waresView, quote, formatPrice, purseView, shopOpenTo, salesLog } from "../adapter/shop.mjs";
 import { byCategory, matchesSearch, parseGold, CP_PER } from "../core/shop.mjs";
 import { escape, itemPicture, showItemInfo } from "./shop-parts.mjs";
+import { coinAmount } from "./coin.mjs";
 import { merchantFormContext, merchantFormHTML, readMerchantForm, wireTables } from "./merchant-form.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -45,7 +46,7 @@ export class ShopWindow extends ApplicationV2 {
   }
 
   static DEFAULT_OPTIONS = {
-    classes: ["dlo-loot", "dlo-shop"],
+    classes: ["dlo-loot", "dlo-shop", "dnd5e2", "titlebar"],
     window: { icon: "fa-solid fa-store", resizable: true },
     position: { width: 880, height: "auto" },
     actions: {
@@ -286,7 +287,7 @@ export class ShopWindow extends ApplicationV2 {
 
   #purse(actor) {
     const coins = purseView(actor);
-    return coins.length ? coins.map(c => `<span class="dlo-coin dlo-coin-${c.key}">${c.value} ${c.abbr}</span>`).join(" ") : `<span class="dlo-muted">—</span>`;
+    return coins.length ? coins.map(c => coinAmount(c.key, c.value)).join(" ") : `<span class="dlo-muted">—</span>`;
   }
 
   /** Search field and view switch. */

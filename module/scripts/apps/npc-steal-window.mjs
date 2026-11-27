@@ -19,7 +19,7 @@ export class NpcStealWindow extends ApplicationV2 {
   }
 
   static DEFAULT_OPTIONS = {
-    classes: ["dlo-loot", "dlo-steal", "dlo-npc-steal"],
+    classes: ["dlo-loot", "dlo-steal", "dlo-npc-steal", "dnd5e2", "titlebar"],
     window: { icon: "fa-solid fa-hand", resizable: true },
     position: { width: 380, height: "auto" },
     actions: { steal: NpcStealWindow.#onSteal }

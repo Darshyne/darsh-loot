@@ -44,7 +44,7 @@ export async function showItemInfo(item, { price="", quantity=null }={}) {
   if ( rarity && CONFIG.DND5E?.itemRarity?.[rarity] ) facts.push(game.i18n.localize(CONFIG.DND5E.itemRarity[rarity]));
   return foundry.applications.api.DialogV2.prompt({
     window: { title: name, icon: "fa-solid fa-circle-info" },
-    classes: ["dlo-loot", "dlo-item-info"],
+    classes: ["dlo-loot", "dlo-item-info", "dnd5e2", "titlebar"],
     position: { width: 420 },
     content: `<div class="dlo-info-head">${itemPicture(item.img, "dlo-info-pic")}<div><h3>${escape(name)}</h3>
       <p class="dlo-muted">${facts.map(escape).join(" · ")}</p></div></div><div class="dlo-info-desc">${enriched}</div>`,

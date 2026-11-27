@@ -1,18 +1,49 @@
-/* Butin et commerce — tout aspect passe par une variable --dlo-* (la V2 BG3 sera un thème). */
+/*
+ * DAS · Loot & Trade — the module's windows wear the dnd5e system's look (design review of 2026-11-27, option B).
+ *
+ * Every module window carries the classes `dnd5e2 titlebar` beside its own (`dlo-loot`…): `dnd5e2` brings the system frame
+ * (paper or dark texture, gold edge), Roboto, the system's form styles and its themed variables, in the light and in the dark
+ * theme each user picks (« Appearance » settings), with no theme code in this module. The rules below only point at variables
+ * published by dnd5e 6.x or Foundry core, always with a fallback: nothing is copied from the system's stylesheet.
+ * Every colour goes through a `--dlo-*` variable defined once, here.
+ */
 :root {
-  --dlo-bg: #1b1712;
-  --dlo-edge: #6b5634;
-  --dlo-gold: #d9b56a;
-  --dlo-text: #e8dcc4;
-  --dlo-muted: #9c8f78;
-  --dlo-slot: #2a241c;
-  --dlo-slot-hover: #3a3124;
   --dlo-slot-size: 52px;
 }
+.dlo-loot {
+  --dlo-text: var(--color-text-primary, #191813);
+  --dlo-muted: var(--color-text-secondary, #666);
+  /* headings and text accents: dark ink on paper, gold on the dark theme */
+  --dlo-title: var(--color-text-title, var(--dlo-text));
+  --dlo-edge: var(--filigree-border-color, var(--dnd5e-color-gold, #9f9275));
+  --dlo-gold: var(--dnd5e-color-gold, #9f9275);
+  --dlo-card: var(--dnd5e-background-card, #f8f4f1);
+  /* an item tile: the system's « gold icon » background */
+  --dlo-slot: var(--dnd5e-gold-icon-background, #3d3d3d);
+  --dlo-field: var(--dnd5e-background-10, rgb(0 0 0 / 10%));
+  --dlo-row: var(--dnd5e-background-5, rgb(0 0 0 / 5%));
+  /* text on a gold background (an active tab, a hovered button) */
+  --dlo-on-text: var(--dnd5e-background-card, #fff);
+  --dlo-warn: var(--dnd5e-color-maroon, #741b2b);
+  --dlo-ok: var(--dnd5e-color-green, #205b15);
+  --dlo-caution: #8a5a00;
+  --dlo-head-1: var(--dnd5e-card-header-1, var(--dnd5e-color-hd-1, #401f25));
+  --dlo-head-2: var(--dnd5e-card-header-2, var(--dnd5e-color-hd-2, #741b2b));
+  --dlo-shadow: var(--dnd5e-shadow-15, rgb(0 0 0 / 15%));
+  --dlo-shadow-strong: var(--dnd5e-shadow-45, rgb(0 0 0 / 45%));
+}
+/* The only theme-dependent values the system does not publish as themed variables. */
+body.theme-dark .dlo-loot:not(.theme-light), .dlo-loot.theme-dark {
+  --dlo-warn: #f08c8c;
+  --dlo-ok: #8fd07f;
+  --dlo-caution: #e3b07c;
+  --dlo-field: rgb(255 255 255 / 6%);
+  --dlo-row: rgb(255 255 255 / 4%);
+}
 
-/* ---- curseurs (canevas) ----
- * Préfixés par `html` : plus forts que ceux du moteur de combat (`body[data-dnd5e-combat-cursor] #board`), qui pose
- * « se déplacer » au survol du sol hors combat — un coffre ou un tas au sol doit montrer notre curseur. */
+/* ---- cursors (canvas) ----
+ * Prefixed with `html`: stronger than the Core's (`body[data-dnd5e-combat-cursor] #board`), which shows « move » over the
+ * ground out of combat — a chest or a pile on the ground must show ours. */
 html body[data-darsh-loot-cursor="loot"] #board { cursor: url("../assets/cursors/loot.svg") 4 4, pointer !important; }
 html body[data-darsh-loot-cursor="far"] #board { cursor: url("../assets/cursors/loot-far.svg") 4 4, not-allowed !important; }
 html body[data-darsh-loot-cursor="go"] #board { cursor: url("../assets/cursors/go.svg") 4 4, pointer !important; }
@@ -20,14 +51,77 @@ html body[data-darsh-loot-cursor="steal"] #board { cursor: url("../assets/cursor
 html body[data-darsh-loot-cursor="locked"] #board { cursor: url("../assets/cursors/locked.svg") 4 4, pointer !important; }
 html body[data-darsh-loot-cursor="use"] #board { cursor: url("../assets/cursors/use.svg") 4 4, pointer !important; }
 html body[data-darsh-loot-cursor="disarm"] #board { cursor: url("../assets/cursors/disarm.svg") 4 4, pointer !important; }
+html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors/shop.svg") 4 4, pointer !important; }
 
-/* ---- fenêtre de fouille ---- */
+/* ---- every module window ---- */
 .dlo-loot .window-content {
-  background: var(--dlo-bg);
+  background: transparent;
   color: var(--dlo-text);
+  font-family: var(--dnd5e-font-roboto, sans-serif);
   padding: 10px 12px;
 }
 .dlo-loot .dlo-to { margin: 0 0 8px; color: var(--dlo-muted); font-size: 0.85rem; }
+.dlo-loot .dlo-muted { color: var(--dlo-muted); }
+.dlo-loot .dlo-empty { color: var(--dlo-muted); font-style: italic; }
+.dlo-loot .dlo-hint { margin: 8px 0 0; color: var(--dlo-muted); font-size: 0.8rem; }
+.dlo-loot .dlo-blocked { margin: 8px 0 0; color: var(--dlo-warn); font-size: 0.85rem; }
+.dlo-loot .dlo-lock { color: var(--dlo-title); font-family: var(--dnd5e-font-roboto-slab, serif); font-size: 1rem; margin: 4px 0; }
+
+/* Buttons: the system's card button (as in its « Award » window), the same in every module window. */
+.dlo-loot .window-content button {
+  width: auto;
+  color: var(--dlo-text);
+  background: var(--dlo-card);
+  border: 1px solid var(--dlo-edge);
+  box-shadow: 0 0 4px var(--dlo-shadow);
+  font-family: var(--dnd5e-font-roboto, sans-serif);
+  font-size: var(--font-size-12, 12px);
+  font-weight: bold;
+  text-transform: uppercase;
+  padding-inline: 10px;
+}
+.dlo-loot .window-content button:hover:not(:disabled) {
+  color: var(--dlo-text);
+  background: var(--dlo-card);
+  border-color: var(--dlo-gold);
+  box-shadow: 0 0 6px var(--dlo-gold);
+}
+.dlo-loot .window-content button:disabled { color: var(--dlo-muted); opacity: 0.6; cursor: not-allowed; }
+.dlo-loot .window-content button i { color: var(--dlo-gold); }
+.dlo-loot .window-content button.dlo-on,
+.dlo-loot .window-content button.dlo-on:hover { color: var(--dlo-on-text); background: var(--dlo-gold); border-color: var(--dlo-gold); }
+.dlo-loot .window-content button.dlo-on i { color: inherit; }
+
+/* Text fields: a visible field in both themes (the system leaves some of them borderless). */
+.dlo-loot .window-content :is(input[type="text"], input[type="number"], input[type="search"], select, textarea) {
+  color: var(--dlo-text);
+  background: var(--dlo-field);
+  border: 1px solid var(--dlo-edge);
+  border-radius: 3px;
+}
+
+/* A card: the system's panel with, on top, its coloured header strip (as an inventory section). */
+.dlo-shop .dlo-shop-col, .dlo-trade .dlo-trade-col {
+  background: var(--dlo-card);
+  border: 1px solid var(--dlo-edge);
+  border-radius: 4px;
+  box-shadow: 0 0 6px var(--dlo-shadow-strong);
+  padding: 0 0 8px;
+}
+.dlo-shop .dlo-shop-col > *, .dlo-trade .dlo-trade-col > * { margin-inline: 8px; }
+.dlo-shop .dlo-shop-col h3, .dlo-trade .dlo-trade-col h3 {
+  margin: 0 0 8px; padding: 0.5rem;
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  background: linear-gradient(to right, var(--dlo-head-1), var(--dlo-head-2));
+  color: #fff;
+  font-family: var(--dnd5e-font-roboto-slab, serif);
+  font-size: var(--font-size-13, 13px); font-weight: bold; line-height: 1;
+  border: none; border-bottom: 1px solid var(--dlo-edge);
+}
+.dlo-shop .dlo-shop-col h3:first-child, .dlo-trade .dlo-trade-col h3:first-child { border-radius: 3px 3px 0 0; }
+.dlo-shop .dlo-shop-col h3:not(:first-child) { margin-top: 4px; border-top: 1px solid var(--dlo-edge); }
+
+/* ---- search window ---- */
 .dlo-loot .dlo-grid {
   list-style: none;
   margin: 0;
@@ -36,144 +130,233 @@ html body[data-darsh-loot-cursor="disarm"] #board { cursor: url("../assets/curso
   grid-template-columns: repeat(auto-fill, var(--dlo-slot-size));
   gap: 6px;
 }
+/* An item tile: the system's « gold icon », the item picture framed in gold. */
 .dlo-loot .dlo-slot {
   position: relative;
   width: var(--dlo-slot-size);
   height: var(--dlo-slot-size);
   background: var(--dlo-slot);
-  border: 1px solid var(--dlo-edge);
+  border: 1px solid var(--dlo-gold);
   border-radius: 4px;
+  box-shadow: 0 0 4px var(--dlo-shadow-strong);
+  overflow: hidden;
   cursor: pointer;
 }
-.dlo-loot .dlo-slot:hover { background: var(--dlo-slot-hover); border-color: var(--dlo-gold); }
+.dlo-loot .dlo-slot:hover { box-shadow: 0 0 6px var(--dlo-gold); }
 .dlo-loot .dlo-grid.disabled .dlo-slot { cursor: not-allowed; opacity: 0.6; }
 .dlo-loot .dlo-slot img { width: 100%; height: 100%; object-fit: contain; border: 0; }
+.dlo-loot .dlo-pic { display: block; width: 100%; height: 100%; background: center / contain no-repeat; }
+/* Text drawn over an item picture: light on a dark shadow, whatever the theme. */
 .dlo-loot .dlo-qty {
   position: absolute; right: 2px; bottom: 1px;
-  font-size: 0.75rem; font-weight: bold; color: var(--dlo-text);
+  font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+  font-size: 0.75rem; font-weight: bold; color: #fff;
   text-shadow: 0 0 2px #000, 0 0 2px #000;
 }
 .dlo-loot .dlo-inside {
   position: absolute; left: 2px; top: 1px;
-  font-size: 0.65rem; color: var(--dlo-gold);
+  font-size: 0.65rem; color: #fff;
   text-shadow: 0 0 2px #000;
 }
+
+/* Coins: the system's coin icons (apps/coin.mjs), on a card. */
+.dlo-loot .dlo-coin { color: var(--dlo-text); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.dlo-loot .dlo-coin i.currency { font-size: 1.15em; }
+.dlo-loot .dlo-coin-abbr { font-weight: normal; color: var(--dlo-muted); }
 .dlo-loot .dlo-coins {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  margin-top: 10px; padding: 4px 6px;
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-top: 10px; padding: 6px 8px;
+  background: var(--dlo-card);
   border: 1px solid var(--dlo-edge); border-radius: 4px;
+  box-shadow: 0 0 4px var(--dlo-shadow);
   cursor: pointer;
 }
-.dlo-loot .dlo-coins:hover { border-color: var(--dlo-gold); }
-.dlo-loot .dlo-coin { color: var(--dlo-gold); }
-.dlo-loot .dlo-empty { color: var(--dlo-muted); font-style: italic; }
-.dlo-loot .dlo-blocked { margin: 8px 0 0; color: #d98a6a; font-size: 0.85rem; }
-.dlo-loot .dlo-foot { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-/* Boutons : couleurs posées (le thème sombre du cœur donnait un texte presque noir sur fond sombre). */
-.dlo-loot .dlo-foot button {
-  width: auto;
-  color: var(--dlo-text);
-  background: var(--dlo-slot);
-  border: 1px solid var(--dlo-edge);
-}
-.dlo-loot .dlo-foot button:hover:not(:disabled) {
-  color: var(--dlo-bg);
-  background: var(--dlo-gold);
-  border-color: var(--dlo-gold);
-}
-.dlo-loot .dlo-foot button:disabled { color: var(--dlo-muted); opacity: 0.55; cursor: not-allowed; }
-.dlo-loot .dlo-foot button i { color: inherit; }
-.dlo-loot .dlo-foot .dlo-store { margin-right: auto; }
-.dlo-loot .dlo-lock { color: var(--dlo-gold); font-size: 1rem; margin: 4px 0; }
+.dlo-loot .dlo-coins:hover { border-color: var(--dlo-gold); box-shadow: 0 0 6px var(--dlo-gold); }
+/* Lot 1 — sharing: the coins and, beside them, « Share » */
+.dlo-loot .dlo-coin-row { display: flex; align-items: stretch; gap: 6px; margin-top: 10px; }
+.dlo-loot .dlo-coin-row .dlo-coins { flex: 1; margin-top: 0; }
+.dlo-loot .window-content .dlo-share { flex: 0 0 auto; padding: 2px 10px; }
 
-/* ---- vol à la tire : pastille de difficulté, porté, déjà tenté ---- */
+.dlo-loot .dlo-foot { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.dlo-loot .dlo-foot .dlo-store { margin-right: auto; }
+
+/* ---- pickpocketing: difficulty dot, worn, already tried ---- */
 .dlo-steal .dlo-diff {
   position: absolute; left: 3px; top: 3px; width: 9px; height: 9px; border-radius: 50%;
-  border: 1px solid #000; background: var(--dlo-muted);
+  border: 1px solid #000; background: #9c8f78;
 }
 .dlo-steal .dlo-diff-easy .dlo-diff { background: #6fae5c; }
 .dlo-steal .dlo-diff-medium .dlo-diff { background: #d9b56a; }
 .dlo-steal .dlo-diff-hard .dlo-diff { background: #d9824a; }
 .dlo-steal .dlo-diff-veryHard .dlo-diff { background: #c0392b; }
 .dlo-steal .dlo-steal-worn, .dlo-steal .dlo-steal-tried { cursor: not-allowed; opacity: 0.4; filter: grayscale(0.8); }
-.dlo-loot .dlo-hint { margin: 8px 0 0; color: var(--dlo-muted); font-size: 0.8rem; }
 
-/* ---- objet volé dans une fiche ---- */
+/* 0.21.0 (issue #5): GM window when an NPC robs a character — the exact DC on each item, « At random ». */
+.dlo-npc-steal .dlo-dc {
+  position: absolute; left: 2px; top: 1px;
+  font-size: 0.7rem; font-weight: bold; color: #fff;
+  text-shadow: 0 0 2px #000, 0 0 2px #000;
+}
+.dlo-npc-steal .dlo-actions { display: flex; justify-content: center; margin: 0.4rem 0; }
+.dlo-npc-steal .dlo-actions button { flex: 0 0 auto; }
+
+/* ---- a stolen item in a character sheet ---- */
 .dlo-stolen-mark { color: #c0392b; margin-left: 4px; font-size: 0.8em; }
 
-/* ---- échange ---- */
+/* ---- trade between players ---- */
 .dlo-trade .dlo-trade-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.dlo-trade .dlo-trade-col { border: 1px solid var(--dlo-edge); border-radius: 4px; padding: 6px 8px; min-height: 120px; }
+.dlo-trade .dlo-trade-col { min-height: 120px; }
 .dlo-trade .dlo-trade-mine { border-style: dashed; }
-.dlo-trade h3 { margin: 0 0 6px; font-size: 0.95rem; color: var(--dlo-gold); border: none; display: flex; justify-content: space-between; gap: 6px; }
-.dlo-trade .dlo-trade-ok { color: #6fae5c; font-size: 0.8rem; }
-.dlo-trade .dlo-trade-wait { color: var(--dlo-muted); font-size: 0.8rem; }
+.dlo-trade .dlo-trade-ok { color: #b6f0a8; font-family: var(--dnd5e-font-roboto, sans-serif); font-weight: normal; font-size: 0.8rem; }
+.dlo-trade .dlo-trade-wait { color: rgb(255 255 255 / 75%); font-family: var(--dnd5e-font-roboto, sans-serif); font-weight: normal; font-size: 0.8rem; }
 .dlo-trade .dlo-trade-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .dlo-trade .dlo-trade-item { display: flex; align-items: center; gap: 6px; }
-.dlo-trade .dlo-trade-item img { width: 28px; height: 28px; border: 1px solid var(--dlo-edge); border-radius: 3px; }
-.dlo-trade .dlo-trade-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dlo-trade .dlo-trade-qty { width: 52px; }
-.dlo-trade .dlo-trade-remove { width: auto; padding: 0 6px; color: var(--dlo-text); background: transparent; border: none; }
-.dlo-trade .dlo-trade-coins { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.dlo-trade .dlo-trade-coin { display: flex; align-items: center; gap: 3px; color: var(--dlo-gold); font-size: 0.8rem; }
-.dlo-trade .dlo-trade-coin input { width: 52px; }
+.dlo-trade .dlo-trade-item img { width: 32px; height: 32px; background: var(--dlo-slot); border: 1px solid var(--dlo-gold); border-radius: 4px; }
+.dlo-trade .dlo-trade-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--dnd5e-font-roboto-slab, serif); font-weight: bold; font-size: var(--font-size-13, 13px); }
+.dlo-trade .window-content input.dlo-trade-qty { width: 52px; text-align: center; }
+.dlo-trade .window-content .dlo-trade-remove { padding: 0 6px; background: transparent; border: none; box-shadow: none; }
+.dlo-trade .window-content .dlo-trade-remove i { color: var(--dlo-muted); }
+.dlo-trade .dlo-trade-coins { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.dlo-trade .dlo-trade-coin { display: flex; align-items: center; gap: 3px; }
+.dlo-trade .dlo-trade-coin i.currency { font-size: 1.15em; }
+.dlo-trade .window-content .dlo-trade-coin input { width: 52px; text-align: center; }
 
-/* ---- boutique (SPEC §3.7) ---- */
-html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors/shop.svg") 4 4, pointer !important; }
-/* En-tête : le marchand (portrait, nom, présentation) — agrandi le 2026-10-01, la présentation était coupée à trois lignes. */
+/* ---- shop (SPEC §3.7) ---- */
+/* Header: the merchant (portrait, name, introduction) — enlarged 2026-10-01, the introduction was cut at three lines. */
 .dlo-shop .dlo-shop-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
-.dlo-shop .dlo-shop-head .dlo-shop-portrait { width: 112px; height: 112px; background-size: cover; border: 1px solid var(--dlo-edge); border-radius: 4px; flex: none; }
+.dlo-shop .dlo-shop-head .dlo-shop-portrait { width: 112px; height: 112px; background-color: var(--dlo-slot); background-size: cover;
+  border: 1px solid var(--dlo-gold); border-radius: 4px; box-shadow: 0 0 6px var(--dlo-shadow-strong); flex: none; }
 .dlo-shop .dlo-shop-about { flex: 1; min-width: 0; }
-.dlo-shop .dlo-shop-about h2 { margin: 0 0 4px; font-size: 1.45rem; color: var(--dlo-gold); border: none; }
+.dlo-shop .dlo-shop-about h2 {
+  margin: 0 0 4px; border: none;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-family: var(--dnd5e-font-modesto, serif);
+  font-size: var(--font-size-32, 2rem); font-weight: bold; line-height: 1;
+  color: var(--dlo-title);
+}
 .dlo-shop .dlo-shop-desc { color: var(--dlo-text); font-size: 0.92rem; line-height: 1.35; max-height: 14em; overflow-y: auto; padding-right: 4px; }
 .dlo-shop .dlo-shop-desc p { margin: 0 0 4px; }
 .dlo-shop .dlo-shop-desc em { color: var(--dlo-muted); }
-.dlo-shop .dlo-shop-closed { color: #d98a6a; font-size: 0.85rem; }
+.dlo-shop .dlo-shop-closed { color: var(--dlo-warn); font-size: 0.85rem; }
 .dlo-shop .dlo-shop-shut { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem;
-  min-height: 14rem; padding: 2rem 1rem; text-align: center; color: #cdbf9e; }
-.dlo-shop .dlo-shop-shut > i { font-size: 3.2rem; color: #d98a6a; opacity: 0.85; }
+  min-height: 14rem; padding: 2rem 1rem; text-align: center; color: var(--dlo-muted); }
+.dlo-shop .dlo-shop-shut > i { font-size: 3.2rem; color: var(--dlo-warn); opacity: 0.85; }
 .dlo-shop .dlo-shop-shut p { margin: 0; }
-.dlo-shop .dlo-shop-shut .dlo-shop-shut-title { font-size: 1.3rem; font-weight: bold; color: #e8d9b5; }
-.dlo-shop .dlo-shop-gm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
-.dlo-shop .dlo-shop-gm button { width: auto; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
-.dlo-shop .dlo-shop-gm button:hover { color: var(--dlo-bg); background: var(--dlo-gold); }
+.dlo-shop .dlo-shop-shut .dlo-shop-shut-title { font-size: 1.3rem; font-weight: bold; color: var(--dlo-title);
+  font-family: var(--dnd5e-font-roboto-slab, serif); }
+/* The open / closed pill beside the merchant's name. */
+.dlo-shop .window-content .dlo-shop-status {
+  font-family: var(--dnd5e-font-roboto, sans-serif); font-size: 0.8rem; text-transform: none;
+  padding: 2px 10px; border-radius: 12px; line-height: 1.6; box-shadow: none;
+}
+.dlo-shop .window-content .dlo-shop-status.dlo-open { color: var(--dlo-ok); border-color: var(--dlo-ok); background: color-mix(in srgb, var(--dlo-ok) 14%, transparent); }
+.dlo-shop .window-content .dlo-shop-status.dlo-closed { color: var(--dlo-warn); border-color: var(--dlo-warn); background: color-mix(in srgb, var(--dlo-warn) 14%, transparent); }
+.dlo-shop .window-content .dlo-shop-status i { color: inherit; }
+/* GM bar: tabs and tools */
+.dlo-shop .dlo-shop-gm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px;
+  margin-bottom: 8px; border-bottom: 1px solid var(--dlo-edge); padding-bottom: 6px; }
 .dlo-shop .dlo-shop-gm .dlo-hint { margin: 0; }
+.dlo-shop .dlo-shop-tabs, .dlo-shop .dlo-shop-gm-tools { display: flex; gap: 4px; flex-wrap: wrap; }
+.dlo-shop .window-content .dlo-shop-gm-tools button { width: 30px; padding: 0; justify-content: center; }
+/* Columns: the stock, the deal, the customer's goods */
 .dlo-shop .dlo-shop-cols { display: grid; grid-template-columns: minmax(0, 1fr) 236px minmax(0, 1fr); gap: 10px; }
-.dlo-shop .dlo-shop-col { border: 1px solid var(--dlo-edge); border-radius: 4px; padding: 6px 8px; min-height: 260px; display: flex; flex-direction: column; }
-.dlo-shop .dlo-shop-col h3 { margin: 0 0 6px; font-size: 0.95rem; color: var(--dlo-gold); border: none; display: flex; justify-content: space-between; gap: 6px; }
+.dlo-shop .dlo-shop-col { min-height: 260px; display: flex; flex-direction: column; }
 .dlo-shop .dlo-shop-col > .dlo-grid { max-height: 380px; overflow-y: auto; align-content: start; padding-bottom: 2px; }
 .dlo-shop .dlo-shop-deal { border-style: dashed; }
 .dlo-shop .dlo-shop-tray { min-height: calc(var(--dlo-slot-size) + 16px); margin-bottom: 8px; }
-.dlo-shop .dlo-shop-total { color: var(--dlo-text); font-weight: normal; font-size: 0.85rem; }
+.dlo-shop .dlo-shop-total { color: #fff; font-family: var(--dnd5e-font-roboto, sans-serif); font-weight: normal; font-size: 0.85rem; }
 .dlo-shop .dlo-shop-slot { height: calc(var(--dlo-slot-size) + 14px); }
 .dlo-shop .dlo-shop-slot img, .dlo-shop .dlo-shop-slot .dlo-pic { height: var(--dlo-slot-size); }
 .dlo-shop .dlo-shop-slot .dlo-qty { bottom: 15px; }
 .dlo-shop .dlo-shop-price {
   position: absolute; left: 0; right: 0; bottom: 0; height: 14px; line-height: 14px;
-  font-size: 0.62rem; text-align: center; color: var(--dlo-gold); background: rgba(0, 0, 0, 0.45);
+  font-family: var(--dnd5e-font-roboto-condensed, sans-serif); font-size: 0.68rem;
+  text-align: center; color: #f1ebe8; background: rgb(0 0 0 / 65%);
   white-space: nowrap; overflow: hidden;
 }
 .dlo-shop .dlo-shop-no { cursor: not-allowed; opacity: 0.45; filter: grayscale(0.8); }
 .dlo-shop .dlo-shop-out { cursor: default; opacity: 0.3; }
 .dlo-shop .dlo-shop-hidden { border-style: dashed; }
-.dlo-shop .dlo-shop-badge { position: absolute; right: 2px; top: 1px; font-size: 0.65rem; color: #d98a6a; text-shadow: 0 0 2px #000; }
-.dlo-shop .dlo-shop-badge-left { right: auto; left: 2px; color: var(--dlo-muted); }
-.dlo-shop .dlo-shop-purse { margin-top: auto; padding-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.85rem; }
-.dlo-shop .dlo-shop-balance { margin: 4px 0 0; font-weight: bold; color: var(--dlo-text); }
-.dlo-shop .dlo-shop-foot { margin-top: auto; padding-top: 8px; justify-content: space-between; }
+.dlo-shop .dlo-shop-badge { position: absolute; right: 2px; top: 1px; display: inline-flex; gap: 3px;
+  font-size: 0.65rem; color: #ffb4a0; text-shadow: 0 0 2px #000; }
+.dlo-shop .dlo-shop-badge-left { right: auto; left: 2px; color: #ddd; }
+.dlo-shop .dlo-shop-badge .dlo-warn { color: #ffb4a0; }
+.dlo-shop .dlo-warn { color: var(--dlo-warn); }
+.dlo-shop .dlo-shop-purse { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--dlo-edge);
+  display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; }
+.dlo-shop .dlo-shop-balance { margin: 4px 0 0; font-weight: bold; color: var(--dlo-text);
+  font-family: var(--dnd5e-font-roboto-slab, serif); font-size: var(--font-size-14, 14px); }
+.dlo-shop .dlo-shop-foot { margin-top: auto; padding-top: 8px; padding-inline: 0; justify-content: space-between; }
 .dlo-shop .dlo-off .dlo-slot { cursor: not-allowed; }
-.dlo-loot .dlo-muted { color: var(--dlo-muted); }
+/* Search field and view switch */
+.dlo-shop .dlo-shop-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dlo-shop .dlo-shop-search { flex: 1; display: flex; align-items: center; gap: 6px; color: var(--dlo-muted); }
+.dlo-shop .dlo-shop-search input { flex: 1; }
+.dlo-shop .dlo-shop-views { display: flex; gap: 2px; }
+.dlo-shop .window-content .dlo-shop-views button { width: 30px; padding: 0; justify-content: center; }
+.dlo-shop .dlo-shop-scroll { max-height: 400px; overflow-y: auto; padding-right: 2px; }
+.dlo-shop .dlo-shop-scroll > .dlo-grid { align-content: start; padding-bottom: 2px; }
+/* List view */
+.dlo-shop .dlo-shop-category h4 { margin: 6px 0 2px; font-size: 0.8rem; color: var(--dlo-title); text-transform: uppercase; letter-spacing: 0.04em;
+  font-family: var(--dnd5e-font-roboto, sans-serif); border-bottom: 1px solid var(--dlo-edge); display: flex; justify-content: space-between; }
+.dlo-shop .dlo-shop-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.dlo-shop .dlo-shop-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; align-items: center; gap: 8px;
+  padding: 2px 6px 2px 2px; background: var(--dlo-row); border: 1px solid transparent; border-radius: 3px; cursor: pointer; }
+.dlo-shop .dlo-shop-row:hover { border-color: var(--dlo-gold); box-shadow: 0 0 4px var(--dlo-gold); }
+.dlo-shop .dlo-shop-row .dlo-pic { width: 30px; height: 30px; background-color: var(--dlo-slot); border: 1px solid var(--dlo-gold); border-radius: 3px; }
+.dlo-shop .dlo-shop-row .dlo-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlo-shop .dlo-shop-row .dlo-shop-badge { position: static; font-size: 0.7rem; margin-left: 4px; color: var(--dlo-muted); text-shadow: none; }
+.dlo-shop .dlo-shop-row .dlo-shop-badge .dlo-warn { color: var(--dlo-warn); }
+.dlo-shop .dlo-shop-row .dlo-row-qty { color: var(--dlo-muted); font-size: 0.8rem; min-width: 2ch; text-align: right; }
+.dlo-shop .dlo-shop-row .dlo-row-price { color: var(--dlo-title); font-weight: 600; font-size: 0.8rem; white-space: nowrap; min-width: 6ch; text-align: right; }
+.dlo-shop .dlo-shop-row[hidden], .dlo-shop .dlo-shop-slot[hidden], .dlo-shop .dlo-shop-category[hidden] { display: none; }
+.dlo-shop .dlo-shop-row.dlo-shop-hidden { border-style: dashed; border-color: var(--dlo-edge); }
+/* GM: the stall to manage */
+.dlo-shop .dlo-shop-managed { min-height: 200px; }
+.dlo-shop .dlo-shop-manage { grid-template-columns: 30px minmax(0, 1fr) 64px 96px auto; cursor: default; }
+.dlo-shop .window-content .dlo-shop-manage input { height: 24px; text-align: right; }
+.dlo-shop .dlo-row-price-field { display: flex; align-items: center; gap: 3px; }
+.dlo-shop .dlo-row-price-field input { width: 70px; }
+.dlo-shop .window-content .dlo-row-price-field.dlo-fixed input { border-color: var(--dlo-gold); color: var(--dlo-title); font-weight: 600; }
+.dlo-shop .dlo-row-tools { display: flex; gap: 2px; }
+.dlo-shop .window-content .dlo-row-tools button { width: 26px; height: 24px; padding: 0; background: transparent; box-shadow: none; }
+.dlo-shop .window-content .dlo-row-tools button i { color: var(--dlo-muted); }
+.dlo-shop .window-content .dlo-row-tools button.dlo-on i { color: inherit; }
+.dlo-shop .dlo-shop-dropzone { margin-top: 8px; padding: 8px; border: 1px dashed var(--dlo-edge); border-radius: 4px; color: var(--dlo-muted);
+  text-align: center; font-size: 0.85rem; }
+.dlo-shop .dlo-shop-tab-stall .dlo-shop-scroll { max-height: 460px; }
+.dlo-shop .dlo-shop-settings { max-height: 520px; overflow-y: auto; padding-right: 4px; }
+/* GM: sales log */
+.dlo-shop .dlo-shop-log { width: 100%; border: none; background: transparent; font-size: 0.85rem; margin: 0 0 8px; }
+.dlo-shop .dlo-shop-log th { color: var(--dlo-title); font-weight: bold; text-align: left; border-bottom: 1px solid var(--dlo-edge); }
+.dlo-shop .dlo-shop-log td { padding: 3px 4px; border: none; vertical-align: top; }
+.dlo-shop .dlo-shop-log tr:nth-child(even) td { background: var(--dlo-row); }
+.dlo-shop .dlo-log-caught td { color: var(--dlo-warn); }
+/* A merchant stuck (no token on the scene…) */
+.dlo-shop .dlo-shop-stuck { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px; color: var(--dlo-caution);
+  border: 1px solid currentColor; border-radius: 4px; background: color-mix(in srgb, var(--dlo-caution) 12%, transparent); font-size: 0.85rem; }
+.dlo-shop .window-content .dlo-shop-stuck button { flex: none; }
+/* Item details */
+.dlo-item-info .dlo-info-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.dlo-item-info .dlo-info-pic { width: 56px; height: 56px; flex: none; background-color: var(--dlo-slot); border: 1px solid var(--dlo-gold); border-radius: 4px; }
+.dlo-item-info h3 { margin: 0; border: none; color: var(--dlo-title); font-family: var(--dnd5e-font-roboto-slab, serif); }
+.dlo-item-info .dlo-info-desc { max-height: 320px; overflow-y: auto; }
+.dlo-restock-help { margin: 0 0 6px; padding-left: 18px; font-size: 0.88rem; }
 
-/* ---- réglages d'un marchand ---- */
+/* ---- a merchant's settings (its own window, and the GM's « Settings » tab of the shop) ---- */
 .dlo-merchant-config .window-content { overflow-y: auto; max-height: 82vh; }
-.dlo-merchant-config fieldset { border: 1px solid var(--dlo-edge); border-radius: 4px; margin: 0 0 8px; padding: 6px 8px; }
-.dlo-merchant-config legend { color: var(--dlo-gold); padding: 0 4px; }
-.dlo-merchant-config .dlo-field { display: grid; grid-template-columns: 170px 1fr; gap: 2px 8px; align-items: center; margin-bottom: 4px; }
-.dlo-merchant-config .dlo-field label { color: var(--dlo-text); }
-.dlo-merchant-config .dlo-field .dlo-hint { grid-column: 2; margin: 0; }
-.dlo-merchant-config input[type="text"], .dlo-merchant-config input[type="number"], .dlo-merchant-config select, .dlo-merchant-config textarea {
-  color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge);
+.dlo-merchant-config fieldset {
+  border: 1px solid var(--color-fieldset-border, var(--dlo-edge)); border-radius: 4px; margin: 0 0 8px; padding: 6px 8px; background: transparent;
 }
+.dlo-merchant-config legend {
+  color: var(--dlo-title); padding: 0 4px;
+  font-family: var(--dnd5e-font-roboto, sans-serif); font-weight: bold; text-transform: uppercase; font-size: var(--font-size-11, 11px);
+}
+/* A field: Foundry's « form-group » row, label on the left, hint under the field. */
+.dlo-merchant-config .dlo-field { display: grid; grid-template-columns: 170px 1fr; gap: 2px 8px; align-items: center; margin: 0 0 4px; }
+.dlo-merchant-config .dlo-field > label { color: var(--dlo-text); font-weight: 600; }
+.dlo-merchant-config .dlo-field .dlo-hint { grid-column: 2; margin: 0; }
 .dlo-merchant-config textarea { width: 100%; resize: vertical; }
 .dlo-merchant-config .dlo-merchant-grid { width: 100%; border: none; background: transparent; margin: 0; }
 .dlo-merchant-config .dlo-merchant-grid th { color: var(--dlo-muted); font-weight: normal; text-align: left; }
@@ -184,33 +367,34 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-merchant-config .dlo-merchant-table-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dlo-merchant-config .dlo-merchant-rolls { width: 80px; flex: none; }
 .dlo-merchant-config .dlo-merchant-drop { border: 1px dashed var(--dlo-edge); border-radius: 4px; padding: 6px; text-align: center; color: var(--dlo-muted); margin-bottom: 6px; }
-.dlo-merchant-config button { width: auto; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
-.dlo-merchant-config button:hover { color: var(--dlo-bg); background: var(--dlo-gold); }
-.dlo-merchant-config .dlo-merchant-piles { color: var(--dlo-gold); display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.dlo-merchant-config .dlo-merchant-piles { color: var(--dlo-caution); display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
 
-/* Fenêtre d'un mur (0.16.0) : avec les sections DAS (serrure du moteur, mur caché, porte piégée), le formulaire dépasse l'écran.
-   La fenêtre reste dans la hauteur de l'écran et son contenu défile. */
+/* ---- Foundry core windows the module adds to (they keep the core look) ---- */
+/* A wall's window (0.16.0): with the DAS sections (Core lock, hidden wall, trapped door), the form goes past the screen.
+   The window stays within the screen height and its content scrolls. */
 .application.wall-config {
   max-height: calc(100vh - 20px);
 }
 .application.wall-config .window-content {
   overflow-y: auto;
 }
-/* Le contenu est une colonne flex : sans cela, le formulaire du cœur se tassait à rien au lieu de faire défiler le tout. */
+/* The content is a flex column: without this, the core form shrank to nothing instead of scrolling. */
 .application.wall-config .window-content > * {
   flex-shrink: 0;
 }
 
-/* 0.17.0 : la fenêtre du MJ quand un piège frappe en mode avancé. */
+/* 0.17.0: the GM's window when a trap strikes in advanced mode. */
 .dlo-trap-window .dlo-trap-targets { width: 100%; margin: 0.5rem 0; }
 .dlo-trap-window .dlo-trap-targets td { vertical-align: middle; padding: 2px 4px; }
 .dlo-trap-window .dlo-trap-who { display: flex; align-items: center; gap: 0.5rem; }
 .dlo-trap-window .dlo-trap-who img { width: 32px; height: 32px; object-fit: contain; border: none; }
+/* 2026-11-06: a character caught by surprise, in the GM's trap window. */
+.dlo-trap-window .dlo-trap-surprised { color: #e0a030; font-weight: 600; font-size: var(--font-size-12, 12px); white-space: nowrap; }
 
-/* 0.17.0 : « Choisir sur la carte » à côté d'un champ qui désigne une région ou une tuile. */
+/* 0.17.0: « Pick on the map » beside a field naming a region or a tile. */
 .dlo-pick { flex: 0 0 auto; width: 28px; }
 
-/* 0.17.2 : les réglages d'un piège en sections (apps/trap-config.mjs) — un liseré de couleur par partie, la légende en tête. */
+/* 0.17.2: a trap's settings in sections (apps/trap-config.mjs) — a coloured edge per part, the legend on top. */
 .dlo-trap-section { border-left: 4px solid var(--dlo-section, #888); border-radius: 4px; padding-left: 8px; margin-top: 8px; }
 .dlo-trap-section > legend { font-weight: bold; color: var(--dlo-section, inherit); }
 .dlo-trap-section > legend > i { margin-right: 4px; }
@@ -221,10 +405,10 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-trap-trigger { --dlo-section: #3f8fd2; }
 .dlo-trap-arming { --dlo-section: #4d9a5b; }
 .dlo-trap-contents, .dlo-trap-lock, .dlo-trap-cache { --dlo-section: #a08a5a; }
-/* La fenêtre d'un piège ou d'un conteneur devient longue : elle reste dans l'écran et son contenu défile. */
+/* A trap's or a container's window gets long: it stays within the screen and its content scrolls. */
 .application.dlo-trap-config { max-height: calc(100vh - 20px); }
 
-/* Étape 13 : la liste des actions d'un « DAS · Mécanisme » (apps/mechanism-config.mjs). */
+/* Step 13: the list of actions of a « DAS · Mechanism » (apps/mechanism-config.mjs). */
 .dlo-mechanism-actions .dlo-actions { list-style: none; margin: 0.25rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
 .dlo-mechanism-actions .dlo-action { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .dlo-mechanism-actions .dlo-action > select { flex: 0 0 9rem; }
@@ -238,96 +422,12 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-mechanism-actions .dlo-action-name { flex: 0 0 auto; font-size: var(--font-size-12, 12px); }
 .dlo-mechanism-actions button.icon { flex: 0 0 auto; width: 2rem; }
 .dlo-mechanism-actions [data-dlo-add] { width: auto; align-self: flex-start; }
-/* 2026-11-06 : un personnage pris par surprise, dans la fenêtre du MJ d'un piège. */
-.dlo-trap-window .dlo-trap-surprised { color: #e0a030; font-weight: 600; font-size: var(--font-size-12, 12px); white-space: nowrap; }
 
-/* 0.21.0 (issue #5) : fenêtre du MJ quand un PNJ vole un personnage — le DD exact sur chaque objet, « Au hasard ». */
-.dlo-npc-steal .dlo-dc {
-  position: absolute; left: 2px; top: 1px;
-  font-size: 0.7rem; font-weight: bold; color: var(--dlo-gold);
-  text-shadow: 0 0 2px #000, 0 0 2px #000;
-}
-.dlo-npc-steal .dlo-actions { display: flex; justify-content: center; margin: 0.4rem 0; }
-.dlo-npc-steal .dlo-actions button { flex: 0 0 auto; }
-
-/* 2026-11-27 — shop window revision: pictures without <img>, list view, search, GM tabs, stall editing, log. */
-.dlo-loot .dlo-pic { display: block; width: 100%; height: 100%; background: center / contain no-repeat; }
-.dlo-shop .dlo-shop-about h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.dlo-shop .dlo-shop-status { width: auto; font-size: 0.8rem; padding: 2px 10px; border-radius: 12px; line-height: 1.6; border: 1px solid; }
-.dlo-shop .dlo-shop-status.dlo-open { color: #9fd18b; border-color: #5d8a4c; background: rgba(93, 138, 76, 0.18); }
-.dlo-shop .dlo-shop-status.dlo-closed { color: #e39a7c; border-color: #9a5a41; background: rgba(154, 90, 65, 0.2); }
-.dlo-shop .dlo-shop-gm { justify-content: space-between; border-bottom: 1px solid var(--dlo-edge); padding-bottom: 6px; }
-.dlo-shop .dlo-shop-tabs, .dlo-shop .dlo-shop-gm-tools { display: flex; gap: 4px; flex-wrap: wrap; }
-.dlo-shop .dlo-shop-tabs button.dlo-on, .dlo-shop .dlo-shop-views button.dlo-on { color: var(--dlo-bg); background: var(--dlo-gold); border-color: var(--dlo-gold); }
-.dlo-shop .dlo-shop-gm-tools button { width: 30px; justify-content: center; }
-.dlo-shop .dlo-shop-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.dlo-shop .dlo-shop-search { flex: 1; display: flex; align-items: center; gap: 6px; color: var(--dlo-muted); }
-.dlo-shop .dlo-shop-search input { flex: 1; background: var(--dlo-slot); color: var(--dlo-text); border: 1px solid var(--dlo-edge); }
-.dlo-shop .dlo-shop-views { display: flex; gap: 2px; }
-.dlo-shop .dlo-shop-views button { width: 30px; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
-.dlo-shop .dlo-shop-scroll { max-height: 400px; overflow-y: auto; padding-right: 2px; }
-.dlo-shop .dlo-shop-scroll > .dlo-grid { align-content: start; padding-bottom: 2px; }
-.dlo-shop .dlo-shop-badge { display: inline-flex; gap: 3px; }
-.dlo-shop .dlo-shop-badge .dlo-warn, .dlo-shop .dlo-warn { color: #d98a6a; }
-/* list view */
-.dlo-shop .dlo-shop-category h4 { margin: 6px 0 2px; font-size: 0.8rem; color: var(--dlo-gold); text-transform: uppercase; letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--dlo-edge); display: flex; justify-content: space-between; }
-.dlo-shop .dlo-shop-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.dlo-shop .dlo-shop-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; align-items: center; gap: 8px;
-  padding: 2px 6px 2px 2px; background: var(--dlo-slot); border: 1px solid transparent; border-radius: 3px; cursor: pointer; }
-.dlo-shop .dlo-shop-row:hover { background: var(--dlo-slot-hover); border-color: var(--dlo-gold); }
-.dlo-shop .dlo-shop-row .dlo-pic { width: 30px; height: 30px; }
-.dlo-shop .dlo-shop-row .dlo-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dlo-shop .dlo-shop-row .dlo-shop-badge { position: static; font-size: 0.7rem; margin-left: 4px; color: var(--dlo-muted); }
-.dlo-shop .dlo-shop-row .dlo-row-qty { color: var(--dlo-muted); font-size: 0.8rem; min-width: 2ch; text-align: right; }
-.dlo-shop .dlo-shop-row .dlo-row-price { color: var(--dlo-gold); font-size: 0.8rem; white-space: nowrap; min-width: 6ch; text-align: right; }
-.dlo-shop .dlo-shop-row[hidden], .dlo-shop .dlo-shop-slot[hidden], .dlo-shop .dlo-shop-category[hidden] { display: none; }
-.dlo-shop .dlo-shop-row.dlo-shop-hidden { border-style: dashed; border-color: var(--dlo-edge); }
-/* GM: the stall to manage */
-.dlo-shop .dlo-shop-managed { min-height: 200px; }
-.dlo-shop .dlo-shop-manage { grid-template-columns: 30px minmax(0, 1fr) 64px 96px auto; cursor: default; }
-.dlo-shop .dlo-shop-manage input { height: 24px; background: var(--dlo-bg); color: var(--dlo-text); border: 1px solid var(--dlo-edge); text-align: right; }
-.dlo-shop .dlo-row-price-field { display: flex; align-items: center; gap: 3px; }
-.dlo-shop .dlo-row-price-field input { width: 70px; }
-.dlo-shop .dlo-row-price-field.dlo-fixed input { border-color: var(--dlo-gold); color: var(--dlo-gold); }
-.dlo-shop .dlo-row-tools { display: flex; gap: 2px; }
-.dlo-shop .dlo-row-tools button { width: 26px; height: 24px; padding: 0; color: var(--dlo-muted); background: transparent; border: 1px solid var(--dlo-edge); }
-.dlo-shop .dlo-row-tools button:hover { color: var(--dlo-bg); background: var(--dlo-gold); }
-.dlo-shop .dlo-row-tools button.dlo-on { color: var(--dlo-gold); }
-.dlo-shop .dlo-shop-dropzone { margin-top: 8px; padding: 8px; border: 1px dashed var(--dlo-edge); border-radius: 4px; color: var(--dlo-muted);
-  text-align: center; font-size: 0.85rem; }
-.dlo-shop .dlo-shop-tab-stall .dlo-shop-scroll { max-height: 460px; }
-.dlo-shop .dlo-shop-settings { max-height: 520px; overflow-y: auto; padding-right: 4px; }
-/* GM: log */
-.dlo-shop .dlo-shop-log { width: 100%; border: none; background: transparent; font-size: 0.85rem; margin: 0 0 8px; }
-.dlo-shop .dlo-shop-log th { color: var(--dlo-gold); font-weight: normal; text-align: left; border-bottom: 1px solid var(--dlo-edge); }
-.dlo-shop .dlo-shop-log td { padding: 3px 4px; border: none; vertical-align: top; }
-.dlo-shop .dlo-shop-log tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03); }
-.dlo-shop .dlo-log-caught td { color: #d98a6a; }
-/* item details */
-.dlo-item-info .dlo-info-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
-.dlo-item-info .dlo-info-pic { width: 56px; height: 56px; flex: none; border: 1px solid var(--dlo-edge); border-radius: 4px; }
-.dlo-item-info h3 { margin: 0; border: none; color: var(--dlo-gold); }
-.dlo-item-info .dlo-info-desc { max-height: 320px; overflow-y: auto; }
-.dlo-restock-help { margin: 0 0 6px; padding-left: 18px; font-size: 0.88rem; }
-.dlo-shop .dlo-shop-stuck { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px; color: #e3b07c;
-  border: 1px solid #9a5a41; border-radius: 4px; background: rgba(154, 90, 65, 0.15); font-size: 0.85rem; }
-.dlo-shop .dlo-shop-stuck button { width: auto; flex: none; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
-/* Lot 1 — sharing: the coins and, beside them, « Share » */
-.dlo-loot .dlo-coin-row { display: flex; align-items: stretch; gap: 6px; margin-top: 10px; }
-.dlo-loot .dlo-coin-row .dlo-coins { flex: 1; margin-top: 0; }
-.dlo-loot .dlo-share {
-  flex: 0 0 auto; width: auto; padding: 2px 10px;
-  background: #2b2418; color: var(--dlo-gold);
-  border: 1px solid var(--dlo-edge); border-radius: 4px; cursor: pointer;
-}
-.dlo-loot .dlo-share:hover:not(:disabled) { border-color: var(--dlo-gold); }
-.dlo-loot .dlo-share:disabled { color: var(--dlo-muted); opacity: 0.55; cursor: not-allowed; }
+/* Forced refusal window */
 .dlo-force-reason { font-weight: bold; }
 
-/* Lot 1 — coins: one field per coin held */
+/* Lot 1 — coins dialog: one field per coin held */
 .dlo-coin-fields { display: grid; gap: 6px; }
 .dlo-coin-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dlo-coin-field input { width: 6em; text-align: right; }
 .dlo-coin-field em { opacity: 0.7; font-style: normal; }
-

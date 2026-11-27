@@ -7,6 +7,7 @@ import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { lootView, hasThievesTools, keyItem } from "../adapter/dnd5e.mjs";
 import { partyMembers, sceneOfSource } from "../adapter/party.mjs";
 import { askQuantity } from "./quantity-dialog.mjs";
+import { coinAmount } from "./coin.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 const escape = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -23,7 +24,7 @@ export class LootWindow extends ApplicationV2 {
   }
 
   static DEFAULT_OPTIONS = {
-    classes: ["dlo-loot"],
+    classes: ["dlo-loot", "dnd5e2", "titlebar"],
     window: { icon: "fa-solid fa-sack", resizable: true },
     position: { width: 340, height: "auto" },
     actions: {
@@ -118,10 +119,7 @@ export class LootWindow extends ApplicationV2 {
         ${(e.quantity > 1) ? `<span class="dlo-qty">${e.quantity}</span>` : ""}
         ${e.contents ? `<span class="dlo-inside"><i class="fa-solid fa-box-open"></i> ${e.contents}</span>` : ""}
       </li>`).join("");
-    const coins = context.coins.map(c => {
-      const cfg = CONFIG.DND5E.currencies[c.key] ?? {};
-      return `<span class="dlo-coin dlo-coin-${c.key}" data-tooltip="${cfg.label ?? c.key}">${c.value} ${cfg.abbreviation ?? c.key}</span>`;
-    }).join("");
+    const coins = context.coins.map(c => coinAmount(c.key, c.value)).join("");
     root.innerHTML = `
       <p class="dlo-to">${context.looterName ? loc("Window.To", { name: escape(context.looterName) }) : ""}</p>
       ${context.empty ? `<p class="dlo-empty">${loc("Window.Empty")}</p>` : `<ol class="dlo-grid ${disabled}">${slots}</ol>`}
