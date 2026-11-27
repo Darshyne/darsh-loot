@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { ATTITUDES, STOLEN_POLICIES } from "../module/scripts/core/shop.mjs";
+import { ATTITUDES, STOLEN_POLICIES, RESTOCK_MODES } from "../module/scripts/core/shop.mjs";
 import { GENERIC_TABLES } from "../module/scripts/core/tables.mjs";
 import { discoveryKey } from "../module/scripts/core/hidden.mjs";
 import { difficultyOf } from "../module/scripts/core/theft.mjs";
@@ -53,6 +53,7 @@ const DYNAMIC = {
   "DLO.Tables": GENERIC_TABLES.map(t => t.key),
   "DLO.Merchant.Attitude": Object.keys(ATTITUDES),
   "DLO.Merchant.StolenPolicy": [...STOLEN_POLICIES],
+  "DLO.Shop.RestockMode": [...RESTOCK_MODES],
   "DLO.Steal.Difficulty": [...new Set([0, 1, 5, 10, 50, 1000, 100000].map(value => difficultyOf({ value, weight: 0 })))
     .add(difficultyOf({ value: 0, weight: 0, alert: true }))],
   "DLO.Hidden.Found": [...new Set(["container", "macro", "mechanism", "scene", "document", "secret", "ethereal", "trap", "?"].map(discoveryKey))],

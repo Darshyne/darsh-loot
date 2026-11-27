@@ -122,7 +122,7 @@ html body[data-darsh-loot-cursor="disarm"] #board { cursor: url("../assets/curso
 html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors/shop.svg") 4 4, pointer !important; }
 /* En-tête : le marchand (portrait, nom, présentation) — agrandi le 2026-10-01, la présentation était coupée à trois lignes. */
 .dlo-shop .dlo-shop-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
-.dlo-shop .dlo-shop-portrait { width: 112px; height: 112px; object-fit: cover; border: 1px solid var(--dlo-edge); border-radius: 4px; flex: none; }
+.dlo-shop .dlo-shop-head .dlo-shop-portrait { width: 112px; height: 112px; background-size: cover; border: 1px solid var(--dlo-edge); border-radius: 4px; flex: none; }
 .dlo-shop .dlo-shop-about { flex: 1; min-width: 0; }
 .dlo-shop .dlo-shop-about h2 { margin: 0 0 4px; font-size: 1.45rem; color: var(--dlo-gold); border: none; }
 .dlo-shop .dlo-shop-desc { color: var(--dlo-text); font-size: 0.92rem; line-height: 1.35; max-height: 14em; overflow-y: auto; padding-right: 4px; }
@@ -141,7 +141,7 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-shop .dlo-shop-tray { min-height: calc(var(--dlo-slot-size) + 16px); margin-bottom: 8px; }
 .dlo-shop .dlo-shop-total { color: var(--dlo-text); font-weight: normal; font-size: 0.85rem; }
 .dlo-shop .dlo-shop-slot { height: calc(var(--dlo-slot-size) + 14px); }
-.dlo-shop .dlo-shop-slot img { height: var(--dlo-slot-size); }
+.dlo-shop .dlo-shop-slot img, .dlo-shop .dlo-shop-slot .dlo-pic { height: var(--dlo-slot-size); }
 .dlo-shop .dlo-shop-slot .dlo-qty { bottom: 15px; }
 .dlo-shop .dlo-shop-price {
   position: absolute; left: 0; right: 0; bottom: 0; height: 14px; line-height: 14px;
@@ -244,3 +244,67 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 }
 .dlo-npc-steal .dlo-actions { display: flex; justify-content: center; margin: 0.4rem 0; }
 .dlo-npc-steal .dlo-actions button { flex: 0 0 auto; }
+
+/* 2026-11-27 — shop window revision: pictures without <img>, list view, search, GM tabs, stall editing, log. */
+.dlo-loot .dlo-pic { display: block; width: 100%; height: 100%; background: center / contain no-repeat; }
+.dlo-shop .dlo-shop-about h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dlo-shop .dlo-shop-status { width: auto; font-size: 0.8rem; padding: 2px 10px; border-radius: 12px; line-height: 1.6; border: 1px solid; }
+.dlo-shop .dlo-shop-status.dlo-open { color: #9fd18b; border-color: #5d8a4c; background: rgba(93, 138, 76, 0.18); }
+.dlo-shop .dlo-shop-status.dlo-closed { color: #e39a7c; border-color: #9a5a41; background: rgba(154, 90, 65, 0.2); }
+.dlo-shop .dlo-shop-gm { justify-content: space-between; border-bottom: 1px solid var(--dlo-edge); padding-bottom: 6px; }
+.dlo-shop .dlo-shop-tabs, .dlo-shop .dlo-shop-gm-tools { display: flex; gap: 4px; flex-wrap: wrap; }
+.dlo-shop .dlo-shop-tabs button.dlo-on, .dlo-shop .dlo-shop-views button.dlo-on { color: var(--dlo-bg); background: var(--dlo-gold); border-color: var(--dlo-gold); }
+.dlo-shop .dlo-shop-gm-tools button { width: 30px; justify-content: center; }
+.dlo-shop .dlo-shop-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dlo-shop .dlo-shop-search { flex: 1; display: flex; align-items: center; gap: 6px; color: var(--dlo-muted); }
+.dlo-shop .dlo-shop-search input { flex: 1; background: var(--dlo-slot); color: var(--dlo-text); border: 1px solid var(--dlo-edge); }
+.dlo-shop .dlo-shop-views { display: flex; gap: 2px; }
+.dlo-shop .dlo-shop-views button { width: 30px; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }
+.dlo-shop .dlo-shop-scroll { max-height: 400px; overflow-y: auto; padding-right: 2px; }
+.dlo-shop .dlo-shop-scroll > .dlo-grid { align-content: start; padding-bottom: 2px; }
+.dlo-shop .dlo-shop-badge { display: inline-flex; gap: 3px; }
+.dlo-shop .dlo-shop-badge .dlo-warn, .dlo-shop .dlo-warn { color: #d98a6a; }
+/* list view */
+.dlo-shop .dlo-shop-category h4 { margin: 6px 0 2px; font-size: 0.8rem; color: var(--dlo-gold); text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--dlo-edge); display: flex; justify-content: space-between; }
+.dlo-shop .dlo-shop-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.dlo-shop .dlo-shop-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; align-items: center; gap: 8px;
+  padding: 2px 6px 2px 2px; background: var(--dlo-slot); border: 1px solid transparent; border-radius: 3px; cursor: pointer; }
+.dlo-shop .dlo-shop-row:hover { background: var(--dlo-slot-hover); border-color: var(--dlo-gold); }
+.dlo-shop .dlo-shop-row .dlo-pic { width: 30px; height: 30px; }
+.dlo-shop .dlo-shop-row .dlo-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlo-shop .dlo-shop-row .dlo-shop-badge { position: static; font-size: 0.7rem; margin-left: 4px; color: var(--dlo-muted); }
+.dlo-shop .dlo-shop-row .dlo-row-qty { color: var(--dlo-muted); font-size: 0.8rem; min-width: 2ch; text-align: right; }
+.dlo-shop .dlo-shop-row .dlo-row-price { color: var(--dlo-gold); font-size: 0.8rem; white-space: nowrap; min-width: 6ch; text-align: right; }
+.dlo-shop .dlo-shop-row[hidden], .dlo-shop .dlo-shop-slot[hidden], .dlo-shop .dlo-shop-category[hidden] { display: none; }
+.dlo-shop .dlo-shop-row.dlo-shop-hidden { border-style: dashed; border-color: var(--dlo-edge); }
+/* GM: the stall to manage */
+.dlo-shop .dlo-shop-managed { min-height: 200px; }
+.dlo-shop .dlo-shop-manage { grid-template-columns: 30px minmax(0, 1fr) 64px 96px auto; cursor: default; }
+.dlo-shop .dlo-shop-manage input { height: 24px; background: var(--dlo-bg); color: var(--dlo-text); border: 1px solid var(--dlo-edge); text-align: right; }
+.dlo-shop .dlo-row-price-field { display: flex; align-items: center; gap: 3px; }
+.dlo-shop .dlo-row-price-field input { width: 70px; }
+.dlo-shop .dlo-row-price-field.dlo-fixed input { border-color: var(--dlo-gold); color: var(--dlo-gold); }
+.dlo-shop .dlo-row-tools { display: flex; gap: 2px; }
+.dlo-shop .dlo-row-tools button { width: 26px; height: 24px; padding: 0; color: var(--dlo-muted); background: transparent; border: 1px solid var(--dlo-edge); }
+.dlo-shop .dlo-row-tools button:hover { color: var(--dlo-bg); background: var(--dlo-gold); }
+.dlo-shop .dlo-row-tools button.dlo-on { color: var(--dlo-gold); }
+.dlo-shop .dlo-shop-dropzone { margin-top: 8px; padding: 8px; border: 1px dashed var(--dlo-edge); border-radius: 4px; color: var(--dlo-muted);
+  text-align: center; font-size: 0.85rem; }
+.dlo-shop .dlo-shop-tab-stall .dlo-shop-scroll { max-height: 460px; }
+.dlo-shop .dlo-shop-settings { max-height: 520px; overflow-y: auto; padding-right: 4px; }
+/* GM: log */
+.dlo-shop .dlo-shop-log { width: 100%; border: none; background: transparent; font-size: 0.85rem; margin: 0 0 8px; }
+.dlo-shop .dlo-shop-log th { color: var(--dlo-gold); font-weight: normal; text-align: left; border-bottom: 1px solid var(--dlo-edge); }
+.dlo-shop .dlo-shop-log td { padding: 3px 4px; border: none; vertical-align: top; }
+.dlo-shop .dlo-shop-log tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03); }
+.dlo-shop .dlo-log-caught td { color: #d98a6a; }
+/* item details */
+.dlo-item-info .dlo-info-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.dlo-item-info .dlo-info-pic { width: 56px; height: 56px; flex: none; border: 1px solid var(--dlo-edge); border-radius: 4px; }
+.dlo-item-info h3 { margin: 0; border: none; color: var(--dlo-gold); }
+.dlo-item-info .dlo-info-desc { max-height: 320px; overflow-y: auto; }
+.dlo-restock-help { margin: 0 0 6px; padding-left: 18px; font-size: 0.88rem; }
+.dlo-shop .dlo-shop-stuck { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px; color: #e3b07c;
+  border: 1px solid #9a5a41; border-radius: 4px; background: rgba(154, 90, 65, 0.15); font-size: 0.85rem; }
+.dlo-shop .dlo-shop-stuck button { width: auto; flex: none; color: var(--dlo-text); background: var(--dlo-slot); border: 1px solid var(--dlo-edge); }

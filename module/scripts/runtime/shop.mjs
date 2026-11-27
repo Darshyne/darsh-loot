@@ -1,51 +1,56 @@
 /**
- * Marchands (SPEC §3.7, étape 8) : le troc demandé par un joueur est refait et exécuté par le MJ actif (le joueur n'a
- * aucun droit sur le marchand) ; réassort, réglages et drapeaux d'étal sont au MJ. Entrées : clic sur le marchand hors
- * combat (runtime/pointer.mjs), « Commercer » dans le menu contextuel du moteur, bouton du HUD de token (MJ).
+ * Merchants (SPEC §3.7, step 8): the deal a player asks for is quoted again and carried out by the active GM (the player has no
+ * right on the merchant); restock, settings and stall editing are the GM's. Ways in: a click on the merchant out of combat or a
+ * double click (runtime/pointer.mjs), « Trade » / « Open the shop » in the Core's token menu, the token HUD button (GM), the actors
+ * sidebar (GM), the shop button in the merchant's sheet header, a `@Shop[…]` link in a journal.
  */
 import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM, sourceRef } from "./take.mjs";
-import { resolveSource, merchantSource } from "../adapter/sources.mjs";
-import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
+import { requestSteal } from "./theft.mjs";
+import { landingSound } from "./drop-fx.mjs";
+import { resolveSource, merchantSource, pocketSource } from "../adapter/sources.mjs";
+import { TOKEN_MENU_HOOK, engineNotice } from "../adapter/engine.mjs";
 import { inTurn, operation } from "../adapter/ledger.mjs";
 import { boxInSight } from "../adapter/hidden.mjs";
 import {
-  merchantOf, merchantToken, isMerchant, quote, executeDeal, unsellable, restock, memorizeStock, convertItemPiles, formatPrice
+  merchantOf, merchantToken, isMerchant, quote, executeDeal, unsellable, restock, memorizeStock, convertItemPiles, formatPrice,
+  shopOpenTo, SHOWN_VALID_MS, setStallPrice, setStallQuantity, setStallFlags, makeSellable, addToStall, removeFromStall,
+  renameMerchant, setClosed, recordSale, clearSalesLog
 } from "../adapter/shop.mjs";
 import { MerchantConfig } from "../apps/merchant-config.mjs";
+import { escape } from "../apps/shop-parts.mjs";
 
 const DEAL_QUERY = `${MODULE_ID}.shopDeal`;
 const SHOW_QUERY = `${MODULE_ID}.shopShow`;
 
-/**
- * How long a shop the GM has shown stays open to the players it was shown to (ms): a session. Lot 0 (audit of 2026-11-26,
- * defect 10): a shop addressed by its **actor** has neither place nor reach — that is meant for a shop without a token, which the
- * GM shows. But any player could send that request for any merchant and trade from anywhere. Now the GM client only accepts it
- * for a shop it has shown (`flags.darsh-loot.shown`: when, and to whom), and a merchant standing on the scene keeps its reach.
- */
-const SHOWN_VALID_MS = 12 * 3600000;
-
-/** Was this shop shown to this user, recently enough? */
-function shownTo(actor, user) {
-  const shown = actor.getFlag(MODULE_ID, "shown");
-  return !!shown && ((Date.now() - (Number(shown.time) || 0)) < SHOWN_VALID_MS) && (shown.users ?? []).includes(user.id);
-}
-
-/** Le personnage derrière ce qui agit : un token, ou l'acteur lui-même (boutique sans token). */
+/** The character behind what acts: a token, or the actor itself (a shop without a token). */
 const actorOf = looter => ((looter instanceof Actor) ? looter : (looter?.actor ?? null));
 
 /* -------------------------------------------- */
-/*  Côté joueur                                 */
+/*  Player side                                 */
 /* -------------------------------------------- */
 
-/** Conclure : le panier part au MJ. Rend le bilan, ou null (refus dit au joueur). */
-export function requestDeal(source, looter, cart) {
-  return askGM(DEAL_QUERY, handleDeal, { source: sourceRef(source), looter: looter.uuid, buy: cart.buy ?? [], sell: cart.sell ?? [] });
+/**
+ * Conclude: the cart goes to the GM. Returns the outcome, or null (the refusal is told to the player). A deal that went through
+ * is felt by the buyer only (user's choice, 2026-11-27): the sound of coins and a floating text over their token.
+ */
+export async function requestDeal(source, looter, cart) {
+  const result = await askGM(DEAL_QUERY, handleDeal, { source: sourceRef(source), looter: looter.uuid, buy: cart.buy ?? [], sell: cart.sell ?? [] });
+  if ( result ) dealFeedback(looter, result);
+  return result;
+}
+
+/** The buyer's own feedback: coins heard, the balance floating over their token (when they have one on the scene). */
+function dealFeedback(looter, result) {
+  landingSound("coins")?.catch?.(() => {});
+  const text = (result.net > 0) ? loc("Shop.FloatPaid", { price: formatPrice(result.net) })
+    : ((result.net < 0) ? loc("Shop.FloatEarned", { price: formatPrice(-result.net) }) : loc("Shop.Done"));
+  if ( looter?.documentName === "Token" ) engineNotice(looter, text, "gain");
 }
 
 /* -------------------------------------------- */
-/*  Chez le MJ                                  */
+/*  GM side                                     */
 /* -------------------------------------------- */
 
 async function handleDeal(payload, { user }) {
@@ -58,26 +63,27 @@ async function handleDeal(payload, { user }) {
   if ( !user.isGM ) {
     if ( merchantOf(source.actor).closed ) throw new Error(loc("Shop.Closed"));
     if ( source.doc.documentName === "Actor" ) {
-      if ( !shownTo(source.actor, user) ) throw new Error(loc("Shop.NotShown"));
+      // A shop addressed by its actor (no place, no reach): shown by the GM to this player, or open from anywhere (`remote`).
+      if ( !shopOpenTo(source.actor, user) ) throw new Error(loc("Shop.NotShown"));
     } else {
       // A merchant on a scene: the character must be there too, as a token, within reach and not behind a wall.
       if ( (looter.documentName !== "Token") || (source.distance(looter) > sceneSetting("reach", looter.parent)) ) throw new Error(loc("Shop.TooFar"));
       if ( !boxInSight(looter, source.box()) ) throw new Error(loc("Refus.Mur"));
     }
   }
-  // Deux joueurs qui concluent en même temps passent l'un après l'autre ; et le devis se fait dans le même tour que les
-  // écritures, sur le marchand **et** le personnage : sa bourse ne bouge pas (échange, vol, autre marchand) entre les deux.
-  return inTurn([source.actor, buyer], () => deal(source, looter, payload));
+  // Two players concluding at once go one after the other; the quote is made in the same turn as the writes, on the merchant
+  // **and** the character: its purse does not move (trade, theft, another merchant) in between.
+  return inTurn([source.actor, buyer], () => deal(source, looter, payload, user));
 }
 
-async function deal(source, looter, payload) {
+async function deal(source, looter, payload, user) {
   const actor = source.actor;
   const buyer = actorOf(looter);
   // Lot 0 (defect 1): everything is checked before the first write — an item the merchant cannot hand over is never charged.
   const stuck = unsellable(actor, payload.buy ?? []);
   if ( stuck ) throw new Error(loc("Shop.Stuck", { name: stuck }));
   const q = quote(actor, source.doc, buyer, { buy: payload.buy, sell: payload.sell });
-  // Le devis du MJ fait foi : un stock ou un inventaire qui a bougé depuis le panier du joueur annule le troc.
+  // The GM's quote rules: a stock or an inventory that moved since the player's cart cancels the deal.
   if ( q.changed ) throw new Error(loc("Shop.Changed"));
   if ( q.empty ) throw new Error(loc("Shop.Nothing"));
   if ( !q.ok ) throw new Error(loc(q.reason === "playerFunds" ? "Shop.NoFunds" : "Shop.MerchantNoFunds"));
@@ -90,11 +96,14 @@ async function deal(source, looter, payload) {
   const names = await operation({ label: loc("Shop.Chat", { buyer: buyer.name, merchant: actor.name }), plan },
     op => executeDeal(actor, buyer, q, op));
   log.info(`trade: ${buyer.name} with ${actor.name} — buys [${names.bought.join(", ")}], sells [${names.sold.join(", ")}], balance ${q.net} cp`);
+  // The sales log is written after the deal: a log that fails to be written never undoes a deal.
+  recordSale(actor, { kind: "deal", who: buyer.name, user: user?.name ?? "", bought: names.bought, sold: names.sold, net: q.net,
+    paid: q.buyTotal, earned: q.sellTotal }).catch(err => log.warn("sales log:", err.message));
   announceDeal(looter, source, names, q);
   return { bought: names.bought, sold: names.sold, net: q.net };
 }
 
-/** Le bilan d'un troc, au MJ ou à tous (réglage `announce`). */
+/** The outcome of a deal, to the GM or to everyone (setting `announce`). */
 function announceDeal(looter, source, names, q) {
   const mode = setting("announce");
   if ( mode === "none" ) return;
@@ -110,7 +119,7 @@ function announceDeal(looter, source, names, q) {
 }
 
 /* -------------------------------------------- */
-/*  MJ : réglages, stock                        */
+/*  GM: settings, stock                         */
 /* -------------------------------------------- */
 
 const gmOnly = () => {
@@ -119,47 +128,91 @@ const gmOnly = () => {
   return false;
 };
 
-/** Réassortir ce marchand (MJ). */
-export async function requestRestock(source) {
+/**
+ * Restock this merchant (GM). `mode`: `full`, `add` or `tables` (core/shop.mjs `restockPlan`); without one, the GM chooses in a
+ * small window (the shop window's button).
+ */
+export async function requestRestock(source, mode=null) {
   if ( !gmOnly() ) return null;
-  const result = await restock(source.actor);
+  const chosen = mode ?? await chooseRestock(source);
+  if ( !chosen ) return null;
+  const result = await restock(source.actor, chosen);
   ui.notifications.info(loc("Shop.Restocked", { name: source.name, count: result.drawn.length }));
   return result;
 }
 
-/** Les actions de la fenêtre de réglages. */
+/** The three restocks, as buttons. Resolves to the mode, or null. */
+async function chooseRestock(source) {
+  const tables = merchantOf(source.actor).tables.length;
+  const button = (action, icon) => ({ action, icon, label: loc(`Shop.RestockMode.${action}`) });
+  return foundry.applications.api.DialogV2.wait({
+    window: { title: loc("Shop.RestockTitle", { name: source.name }), icon: "fa-solid fa-boxes-stacked" },
+    content: `<p>${loc("Shop.RestockAsk")}</p><ul class="dlo-restock-help">
+      <li><b>${loc("Shop.RestockMode.full")}</b> — ${loc("Shop.RestockHelp.full")}</li>
+      <li><b>${loc("Shop.RestockMode.add")}</b> — ${loc("Shop.RestockHelp.add")}</li>
+      <li><b>${loc("Shop.RestockMode.tables")}</b> — ${loc("Shop.RestockHelp.tables")}</li></ul>
+      ${tables ? "" : `<p class="dlo-hint">${loc("Shop.RestockNoTables")}</p>`}`,
+    buttons: [button("full", "fa-solid fa-rotate"), button("add", "fa-solid fa-plus"), button("tables", "fa-solid fa-dice")],
+    rejectClose: false
+  }).catch(() => null);
+}
+
+/** The settings form's actions. */
 const CONFIG_ACTIONS = {
-  /** Enregistre le drapeau ; la première activation note le stock présent comme référence du réassort. */
-  save: async (actor, flag) => {
+  /** Writes the flag (and the name, when given); the first activation notes the present stock as the restock reference. */
+  save: async (actor, flag, name=null, token=null) => {
     if ( !gmOnly() ) return;
     const first = flag.enabled && !actor.getFlag(MODULE_ID, "merchant")?.purse;
     await actor.update({ [`flags.${MODULE_ID}.merchant`]: flag });
+    if ( name ) await renameMerchant(actor, token, name);
     if ( first ) await memorizeStock(actor);
   },
   memorize: actor => (gmOnly() ? memorizeStock(actor) : 0),
   convert: actor => (gmOnly() ? convertItemPiles(actor) : null)
 };
 
-/** Ouvre les réglages de marchand de cet acteur (MJ). */
+/** Opens this actor's merchant settings (GM). */
 export function configureMerchant(actor) {
   if ( !gmOnly() ) return null;
   return MerchantConfig.show(actor, CONFIG_ACTIONS);
 }
 
-/** MJ : pose les drapeaux d'étal d'un objet (caché, pas à vendre). */
-function flagItem(item, shop) {
+/** GM: make this NPC a merchant (enabled, its present stock noted as reference), then open its shop. */
+export async function makeMerchant(actor, open) {
+  if ( !gmOnly() || (actor?.type !== "npc") ) return null;
+  if ( !isMerchant(actor) ) await CONFIG_ACTIONS.save(actor, { ...(actor.getFlag(MODULE_ID, "merchant") ?? {}), enabled: true });
+  return open(merchantSource(actor), null);
+}
+
+/** GM: a new merchant, an NPC in this folder (or none), opened at once. */
+export async function createMerchant(folder, open) {
   if ( !gmOnly() ) return null;
-  return item.update({ [`flags.${MODULE_ID}.shop`]: shop });
+  const actor = await Actor.implementation.create({
+    name: loc("Shop.NewMerchant"), type: "npc", folder: folder?.id ?? null, img: "icons/svg/coins.svg",
+    system: { attributes: { hp: { value: 4, max: 4 } } },
+    prototypeToken: { actorLink: true, disposition: CONST.TOKEN_DISPOSITIONS.NEUTRAL },
+    flags: { [MODULE_ID]: { merchant: { enabled: true, infiniteCoins: true } } }
+  });
+  await memorizeStock(actor);
+  return open(merchantSource(actor), null);
+}
+
+/** GM: open or close a shop, with a word for the GM. */
+export async function toggleClosed(actor) {
+  if ( !gmOnly() ) return null;
+  const closed = await setClosed(actor, !merchantOf(actor).closed);
+  ui.notifications.info(loc(closed ? "Shop.NowClosed" : "Shop.NowOpen", { name: actor.name }));
+  return closed;
 }
 
 /**
- * MJ : montrer la boutique aux joueurs connectés — elle s'ouvre chez chacun pour son personnage (son token sur la scène,
- * sinon son personnage attitré). Sert surtout aux boutiques **sans token** (un marchand de Vallaki joué sans carte).
+ * GM: show the shop to the connected players — it opens for each, for their character (their token on the scene, else their
+ * assigned character). Mostly for shops **without a token** (a merchant played without a map).
  */
 export async function showShop(source) {
   if ( !gmOnly() ) return 0;
   const players = game.users.filter(u => u.active && !u.isGM);
-  // Noted on the merchant before the windows open: a shop shown by its actor is open to these players only (see `shownTo`).
+  // Noted on the merchant before the windows open: a shop shown by its actor is open to these players only (see `shopOpenTo`).
   if ( source.doc.documentName === "Actor" ) await source.actor.setFlag(MODULE_ID, "shown", { time: Date.now(), users: players.map(u => u.id) });
   for ( const user of players ) {
     user.query(SHOW_QUERY, { source: sourceRef(source) }, { timeout: 10000 }).catch(err => log.warn("shop not shown:", err.message));
@@ -168,25 +221,83 @@ export async function showShop(source) {
   return players.length;
 }
 
-/** Ce que la boutique reçoit pour agir (apps/shop-window.mjs). */
-export const SHOP_ACTIONS = { deal: requestDeal, restock: requestRestock, configure: configureMerchant, flag: flagItem, show: showShop };
+/** GM: ask before removing an item from the stall. */
+async function removeItem(item) {
+  if ( !gmOnly() ) return null;
+  const ok = await foundry.applications.api.DialogV2.confirm({
+    window: { title: loc("Shop.RemoveTitle"), icon: "fa-solid fa-trash" },
+    content: `<p>${loc("Shop.RemoveAsk", { name: escape(item.name) })}</p>`, rejectClose: false
+  }).catch(() => false);
+  return ok ? removeFromStall(item) : null;
+}
+
+/** The `@Shop[uuid]{label}` text of a merchant, for a journal (copied to the clipboard). */
+export async function copyShopLink(source) {
+  const text = `@Shop[${source.actor.uuid}]{${source.actor.name}}`;
+  await game.clipboard?.copyPlainText?.(text) ?? navigator.clipboard?.writeText(text);
+  ui.notifications.info(loc("Shop.LinkCopied", { text }));
+  return text;
+}
+
+/**
+ * A player steals an item from the stall (the « Steal » entry of the shop's item menu): the pockets of the merchant's token, through
+ * the usual theft (GM approval when asked, Sleight of Hand, the GM decides). Only for a merchant on the scene and a character token.
+ */
+function stealFromStall(source, looter, itemId) {
+  if ( (source.doc.documentName !== "Token") || (looter?.documentName !== "Token") ) return ui.notifications.warn(loc("Shop.StealNeedsTokens"));
+  return requestSteal(pocketSource(source.doc), looter, itemId);
+}
+
+/** What the shop window receives to act (apps/shop-window.mjs): it never writes by itself. */
+export const SHOP_ACTIONS = {
+  deal: requestDeal, restock: source => requestRestock(source), configure: configureMerchant, show: showShop,
+  save: (actor, flag, name, token) => CONFIG_ACTIONS.save(actor, flag, name, token),
+  memorize: actor => CONFIG_ACTIONS.memorize(actor),
+  flag: (item, shop) => (gmOnly() ? setStallFlags(item, shop) : null),
+  price: (item, cp) => (gmOnly() ? setStallPrice(item, cp) : null),
+  quantity: (item, q) => (gmOnly() ? setStallQuantity(item, q) : null),
+  sellable: item => (gmOnly() ? makeSellable(item) : null),
+  add: (actor, sources) => (gmOnly() ? addToStall(actor, sources) : null),
+  remove: removeItem,
+  rename: (actor, token, name) => (gmOnly() ? renameMerchant(actor, token, name) : null),
+  toggleClosed,
+  clearLog: actor => (gmOnly() ? clearSalesLog(actor) : null),
+  link: copyShopLink,
+  steal: stealFromStall
+};
 
 /* -------------------------------------------- */
-/*  Entrées                                     */
+/*  Ways in                                     */
 /* -------------------------------------------- */
 
 /**
- * « Commercer » dans le menu contextuel d'un marchand (menu du moteur), pour le personnage en main — MJ compris, qui
- * commerce alors au nom du token qu'il a sélectionné. `visit` : ouvrir la boutique en y allant d'abord (runtime/open.mjs).
+ * The Core's token menu:
+ *  - on a merchant, for the character in hand (another token): « Trade » (players and GM — the GM then trades for that token);
+ *  - GM, on the merchant's own token (nothing else in hand: the Core shows the token's own menu): « Open the shop » (the stall to
+ *    manage) and « Open / Close the shop »; on an NPC that is not a merchant: « Make it a merchant ».
+ * `visit`: walk within reach first, then open (runtime/open.mjs).
  */
-function tokenMenu(visit) {
+function tokenMenu({ open, visit }) {
   return (entries, { token, target }) => {
+    if ( !target?.actor ) return;
+    if ( game.user.isGM && (token === target) ) {
+      if ( merchantToken(target) ) {
+        const closed = merchantOf(target.actor).closed;
+        entries.push({ icon: "fa-solid fa-store", label: loc("Shop.HudOpen"), run: () => open(merchantSource(target), null) });
+        entries.push({ icon: closed ? "fa-solid fa-door-open" : "fa-solid fa-door-closed", label: loc(closed ? "Shop.OpenShop" : "Shop.CloseShop"),
+          run: () => toggleClosed(target.actor) });
+      } else if ( (target.actor.type === "npc") && !isMerchant(target.actor) ) {
+        entries.push({ icon: "fa-solid fa-store", label: loc("Shop.HudMake"), run: () => makeMerchant(target.actor, open) });
+      }
+      return;
+    }
     if ( !token?.actor || !merchantToken(target) || (target === token) || game.combat?.started ) return;
     entries.push({ icon: "fa-solid fa-store", label: loc("Shop.Menu"), run: () => visit(merchantSource(target), token) });
+    if ( game.user.isGM ) entries.push({ icon: "fa-solid fa-boxes-stacked", label: loc("Shop.HudOpen"), run: () => open(merchantSource(target), null) });
   };
 }
 
-/** MJ : bouton du HUD d'un PNJ — sa boutique s'il est marchand, sinon les réglages pour en faire un. */
+/** GM: the token HUD button — its shop if it is a merchant, else make it one. */
 function hudButton(open) {
   return (hud, html) => {
     const tokenDoc = hud.document;
@@ -199,58 +310,156 @@ function hudButton(open) {
     button.className = "control-icon dlo-hud dlo-hud-shop";
     button.dataset.tooltip = loc(merchant ? "Shop.HudOpen" : "Shop.HudMake");
     button.innerHTML = `<i class="fa-solid fa-store"></i>`;
-    // Le MJ ouvre l'étal sans personnage (gestion) ; pour commercer au nom d'un PJ : « Commercer » au clic droit.
-    button.addEventListener("click", () => (merchant ? open(merchantSource(tokenDoc), null) : configureMerchant(tokenDoc.actor)));
+    // The GM opens the stall without a character (to manage it); to trade for a character: « Trade » in the menu.
+    button.addEventListener("click", () => (merchant ? open(merchantSource(tokenDoc), null) : makeMerchant(tokenDoc.actor, open)));
     column.append(button);
   };
 }
 
 /**
- * MJ : dans la barre latérale des acteurs, clic droit sur un PNJ — « Ouvrir la boutique » (un marchand, même sans token)
- * et « Réglages de marchand ». Hook du cœur V14 : `getActorContextOptions` (client/applications/sidebar/
- * document-directory.mjs:224), entrées `{ label, icon, visible(li), onClick(event, li) }`.
+ * GM: in the actors sidebar, right click on an NPC — « Open the shop » and « Open / Close the shop » (a merchant, even without a
+ * token), « Make it a merchant » (an NPC that is not one), « Merchant settings ». On a folder: « New merchant ». V14 core hooks
+ * `getActorContextOptions` / `getFolderContextOptions` (client/applications/sidebar/document-directory.mjs:216-226): they are called
+ * **once**, when the sidebar first renders — before `ready`, so they are routed at `init` (they used to be routed at `ready` and
+ * never showed, user report of 2026-11-27).
  */
 function directoryMenu(open) {
   return (app, options) => {
+    if ( app?.documentName && (app.documentName !== "Actor") ) return;
     const actorOfEntry = li => game.actors.get(li.closest("[data-entry-id]")?.dataset.entryId);
     options.push({
-      label: "DLO.Shop.HudOpen", icon: "fa-solid fa-store",
+      label: "DLO.Shop.HudOpen", icon: "<i class=\"fa-solid fa-store\"></i>",
       visible: li => game.user.isGM && isMerchant(actorOfEntry(li)),
       onClick: (event, li) => open(merchantSource(actorOfEntry(li)), null)
     }, {
-      label: "DLO.Merchant.Menu", icon: "fa-solid fa-gear",
-      visible: li => game.user.isGM && (actorOfEntry(li)?.type === "npc"),
+      label: "DLO.Shop.HudMake", icon: "<i class=\"fa-solid fa-store\"></i>",
+      visible: li => game.user.isGM && (actorOfEntry(li)?.type === "npc") && !isMerchant(actorOfEntry(li)),
+      onClick: (event, li) => makeMerchant(actorOfEntry(li), open)
+    }, {
+      label: "DLO.Shop.ToggleShop", icon: "<i class=\"fa-solid fa-door-open\"></i>",
+      visible: li => game.user.isGM && isMerchant(actorOfEntry(li)),
+      onClick: (event, li) => toggleClosed(actorOfEntry(li))
+    }, {
+      label: "DLO.Merchant.Menu", icon: "<i class=\"fa-solid fa-gear\"></i>",
+      visible: li => game.user.isGM && isMerchant(actorOfEntry(li)),
       onClick: (event, li) => configureMerchant(actorOfEntry(li))
     });
   };
 }
 
+function folderMenu(open) {
+  return (app, options) => {
+    if ( app?.documentName !== "Actor" ) return;
+    options.push({
+      label: "DLO.Shop.NewMerchantMenu", icon: "<i class=\"fa-solid fa-store\"></i>",
+      visible: () => game.user.isGM,
+      onClick: (event, li) => createMerchant(game.folders.get(li.closest("[data-folder-id]")?.dataset.folderId), open)
+    });
+  };
+}
+
 /**
- * @param {Function} open  Ouvrir une source (`open(source, looter)`) : chez un joueur à qui le MJ montre une boutique, pour
- *   son token sur la scène, sinon son personnage attitré.
+ * A shop button in the merchant's sheet header, beside the core controls (user's request, 2026-11-27): it opens the shop for whoever
+ * looks — the GM to manage it, a player for their character.
+ */
+function sheetButton(openFor) {
+  return (app, element) => {
+    const actor = app.document ?? app.actor;
+    if ( !(actor instanceof Actor) || !isMerchant(actor) ) return;
+    const header = (element instanceof HTMLElement ? element : app.element)?.querySelector(".window-header");
+    if ( !header || header.querySelector(".dlo-sheet-shop") ) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "header-control icon fa-solid fa-store dlo-sheet-shop";
+    button.dataset.tooltip = loc("Shop.HudOpen");
+    button.setAttribute("aria-label", loc("Shop.HudOpen"));
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      openFor(app.token ?? actor);
+    });
+    const first = header.querySelector(".header-control");
+    if ( first ) first.before(button);
+    else header.append(button);
+  };
+}
+
+/** `@Shop[uuid]{label}` in a journal or a chat message: a link that opens that merchant's shop. */
+const SHOP_LINK = /@Shop\[([^\]]+)\](?:\{([^}]+)\})?/g;
+
+function enrichShopLink(match) {
+  const [, uuid, label] = match;
+  const doc = fromUuidSync(uuid, { strict: false });
+  const a = document.createElement("a");
+  a.className = "content-link dlo-shop-link";
+  a.dataset.shopUuid = uuid;
+  a.draggable = false;
+  a.innerHTML = `<i class="fa-solid fa-store"></i> ${escape(label ?? doc?.name ?? loc("Shop.Stall"))}`;
+  if ( !doc ) a.classList.add("broken");
+  return a;
+}
+
+/**
+ * The character a player shops with: their selected token, else their assigned character's token on the scene, else one of their
+ * characters on the scene; without a token, the character itself (assigned, else the first they own).
+ */
+export function myShopper() {
+  return canvas.tokens?.controlled.find(t => t.document.isOwner && (t.actor?.type === "character"))?.document
+    ?? canvas.scene?.tokens.find(t => t.actorId === game.user.character?.id)
+    ?? canvas.scene?.tokens.find(t => t.isOwner && (t.actor?.type === "character"))
+    ?? game.user.character ?? game.actors.find(a => (a.type === "character") && a.isOwner) ?? null;
+}
+
+/**
+ * Open a merchant's shop from a document (an actor, or a token): the GM opens the stall to manage it; a player opens it for their
+ * character — through the merchant's token on their scene when there is one (reach applies), else through its actor (open only if
+ * the GM showed it, or if it is open from anywhere).
+ */
+export function openShopOf(doc, open) {
+  const actor = (doc instanceof Actor) ? doc : doc?.actor;
+  if ( !isMerchant(actor) ) return ui.notifications.warn(loc("Shop.NotMerchant", { name: actor?.name ?? "?" }));
+  if ( game.user.isGM ) return open(merchantSource(doc), null);
+  const token = (doc?.documentName === "Token") ? doc
+    : (canvas.scene?.tokens.find(t => (t.actorId === actor.id) && t.actorLink) ?? null);
+  return open(merchantSource(token ?? actor), myShopper());
+}
+
+/**
+ * @param {Function} open  Open a source (`open(source, looter)`).
  */
 export function registerShopInit(open) {
   CONFIG.queries[DEAL_QUERY] = handleDeal;
   CONFIG.queries[SHOW_QUERY] = ({ source: ref }) => {
     const source = resolveSource(ref);
     if ( !source?.exists() ) return false;
-    // Son token sélectionné, sinon celui de son personnage attitré, sinon un de ses personnages sur la scène ; à défaut de
-    // token, le personnage lui-même (attitré, sinon le premier qu'il possède).
-    const mine = canvas.tokens?.controlled.find(t => t.document.isOwner)?.document
-      ?? canvas.scene?.tokens.find(t => t.actorId === game.user.character?.id)
-      ?? canvas.scene?.tokens.find(t => t.isOwner && (t.actor?.type === "character"))
-      ?? game.user.character ?? game.actors.find(a => (a.type === "character") && a.isOwner) ?? null;
-    open(source, mine);
+    open(source, myShopper());
     return true;
   };
+  // Routed at `init`: the sidebar builds its context menus once, before `ready`.
+  route("getActorContextOptions", "sidebar: Shop", directoryMenu(open));
+  route("getFolderContextOptions", "sidebar: new merchant", folderMenu(open));
+  CONFIG.TextEditor?.enrichers?.push({ id: `${MODULE_ID}-shop`, pattern: SHOP_LINK, enricher: enrichShopLink });
+  // In the capture phase: the core's own handler of `a.content-link` (the link's look) never sees this click.
+  globalThis.document?.addEventListener("click", event => {
+    const link = event.target?.closest?.("a.dlo-shop-link[data-shop-uuid]");
+    if ( !link ) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const doc = fromUuidSync(link.dataset.shopUuid, { strict: false });
+    if ( !doc ) return ui.notifications.warn(loc("Shop.Gone"));
+    openShopOf(doc, open);
+  }, true);
 }
 
 /**
- * @param {{ open: Function, visit: Function }} ways  Ouvrir une source (`open(source, looter)`), y aller puis l'ouvrir
- *   (`visit(source, looter)`) — passés par le point d'entrée : runtime/open.mjs connaît déjà ce fichier.
+ * @param {{ open: Function, visit: Function }} ways  Open a source (`open(source, looter)`), walk there then open
+ *   (`visit(source, looter)`) — given by the entry point: runtime/open.mjs already knows this file.
  */
 export function registerShop({ open, visit }) {
-  route(TOKEN_MENU_HOOK, "menu: Shop", tokenMenu(visit));
+  route(TOKEN_MENU_HOOK, "menu: Shop", tokenMenu({ open, visit }));
   route("renderTokenHUD", "Shop button", hudButton(open));
-  route("getActorContextOptions", "sidebar: Shop", directoryMenu(open));
+  route("renderActorSheetV2", "sheet: Shop button", sheetButton(doc => openShopOf(doc, open)));
 }
+
+/** How long a shown shop stays open to its players (re-exported for the tests and the API). */
+export { SHOWN_VALID_MS };

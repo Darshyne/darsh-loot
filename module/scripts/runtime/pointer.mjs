@@ -295,8 +295,36 @@ function clickedSource(event) {
   return clickCursor(source) ? source : null;
 }
 
+/**
+ * A double click on a merchant's token opens its shop instead of the actor sheet (user's request, 2026-11-27) — the GM to manage the
+ * stall (the sheet stays one click away in the shop), a player for their character, out of combat. The core opens the sheet on the
+ * second press of a double click (MouseInteractionManager, 250 ms, 5 px): that second press is kept from it here, in the capture
+ * phase on the document, before the canvas sees it.
+ */
+const DOUBLE_MS = 250;
+let lastPress = null;
+
+function onDoublePress(event) {
+  if ( !onBoard(event) || (event.button !== 0) || !plain(event) ) { lastPress = null; return false; }
+  const point = canvas.canvasCoordinatesFromClient({ x: event.clientX, y: event.clientY });
+  const token = tokenAt(point);
+  const merchant = token && merchantToken(token.document) && (game.user.isGM || !inCombat()) && !engineTargeting();
+  const previous = lastPress;
+  lastPress = merchant ? { at: Date.now(), id: token.id, x: event.clientX, y: event.clientY } : null;
+  if ( !merchant || !previous || (previous.id !== token.id) || ((Date.now() - previous.at) > DOUBLE_MS)
+    || (Math.hypot(event.clientX - previous.x, event.clientY - previous.y) > 5) ) return false;
+  lastPress = null;
+  event.stopImmediatePropagation();
+  event.preventDefault();
+  const source = merchantSource(token.document);
+  if ( game.user.isGM ) openSource(source, gmToken() && (gmToken() !== token.document) ? gmToken() : null);
+  else visitSource(source, actingToken());
+  return true;
+}
+
 function onPointerDown(event) {
   down = null;
+  if ( onDoublePress(event) ) return;
   const source = clickedSource(event);
   if ( !source ) return;
   down = { x: event.clientX, y: event.clientY, at: Date.now(), source, looter: actingToken(), cursor: clickCursor(source) };

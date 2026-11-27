@@ -49,6 +49,10 @@ export function registerSettings() {
     scope: "client", config: true, type: String, default: "off",
     choices: { off: "DLO.Settings.ClickToLoot.Off", reach: "DLO.Settings.ClickToLoot.Reach", walk: "DLO.Settings.ClickToLoot.Walk" }
   });
+  // 2026-11-27: how this client shows a shop — icons (« grid ») or a list by category. Changed from the shop window itself.
+  game.settings.register(MODULE_ID, "shopView", {
+    scope: "client", config: false, type: String, default: "grid", choices: { grid: "grid", list: "list" }
+  });
   // 0.15.7 : « Fouiller les environs » proposé dans le menu du token (la Perception passive et l'API restent actives).
   game.settings.register(MODULE_ID, "searchMenu", {
     name: "DLO.Settings.SearchMenu.Name", hint: "DLO.Settings.SearchMenu.Hint",

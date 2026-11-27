@@ -18,6 +18,7 @@ import { livingNPC, livingPC, stealDC, triedBy, victimView, victimDC, moveCoins 
 import { stolenFlag, pickpocketMode, stealMenuState, purseHandful, pickRandom } from "../core/theft.mjs";
 import { coinsOf } from "../core/loot.mjs";
 import { feedbackCard, SOUNDS } from "./feedback.mjs";
+import { isMerchant, recordSale } from "../adapter/shop.mjs";
 import { landingSound } from "./drop-fx.mjs";
 import { engineNotice } from "../adapter/engine.mjs";
 import { waitForDice, newRollMessage, showDiceLocally } from "../adapter/dice.mjs";
@@ -99,6 +100,7 @@ async function handleSteal(payload, { user }) {
   if ( dc === null ) throw new Error(loc("Steal.Impossible"));
 
   await actor.setFlag(MODULE_ID, `tried.${thiefId}`, [...tried, payload.itemId]);
+  const itemName = (payload.itemId === "coins") ? loc("Shop.LogCoins") : (actor.items.get(payload.itemId)?.name ?? "?");
   const ok = Number(payload.total) >= dc;
   if ( ok ) {
     const stolen = stolenFlag({ from: victim.name, fromUuid: actor.uuid, place: victim.parent?.name, time: game.time.worldTime });
@@ -110,6 +112,10 @@ async function handleSteal(payload, { user }) {
     announce(looter, source, taken, true);
   } else {
     await caught(victim, looter, payload.total, dc);
+  }
+  // A merchant keeps its thefts in its sales log (2026-11-27): what was taken, by whom, or who was caught trying.
+  if ( isMerchant(actor) ) {
+    recordSale(actor, { kind: ok ? "theft" : "caught", who: looter.name, user: user.name, item: itemName }).catch(err => log.warn("sales log:", err.message));
   }
   return { ok };
 }

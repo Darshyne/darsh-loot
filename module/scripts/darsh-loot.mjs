@@ -27,8 +27,8 @@ import { registerDropInit, registerDrop, requestDrop, dropEnabled } from "./runt
 import { registerDropFx } from "./runtime/drop-fx.mjs";
 import { registerThrow } from "./runtime/throw.mjs";
 import { registerTradeInit, registerTrade, startTrade } from "./runtime/trade.mjs";
-import { registerShopInit, registerShop, configureMerchant, requestDeal, requestRestock, showShop } from "./runtime/shop.mjs";
-import { merchantOf, isMerchant, quote, stockView, convertItemPiles, convertAllItemPiles, memorizeStock } from "./adapter/shop.mjs";
+import { registerShopInit, registerShop, configureMerchant, requestDeal, requestRestock, showShop, toggleClosed } from "./runtime/shop.mjs";
+import { merchantOf, isMerchant, quote, stockView, convertItemPiles, convertAllItemPiles, memorizeStock, salesLog } from "./adapter/shop.mjs";
 import { listRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { lootView, corpseToken } from "./adapter/dnd5e.mjs";
@@ -109,8 +109,16 @@ Hooks.once("ready", () => {
     quote: (token, looter, cart) => quote(actorOf(token), doc(token), actorOf(looter), cart),
     /** Conclure un troc sans fenêtre (tests) : le MJ refait le devis et exécute. */
     deal: (token, looter, cart) => requestDeal(merchantSource(doc(token)), doc(looter), cart),
-    /** MJ : réassortir (stock fixe à sa référence, tables retirées), noter le stock présent comme référence. */
-    restock: token => requestRestock(merchantSource(doc(token))),
+    /**
+     * GM: restock — `mode` "full" (default: drawn and bought items leave, fixed stock and till back to their reference, tables drawn),
+     * "add" (tables drawn on top) or "tables" (only the drawn items renewed). Locked items are left alone. Also: note the present stock
+     * as the reference.
+     */
+    restock: (token, mode="full") => requestRestock(merchantSource(doc(token)), mode),
+    /** GM: open or close a shop (returns whether it is now closed). */
+    toggleShop: actorOrToken => toggleClosed(doc(actorOrToken)?.actor ?? actorOrToken),
+    /** The merchant's sales and theft log (oldest first). */
+    salesLog: actorOrToken => salesLog(doc(actorOrToken)?.actor ?? actorOrToken),
     memorizeStock: actorOrToken => memorizeStock(doc(actorOrToken)?.actor ?? actorOrToken),
     /** MJ : reprendre un marchand d'Item Piles (ses drapeaux restent en place). */
     convertItemPiles: actorOrToken => convertItemPiles(doc(actorOrToken)?.actor ?? actorOrToken),
