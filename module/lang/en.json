@@ -1568,7 +1568,8 @@
           "Name": "End-of-combat loot, handled by the GM",
           "Hint": "At the end of a combat, the GM finds the defeated creatures in the « Loot » window. Their corpses stay closed to the players until the GM distributes the loot to the party: left on each corpse, or gathered in one shared chest. Off: nothing happens at the end of a combat, each corpse is searched freely and its treasure is rolled at the first search."
         }
-      }
+      },
+      "None": "No end-of-combat loot waiting. The window opens by itself at the end of a combat."
     }
   },
   "TYPES": {

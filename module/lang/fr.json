@@ -1568,7 +1568,8 @@
           "Name": "Butin de fin de combat, géré par le MJ",
           "Hint": "À la fin d'un combat, le MJ retrouve les créatures vaincues dans la fenêtre « Butin ». Leurs cadavres restent fermés aux joueurs jusqu'à ce qu'il distribue le butin au groupe : laissé sur chaque cadavre, ou rassemblé dans un coffre commun. Coupé : rien ne se passe à la fin du combat, chaque cadavre se fouille librement et son trésor est tiré à la première fouille."
         }
-      }
+      },
+      "None": "Aucun butin de fin de combat en attente. La fenêtre s'ouvre d'elle-même à la fin d'un combat."
     }
   },
   "TYPES": {

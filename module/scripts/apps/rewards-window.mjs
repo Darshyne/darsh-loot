@@ -72,13 +72,17 @@ export class RewardsWindow extends ApplicationV2 {
   }
 
   async _prepareContext() {
-    const records = this.handlers.list();
-    const record = this.#record();
+    const offReason = xpOffReason();
+    // With DAS's XP off, only the encounters that have loot are listed (a record without it has nothing to show here).
+    const loot = lootOn();
+    const xpView = !offReason || !loot;
+    const records = this.handlers.list().filter(r => xpView || hasLoot(r));
+    let record = this.#record();
+    if ( record && !xpView && !hasLoot(record) ) record = records[0] ?? null;
     if ( record ) this.recordId = record.id;
     const plan = record ? planAward(record) : null;
     const shares = new Map((plan?.shares ?? []).map(s => [s.uuid, s.xp]));
-    const offReason = xpOffReason();
-    return { records, record, plan, shares, enabled: !offReason, offReason, mode: record?.split ?? setting("xpSplit"), loot: lootOn() };
+    return { records, record, plan, shares, enabled: !offReason, offReason, mode: record?.split ?? setting("xpSplit"), loot };
   }
 
   async _renderHTML(context) {
@@ -94,11 +98,11 @@ export class RewardsWindow extends ApplicationV2 {
         <select name="record" aria-label="${loc("Rewards.Encounter")}">
           ${records.map(r => `<option value="${r.id}" ${r.id === record?.id ? "selected" : ""}>${escape(r.name)} — ${recordStatus(r, showXP)}</option>`).join("")}
         </select>
-        <button type="button" data-action="create" data-tooltip="${loc("Rewards.NewHint")}"><i class="fa-solid fa-plus"></i> ${loc("Rewards.New")}</button>
+        ${showXP ? `<button type="button" data-action="create" data-tooltip="${loc("Rewards.NewHint")}"><i class="fa-solid fa-plus"></i> ${loc("Rewards.New")}</button>` : ""}
       </div>`;
     const off = (enabled || !showXP) ? "" : `<p class="dlo-blocked"><i class="fa-solid fa-circle-info"></i> ${xpOffText(offReason)}</p>`;
     if ( !record ) {
-      root.innerHTML = `${picker}${off}<p class="dlo-empty">${loc("Rewards.None")}</p>`;
+      root.innerHTML = `${records.length ? picker : ""}${off}<p class="dlo-empty">${loc(showXP ? "Rewards.None" : "EndLoot.None")}</p>`;
       return root;
     }
 
@@ -262,6 +266,9 @@ export class RewardsWindow extends ApplicationV2 {
     fromUuidSync(target.dataset.uuid, { strict: false })?.sheet?.render(true);
   }
 }
+
+/** A record that has end-of-combat loot to show (waiting, distributed or set aside). */
+const hasLoot = record => !!record?.loot && (record.loot.status !== "none");
 
 /** The GM's end-of-combat loot is on (`lootManage`). */
 function lootOn() {

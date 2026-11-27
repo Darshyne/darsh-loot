@@ -59,11 +59,13 @@ export default {
       await scene.view();
       for ( let i = 0; i < 40 && ((canvas.scene?.id !== scene.id) || !canvas.ready); i++ ) await new Promise(r => setTimeout(r, 250));
       await new Promise(r => setTimeout(r, 1000));
-      const id = t => t.id;
+      // Found by actor: the server does not always give created documents back in the order asked.
+      const of = a => tokens.find(t => t.actorId === a.id);
+      const map = { actor: of(actor), g1: of(g1), g2: of(g2), g3: of(g3), g4: of(g4) };
       return { previous, own, scene: scene.id, viewed: canvas.scene?.id === scene.id, actor: actor.id, table: table.id,
         ownedByPlayer: !!player && actor.testUserPermission(player, "OWNER"),
-        tokens: { actor: id(tokens[0]), g1: id(tokens[1]), g2: id(tokens[2]), g3: id(tokens[3]), g4: id(tokens[4]) },
-        uuids: { actor: tokens[0].uuid, g1: tokens[1].uuid, g2: tokens[2].uuid, g3: tokens[3].uuid, g4: tokens[4].uuid } };`);
+        tokens: Object.fromEntries(Object.entries(map).map(([k, t]) => [k, t.id])),
+        uuids: Object.fromEntries(Object.entries(map).map(([k, t]) => [k, t.uuid])) };`);
     if ( !ctx.expect(setup?.viewed, `test scene, goblins and loot rule ready, viewed by the GM (${JSON.stringify({ viewed: setup?.viewed })})`) ) return;
     ctx.restore(() => gm(`
       const p = args.previous;
@@ -116,6 +118,14 @@ export default {
     ctx.expect(first?.open && first.dnd5e, `the end of the combat opened the window at the GM, in the dnd5e look (${JSON.stringify({ open: first?.open, dnd5e: first?.dnd5e })})`);
     ctx.expect(first?.title === "Loot" || first?.title === "Butin", `with DAS's XP off the window is named after the loot (« ${first?.title} »), no XP part (${!first?.xpShown})`);
     ctx.expect(!first?.xpShown, "no « Give XP » button while DAS's XP is off");
+    const toolbar = await gm(`
+      ui.controls.render({ reset: true });
+      await new Promise(r => setTimeout(r, 300));
+      return { tool: !!ui.controls.controls?.tokens?.tools?.dloRewards,
+        options: [...(document.querySelectorAll("#darsh-loot-rewards select[name=record] option") ?? [])].length,
+        create: !!document.querySelector("#darsh-loot-rewards [data-action=create]") };`);
+    ctx.expect(toolbar && !toolbar.tool && toolbar.options === 1 && !toolbar.create,
+      `DAS's XP off: no XP button in the toolbar, the window lists only this encounter's loot, no « New » (${JSON.stringify(toolbar)})`);
     ctx.expect(first?.loot === "pending" && first.rows === 2 && JSON.stringify(first.corpses) === JSON.stringify(["DAS goblin A", "DAS goblin B"]),
       `the record has a pending loot part with the two corpses (${JSON.stringify({ loot: first?.loot, corpses: first?.corpses, rows: first?.rows })})`);
     ctx.expect(first?.held?.every(Boolean), `both corpses are held until the GM distributes (${JSON.stringify(first?.held)})`);

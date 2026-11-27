@@ -267,7 +267,8 @@ const shortcutsShown = () => game.user?.isGM && (xpEnabled() || lootEnabled());
 /** The toolbar of tokens: a button (GM). */
 function sceneControls(controls) {
   const tokens = controls?.tokens;
-  if ( !tokens?.tools || !shortcutsShown() || !setting("xpToolbar") ) return;
+  // The XP button: only while DAS handles XP (user's request, 27/11) — the loot window opens by itself at the end of a combat.
+  if ( !tokens?.tools || !game.user?.isGM || !xpEnabled() || !setting("xpToolbar") ) return;
   tokens.tools.dloRewards = {
     name: "dloRewards", title: titleKey(xpEnabled(), lootEnabled()), icon: "fa-solid fa-trophy", order: Object.keys(tokens.tools).length,
     button: true, visible: true, onChange: () => openRewards()
@@ -295,7 +296,7 @@ function tokenMenu(entries, { target }) {
 /** dnd5e's Group sheet: a button in its header (GM). */
 function groupSheetButton(app, element) {
   const header = (element instanceof HTMLElement ? element : app.element)?.querySelector(".window-header");
-  if ( !header || header.querySelector(".dlo-sheet-rewards") || !shortcutsShown() ) return;
+  if ( !header || header.querySelector(".dlo-sheet-rewards") || !game.user?.isGM || !xpEnabled() ) return;
   const button = document.createElement("button");
   button.type = "button";
   button.className = "header-control icon fa-solid fa-trophy dlo-sheet-rewards";
