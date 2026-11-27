@@ -179,6 +179,18 @@ export function registerSettings() {
     scope: "world", config: true, type: String, default: "direct",
     choices: { direct: "DLO.Give.Settings.Mode.Direct", ask: "DLO.Give.Settings.Mode.Ask", off: "DLO.Give.Settings.Mode.Off" }
   });
+  // Lot 2 (2026-11-27, user's request): DAS handles XP at all — off by default; off, nothing happens and no shortcut shows.
+  game.settings.register(MODULE_ID, "xpManage", {
+    name: "DLO.Rewards.Settings.Manage.Name", hint: "DLO.Rewards.Settings.Manage.Hint",
+    scope: "world", config: true, type: Boolean, default: false,
+    onChange: () => ui.controls?.render({ reset: true })
+  });
+  // Lot 2 (user's request): the XP button of the tokens toolbar, shown or hidden (the other shortcuts stay).
+  game.settings.register(MODULE_ID, "xpToolbar", {
+    name: "DLO.Rewards.Settings.Toolbar.Name", hint: "DLO.Rewards.Settings.Toolbar.Hint",
+    scope: "world", config: true, type: Boolean, default: true,
+    onChange: () => ui.controls?.render({ reset: true })
+  });
   // Lot 2 (2026-11-27): XP rewards — when XP is given: at the end of a combat with the « Rewards » window (the GM validates), at
   // the end of a combat without it, at each hostile creature defeated, or only when the GM opens the window. Silent when dnd5e
   // levels up without XP.

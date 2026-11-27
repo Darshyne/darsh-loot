@@ -74,6 +74,7 @@ const DYNAMIC = {
   "DLO.Rewards.Status": ["pending", "open", "awarded", "dismissed"],
   "DLO.Rewards.Challenge": [...DIFFICULTIES],
   "DLO.Rewards.SplitMode": [...XP_SPLIT],
+  "DLO.Rewards.Off": ["das", "dnd5e"],
   "TYPES.RegionBehavior": Object.keys(manifest.documentTypes?.RegionBehavior ?? {}).map(t => `${manifest.id}.${t}`)
 };
 // Préfixes d'aide locale (`const L = key => … \`DLO.TileZone.${key}\``) : leurs appels L("X") sont des clés littérales.

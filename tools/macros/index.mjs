@@ -8,5 +8,5 @@ export const MACROS = [
     img: "icons/commodities/currency/coins-assorted-mix-copper-silver-gold.webp" },
   { file: "marchands-objets-invendables.js", name: "List merchants' items that cannot be sold",
     img: "icons/sundries/documents/document-sealed-signatures-red.webp" },
-  { file: "recompenses.js", name: "Rewards (XP)", img: "icons/commodities/treasure/cup-trophy-gold.webp" }
+  { file: "recompenses.js", name: "XP", img: "icons/commodities/treasure/cup-trophy-gold.webp" }
 ];

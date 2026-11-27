@@ -33,7 +33,7 @@ export default {
       const TEST = { "darsh-loot": { test: true } };
       const previous = { scene: canvas.scene?.id ?? null, level: canvas.level?.id ?? null,
         party: game.settings.get("dnd5e", "primaryParty")?.actor?.id ?? null, active: game.scenes.active?.id ?? null, leveling: game.settings.get("dnd5e", "levelingMode"),
-        settings: Object.fromEntries(["xpWhen", "xpSplit", "xpRemainder", "xpRecipients", "rewards"].map(k => [k, game.settings.get("darsh-loot", k)])),
+        settings: Object.fromEntries(["xpManage", "xpToolbar", "xpWhen", "xpSplit", "xpRemainder", "xpRecipients", "rewards"].map(k => [k, game.settings.get("darsh-loot", k)])),
         xp: actor?.system.details.xp.value ?? null };
       const pc = name => Actor.implementation.create({ name, type: "character", img: "icons/svg/mystery-man.svg", flags: TEST });
       if ( !actor ) actor = await pc("DAS test hero");
@@ -58,6 +58,7 @@ export default {
         at(ally, 400, 700, { disposition: F }), at(g3, 1100, 400, { disposition: H })]);
       await actor.update({ "system.details.xp.value": 0 });
       await companion.update({ "system.details.xp.value": 280 });
+      await S("xpManage", true); await S("xpToolbar", true);
       await S("xpWhen", "semi"); await S("xpSplit", "equal"); await S("xpRemainder", "party"); await S("xpRecipients", "present");
       await S("rewards", { records: [] });
       // Activated, so that the player's client views it too (its right-click menu is read there).
@@ -257,6 +258,30 @@ export default {
     ctx.expect(kill?.first === 1 && kill.status === "open" && now.actor === before.actor + 25 && now.companion === before.companion + 25,
       `per kill: the goblin's 50 XP given as it dies, 25 each, the record stays open (${JSON.stringify({ kill, before, now })})`);
     ctx.expect(kill?.second === 1 && kill.extra === 1 && kill.closed === "awarded", `dying again gives nothing more; the end of the combat closes the record (${JSON.stringify(kill)})`);
+
+    // 7 bis. The user's switches: the toolbar button hidden on its own; DAS's XP off (the default) hides everything.
+    const switches = await gm(`
+      const S = (k, v) => game.settings.set("darsh-loot", k, v);
+      const tool = () => !!ui.controls.controls?.tokens?.tools?.dloRewards;
+      const label = game.i18n.localize("DLO.Rewards.Menu");
+      const engine = game.modules.get("dnd5e-combat")?.api;
+      const scene = game.scenes.get(args.scene);
+      const menu = async () => { scene.tokens.get(args.tokens.actor).object?.control({ releaseOthers: true });
+        await new Promise(r => setTimeout(r, 300));
+        const entries = engine?.ui?.tokenMenu ? await engine.ui.tokenMenu(scene.tokens.get(args.tokens.companion).object) : [];
+        canvas.tokens.releaseAll(); return entries.some(e => e.label === label); };
+      await S("xpToolbar", false); await new Promise(r => setTimeout(r, 300));
+      const hidden = { tool: tool(), menu: await menu() };
+      await S("xpToolbar", true); await S("xpManage", false); await new Promise(r => setTimeout(r, 300));
+      for ( const app of foundry.applications.instances.values() ) if ( app.id === "darsh-loot-rewards" ) await app.close();
+      const opened = game.modules.get("darsh-loot").api.rewards.open();
+      const off = { tool: tool(), menu: await menu(), opened: !!opened };
+      await S("xpManage", true); await new Promise(r => setTimeout(r, 300));
+      return { hidden, off, label, back: tool() };`, setup);
+    ctx.expect(switches && !switches.hidden.tool && switches.hidden.menu, `« XP button in the toolbar » off: no toolbar button, the menu entry stays (${JSON.stringify(switches?.hidden)})`);
+    ctx.expect(switches && !switches.off.tool && !switches.off.menu && !switches.off.opened && switches.back,
+      `« Handle XP with DAS » off: no button, no menu entry, the window does not open; back on, the button returns (${JSON.stringify(switches)})`);
+    ctx.expect(switches?.label === "XP…", `the menu entry is called « ${switches?.label} »`);
 
     // 7. dnd5e levels up without XP: silent.
     const noxp = await gm(`

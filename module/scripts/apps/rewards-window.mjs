@@ -6,7 +6,7 @@
  * it does goes through the handlers received at opening (runtime/rewards.mjs). Lot 3 (loot) is meant to add a section here.
  */
 import { MODULE_ID, loc, setting } from "../shared.mjs";
-import { planAward, challengeFor, xpEnabled } from "../adapter/xp.mjs";
+import { planAward, challengeFor, xpOffReason, xpOffText } from "../adapter/xp.mjs";
 import { DIFFICULTIES, XP_SPLIT } from "../core/xp.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -70,14 +70,15 @@ export class RewardsWindow extends ApplicationV2 {
     if ( record ) this.recordId = record.id;
     const plan = record ? planAward(record) : null;
     const shares = new Map((plan?.shares ?? []).map(s => [s.uuid, s.xp]));
-    return { records, record, plan, shares, enabled: xpEnabled(), mode: record?.split ?? setting("xpSplit") };
+    const offReason = xpOffReason();
+    return { records, record, plan, shares, enabled: !offReason, offReason, mode: record?.split ?? setting("xpSplit") };
   }
 
   async _renderHTML(context) {
     const root = document.createElement("form");
     root.className = "dlo-body dlo-rewards-body";
     root.addEventListener("submit", event => event.preventDefault());
-    const { record, plan, records, enabled, mode, shares } = context;
+    const { record, plan, records, enabled, offReason, mode, shares } = context;
 
     const picker = `
       <div class="dlo-rw-top">
@@ -86,7 +87,7 @@ export class RewardsWindow extends ApplicationV2 {
         </select>
         <button type="button" data-action="create" data-tooltip="${loc("Rewards.NewHint")}"><i class="fa-solid fa-plus"></i> ${loc("Rewards.New")}</button>
       </div>`;
-    const off = enabled ? "" : `<p class="dlo-blocked"><i class="fa-solid fa-circle-info"></i> ${loc("Rewards.Off")}</p>`;
+    const off = enabled ? "" : `<p class="dlo-blocked"><i class="fa-solid fa-circle-info"></i> ${xpOffText(offReason)}</p>`;
     if ( !record ) {
       root.innerHTML = `${picker}${off}<p class="dlo-empty">${loc("Rewards.None")}</p>`;
       return root;

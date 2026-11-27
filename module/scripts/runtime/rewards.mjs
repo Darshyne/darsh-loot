@@ -25,7 +25,7 @@ import { pendingXP } from "../core/xp.mjs";
 import { tokenOnScene } from "../adapter/party.mjs";
 import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 import {
-  REWARDS_SETTING, xpEnabled, readRecords, getRecord, recordOfCombat, currentRecord, putRecord, deleteRecord, recordFromCombat,
+  REWARDS_SETTING, xpEnabled, xpOffReason, xpOffText, readRecords, getRecord, recordOfCombat, currentRecord, putRecord, deleteRecord, recordFromCombat,
   emptyRecord, foeEntry, planAward, awardNow
 } from "../adapter/xp.mjs";
 import { RewardsWindow } from "../apps/rewards-window.mjs";
@@ -60,7 +60,7 @@ export function requestAward(id) {
 
 async function handleAward({ id, force=false, only=null, keepOpen=false }, { user }) {
   if ( !user?.isGM ) throw new Error(loc("Rewards.GMOnly"));
-  if ( !xpEnabled() ) throw new Error(loc("Rewards.Off"));
+  if ( xpOffReason() ) throw new Error(xpOffText(xpOffReason()));
   return serial(async () => {
     const record = getRecord(id);
     if ( !record ) throw new Error(loc("Refus.Introuvable"));
@@ -222,6 +222,8 @@ const handlers = {
 /** GM: opens the « Rewards » window (on a record, else the most recent pending one). */
 export function openRewards(id=null) {
   if ( !game.user.isGM ) return null;
+  // DAS's XP switched off (the default): nothing to open, the GM is told where to switch it on.
+  if ( xpOffReason() === "das" ) { ui.notifications.info(xpOffText("das")); return null; }
   return RewardsWindow.show(id, handlers);
 }
 
@@ -245,7 +247,7 @@ const shortcutsShown = () => game.user?.isGM && xpEnabled();
 /** The toolbar of tokens: a button (GM). */
 function sceneControls(controls) {
   const tokens = controls?.tokens;
-  if ( !tokens?.tools || !shortcutsShown() ) return;
+  if ( !tokens?.tools || !shortcutsShown() || !setting("xpToolbar") ) return;
   tokens.tools.dloRewards = {
     name: "dloRewards", title: "DLO.Rewards.Tool", icon: "fa-solid fa-trophy", order: Object.keys(tokens.tools).length,
     button: true, visible: true, onChange: () => openRewards()

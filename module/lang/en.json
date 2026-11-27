@@ -163,7 +163,7 @@
         "loot": "Loot & theft",
         "containers": "Containers",
         "traps": "Traps",
-        "rewards": "Rewards"
+        "rewards": "XP"
       },
       "Tool": {
         "tables": {
@@ -1356,17 +1356,20 @@
       "Status": "Loot"
     },
     "Rewards": {
-      "Title": "Rewards",
-      "Tool": "Rewards (XP)",
-      "Menu": "Rewards…",
-      "Count": "Count in the rewards",
+      "Title": "XP",
+      "Tool": "XP",
+      "Menu": "XP…",
+      "Count": "Count for XP",
       "Encounter": "Encounter",
       "New": "New",
-      "NewHint": "A reward outside combat: a challenge, a negotiation, a milestone. Every character of the party is ticked.",
+      "NewHint": "XP outside combat: a challenge, a negotiation, a milestone. Every character of the party is ticked.",
       "None": "No encounter recorded. They show here at the end of a combat; « New » makes one by hand.",
-      "Off": "XP is switched off in dnd5e (level advancement without XP): nothing is given.",
+      "Off": {
+        "das": "XP handling is switched off in DAS (DAS settings, XP tab).",
+        "dnd5e": "XP is switched off in dnd5e (level advancement without XP): nothing is given."
+      },
       "CombatName": "Combat — {scene}, round {round}",
-      "ManualName": "Reward outside combat",
+      "ManualName": "XP outside combat",
       "Status": {
         "pending": "to give",
         "open": "in progress",
@@ -1409,7 +1412,7 @@
       "Nothing": "Nothing to give: no creature ticked and no bonus.",
       "NoOne": "Nobody receives XP: tick at least one character.",
       "Already": "The XP of this encounter was already given.",
-      "Kept": "Encounter recorded: « {name} ». Open Rewards to give the XP.",
+      "Kept": "Encounter recorded: « {name} ». Open the XP window to give the XP.",
       "Card": "{name}: {xp} XP — {shares}.",
       "CardShare": "{who} +{xp}",
       "CardParty": "{xp} XP go to the party's pool.",
@@ -1417,14 +1420,14 @@
       "CardLevelUp": "Can level up: {names}!",
       "Float": "+{xp} XP",
       "FloatLevelUp": "+{xp} XP — level up!",
-      "Op": "Reward « {name} »",
+      "Op": "XP « {name} »",
       "PlanLine": "{who}: +{xp} XP",
       "Step": "{xp} XP given to {who}",
       "StepRecord": "encounter record updated",
       "Settings": {
         "When": {
           "Name": "When XP is given",
-          "Hint": "Semi-automatic: at the end of a combat the Rewards window opens at the GM, who adjusts and confirms. Automatic: given at the end of the combat, no window. At each creature defeated: its XP is given at once (never twice). Manual: the encounter is recorded, the GM opens the window when they want. Nothing happens when dnd5e levels up without XP.",
+          "Hint": "Semi-automatic: at the end of a combat the XP window opens at the GM, who adjusts and confirms. Automatic: given at the end of the combat, no window. At each creature defeated: its XP is given at once (never twice). Manual: the encounter is recorded, the GM opens the window when they want.",
           "Semi": "Semi-automatic (end of combat, the GM confirms)",
           "Auto": "Automatic (end of combat)",
           "Kill": "At each creature defeated",
@@ -1445,6 +1448,14 @@
           "Hint": "Ticked by default in the window: the characters who fought (absent ones are listed, unticked), or the whole primary party.",
           "Present": "Those who fought",
           "Party": "The whole party"
+        },
+        "Manage": {
+          "Name": "Handle XP with DAS",
+          "Hint": "Off by default: DAS leaves XP alone (no encounter record, no window, no button). On: the XP window, its shortcuts and the settings below. Nothing happens either when dnd5e levels up without XP."
+        },
+        "Toolbar": {
+          "Name": "XP button in the toolbar",
+          "Hint": "The trophy button of the tokens toolbar (GM). The other shortcuts stay: Group sheet, right-click on a character, macro."
         }
       },
       "GMOnly": "Only the GM can give XP."

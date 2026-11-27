@@ -183,7 +183,7 @@ beforeEach(async () => {
   globalThis.dnd5e = undefined;
   CONFIG.DND5E.CHARACTER_EXP_LEVELS = LEVELS;
   CONFIG.DND5E.ENCOUNTER_DIFFICULTY = BUDGET;
-  Object.assign(settings, { xpWhen: "semi", xpSplit: "equal", xpRemainder: "party", xpRecipients: "present", levelingMode: "xp", operations: {} });
+  Object.assign(settings, { xpManage: true, xpToolbar: true, xpWhen: "semi", xpSplit: "equal", xpRemainder: "party", xpRecipients: "present", levelingMode: "xp", operations: {} });
   await game.settings.set("darsh-loot", "rewards", { records: [] });
   registerOperations();
 });
@@ -251,6 +251,30 @@ describe("end of combat — the encounter record", () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(rewardsApi.records()).toEqual([]);
     expect(xp(t.pcs)).toEqual([250, 0, 0]);
+  });
+});
+
+describe("the switches (user's requests of 2026-11-27)", () => {
+  it("DAS's XP is off by default: no record, no window, a request refused, nothing written", async () => {
+    const t = table();
+    settings.xpManage = false;
+    settings.xpWhen = "auto";
+    Hooks.callAll("deleteCombat", t.combat);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(rewardsApi.records()).toEqual([]);
+    expect(rewardsApi.open()).toBe(null);
+    expect(opened).toEqual([]);
+    await expect(award({ id: "x" })).rejects.toThrow("Rewards.Off.das");
+    expect(xp(t.pcs)).toEqual([250, 0, 0]);
+  });
+  it("the toolbar button follows its setting; the others stay", () => {
+    const controls = () => { const c = { tokens: { tools: { select: {} } } }; Hooks.callAll("getSceneControlButtons", c); return c.tokens.tools; };
+    expect(controls().dloRewards).toBeTruthy();
+    settings.xpToolbar = false;
+    expect(controls().dloRewards).toBeUndefined();
+    settings.xpToolbar = true;
+    settings.xpManage = false;
+    expect(controls().dloRewards).toBeUndefined();
   });
 });
 
@@ -342,7 +366,7 @@ describe("giving from the window (the request)", () => {
     await rewardsApi.update(t.id, { foes: record.foes });
     await expect(award({ id: t.id }, alice)).rejects.toThrow("Rewards.GMOnly");
     settings.levelingMode = "noxp";
-    await expect(award({ id: t.id })).rejects.toThrow("Rewards.Off");
+    await expect(award({ id: t.id })).rejects.toThrow("Rewards.Off.dnd5e");
     expect(xp(t.pcs)).toEqual([250, 0, 0]);
   });
 

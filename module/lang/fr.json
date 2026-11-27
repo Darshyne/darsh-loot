@@ -163,7 +163,7 @@
         "loot": "Butin et vol",
         "containers": "Conteneurs",
         "traps": "Pièges",
-        "rewards": "Récompenses"
+        "rewards": "XP"
       },
       "Tool": {
         "tables": {
@@ -1356,17 +1356,20 @@
       "Status": "Butin"
     },
     "Rewards": {
-      "Title": "Récompenses",
-      "Tool": "Récompenses (XP)",
-      "Menu": "Récompenses…",
-      "Count": "Compter dans les récompenses",
+      "Title": "XP",
+      "Tool": "XP",
+      "Menu": "XP…",
+      "Count": "Compter pour l'XP",
       "Encounter": "Rencontre",
       "New": "Nouvelle",
-      "NewHint": "Une récompense hors combat : défi, négociation, étape importante. Tous les personnages du groupe sont cochés.",
+      "NewHint": "Une XP hors combat : défi, négociation, étape importante. Tous les personnages du groupe sont cochés.",
       "None": "Aucune rencontre notée. Elles apparaissent ici à la fin d'un combat ; « Nouvelle » en crée une à la main.",
-      "Off": "L'XP est coupée dans dnd5e (montée de niveau sans XP) : rien n'est donné.",
+      "Off": {
+        "das": "La gestion de l'XP est coupée dans DAS (réglages DAS, onglet XP).",
+        "dnd5e": "L'XP est coupée dans dnd5e (montée de niveau sans XP) : rien n'est donné."
+      },
       "CombatName": "Combat — {scene}, round {round}",
-      "ManualName": "Récompense hors combat",
+      "ManualName": "XP hors combat",
       "Status": {
         "pending": "à donner",
         "open": "en cours",
@@ -1409,7 +1412,7 @@
       "Nothing": "Rien à donner : aucune créature cochée et pas de bonus.",
       "NoOne": "Personne ne reçoit d'XP : cochez au moins un personnage.",
       "Already": "L'XP de cette rencontre a déjà été donnée.",
-      "Kept": "Rencontre notée : « {name} ». Ouvrez Récompenses pour donner l'XP.",
+      "Kept": "Rencontre notée : « {name} ». Ouvrez la fenêtre XP pour donner l'XP.",
       "Card": "{name} : {xp} XP — {shares}.",
       "CardShare": "{who} +{xp}",
       "CardParty": "{xp} XP vont à la réserve du groupe.",
@@ -1417,14 +1420,14 @@
       "CardLevelUp": "Niveau supérieur possible : {names} !",
       "Float": "+{xp} XP",
       "FloatLevelUp": "+{xp} XP — niveau supérieur !",
-      "Op": "Récompense « {name} »",
+      "Op": "XP « {name} »",
       "PlanLine": "{who} : +{xp} XP",
       "Step": "{xp} XP donnés à {who}",
       "StepRecord": "relevé de rencontre mis à jour",
       "Settings": {
         "When": {
           "Name": "Quand donner l'XP",
-          "Hint": "Semi-automatique : à la fin d'un combat, la fenêtre Récompenses s'ouvre chez le MJ, qui ajuste puis valide. Automatique : donnée à la fin du combat sans fenêtre. À chaque créature vaincue : son XP est donnée aussitôt (jamais deux fois). Manuel : la rencontre est notée, le MJ ouvre la fenêtre quand il veut. Rien ne se passe si dnd5e monte de niveau sans XP.",
+          "Hint": "Semi-automatique : à la fin d'un combat, la fenêtre XP s'ouvre chez le MJ, qui ajuste puis valide. Automatique : donnée à la fin du combat sans fenêtre. À chaque créature vaincue : son XP est donnée aussitôt (jamais deux fois). Manuel : la rencontre est notée, le MJ ouvre la fenêtre quand il veut.",
           "Semi": "Semi-automatique (fin de combat, le MJ valide)",
           "Auto": "Automatique (fin de combat)",
           "Kill": "À chaque créature vaincue",
@@ -1445,6 +1448,14 @@
           "Hint": "Cochés par défaut dans la fenêtre : les personnages qui ont combattu (les absents sont listés, décochés), ou tout le groupe principal.",
           "Present": "Ceux qui ont combattu",
           "Party": "Tout le groupe"
+        },
+        "Manage": {
+          "Name": "Gérer l'XP avec DAS",
+          "Hint": "Coupé par défaut : DAS ne touche pas à l'XP (ni relevé de rencontre, ni fenêtre, ni bouton). Allumé : la fenêtre XP, ses raccourcis et les réglages ci-dessous. Rien ne se passe non plus si dnd5e monte de niveau sans XP."
+        },
+        "Toolbar": {
+          "Name": "Bouton XP dans la barre d'outils",
+          "Hint": "Le bouton trophée de la barre des tokens (MJ). Les autres raccourcis restent : fiche de Groupe, clic droit sur un personnage, macro."
         }
       },
       "GMOnly": "Seul le MJ peut donner de l'XP."

@@ -16,11 +16,22 @@ import { engineRelation } from "./engine.mjs";
 
 export const REWARDS_SETTING = "rewards";
 
-/** dnd5e's leveling mode is not « level up without XP ». */
-export function xpEnabled() {
-  try { return game.settings.get("dnd5e", "levelingMode") !== "noxp"; }
-  catch { return true; }
+/**
+ * Why XP is off, or null when it is on: `"das"` — the DAS switch (`xpManage`, off by default: user's choice of 2026-11-27);
+ * `"dnd5e"` — dnd5e levels up without XP (`levelingMode: noxp`).
+ */
+export function xpOffReason() {
+  if ( !setting("xpManage") ) return "das";
+  try { if ( game.settings.get("dnd5e", "levelingMode") === "noxp" ) return "dnd5e"; }
+  catch { /* no dnd5e setting: XP stays on */ }
+  return null;
 }
+
+/** XP is handled by DAS: its switch is on and dnd5e levels up with XP. */
+export const xpEnabled = () => !xpOffReason();
+
+/** The text saying why XP is off (`DLO.Rewards.Off.das` / `.dnd5e`). */
+export const xpOffText = reason => loc(`Rewards.Off.${reason}`);
 
 /** dnd5e's tables: XP per level, and the XP budget per character by level and difficulty. */
 export function xpTables() {
