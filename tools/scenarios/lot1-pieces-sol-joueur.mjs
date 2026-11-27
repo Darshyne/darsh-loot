@@ -68,8 +68,12 @@ export default {
     const who = await ctx.asPlayer(`
       for ( let i = 0; i < 60 && ((canvas.scene?.id !== args.scene) || !canvas.ready); i++ ) await new Promise(r => setTimeout(r, 250));
       await new Promise(r => setTimeout(r, 800));
+      // The character stands on the upper level: the player looks at that level, as he would to play it.
+      if ( canvas.level?.id !== args.upper ) await canvas.scene.view({ level: args.upper });
+      for ( let i = 0; i < 40 && ((canvas.level?.id !== args.upper) || !canvas.ready); i++ ) await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 800));
       return { user: game.user.name, gm: game.user.isGM, activeGM: game.users.activeGM?.name ?? null, scene: canvas.scene?.id === args.scene,
-        level: canvas.level?.id ?? null, query: typeof CONFIG.queries["darsh-loot.dropCoins"] };`, setup);
+        level: canvas.level?.id ?? null, upper: canvas.level?.id === args.upper, query: typeof CONFIG.queries["darsh-loot.dropCoins"] };`, setup);
     ctx.log(`player client: ${JSON.stringify(who)}`);
     if ( !ctx.expect(who && !who.gm && who.activeGM && who.scene && (who.query === "function"), `a player client (${who?.user}) viewing the test scene, with an active GM`) ) return;
 
