@@ -509,7 +509,9 @@
       "UnmakeAsk": "{name} redevient un PNJ ordinaire : ses réglages de marchand, son journal des ventes et les réglages de son étal (prix, verrous, objets cachés) sont effacés. Ses objets et ses pièces restent sur sa fiche. Continuer ?",
       "Unmade": "{name} ne tient plus boutique.",
       "ShutTitle": "Cette boutique est fermée.",
-      "ShutText": "Revenez plus tard."
+      "ShutText": "Revenez plus tard.",
+      "LessOne": "Un de moins",
+      "MoreOne": "Un de plus"
     },
     "Merchant": {
       "Title": "Marchand : {name}",

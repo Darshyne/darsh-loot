@@ -329,6 +329,31 @@ export default {
     ctx.expect(edit?.stuckBefore > 0 && edit.stuckAfter === 0, `« make all sellable » fixes the items created with the actor (${edit?.stuckBefore} → ${edit?.stuckAfter})`);
     ctx.expect(edit?.renamed?.every(n => n === "DAS test merchant renamed") && edit.stillMerchant, `the settings tab renames actor and token (${JSON.stringify(edit?.renamed)})`);
 
+    // The − / + beside a stall quantity (user's request, 2026-11-27) — its own call: the bridge drops a script past ~10 s.
+    const step = await gm(`
+      const token = fromUuidSync(args.token);
+      await game.settings.set("darsh-loot", "shopView", "list");
+      await game.modules.get("darsh-loot").api.shop(token);
+      await new Promise(r => setTimeout(r, 800));
+      ${shopWindow}
+      // The window may still be on the settings tab the step before left it on.
+      win()?.element.querySelector("[data-action=shopTab][data-tab=stall]")?.click();
+      await new Promise(r => setTimeout(r, 800));
+      const rope = () => token.actor.items.find(i => i.name === "DAS test rope");
+      const row = () => [...(win()?.element.querySelectorAll(".dlo-shop-manage") ?? [])].find(li => li.dataset.name === "DAS test rope");
+      const before = rope().system.quantity;
+      row()?.querySelector('[data-action=stockStep][data-step="1"]')?.click();
+      await new Promise(r => setTimeout(r, 900));
+      const plus = rope().system.quantity;
+      row()?.querySelector('[data-action=stockStep][data-step="-1"]')?.click();
+      await new Promise(r => setTimeout(r, 900));
+      const minus = rope().system.quantity;
+      await win()?.close();
+      return { before, plus, minus };`, setup);
+    ctx.expect(step && (step.plus === step.before + 1) && (step.minus === step.before),
+      `the − / + beside a stall quantity add one and take one off (${JSON.stringify(step)})`);
+    await closeAll();
+
     // 3. Restocks.
     const restock = await gm(`
       const api = game.modules.get("darsh-loot").api;
@@ -376,11 +401,25 @@ export default {
       const win = [...foundry.applications.instances.values()].find(a => a.id === "darsh-loot-merchant-" + args.tokenId && a.rendered);
       const view = { tabs: !!win?.element.querySelector(".dlo-shop-tabs"), rows: win?.element.querySelectorAll(".dlo-shop-stock .dlo-shop-item").length ?? 0,
         search: !!win?.element.querySelector(".dlo-shop-search input"), imgs: win?.element.querySelectorAll(".dlo-shop-item img").length ?? -1 };
+      // The tray's − / + (user's request, 2026-11-27): one rope on the tray, + makes two, − one again.
+      const wait = () => new Promise(r => setTimeout(r, 500));
+      const inCart = () => win.cart.buy.get(args.rope) ?? 0;
+      win.element.querySelector('.dlo-shop-stock [data-action=add][data-item-id="' + args.rope + '"]')?.click();
+      await wait();
+      const one = inCart();
+      win.element.querySelector('.dlo-tray-step [data-action=add][data-item-id="' + args.rope + '"]')?.click();
+      await wait();
+      const two = inCart();
+      win.element.querySelector('.dlo-tray-step [data-action=remove][data-item-id="' + args.rope + '"]')?.click();
+      await wait();
+      view.tray = { one, two, back: inCart() };
       const result = await api.deal(merchant, me, { buy: [{ id: args.rope, quantity: 1 }], sell: [] });
       await win?.close();
       return { view, result };`, { ...setup, rope });
     ctx.expect(bought?.view?.rows > 0 && !bought.view.tabs && bought.view.search && (bought.view.imgs === 0),
       `the player's window: stall items, search, no GM tabs, no <img> under the pointer (${JSON.stringify(bought?.view)})`);
+    ctx.expect((bought?.view?.tray?.one === 1) && (bought.view.tray.two === 2) && (bought.view.tray.back === 1),
+      `the tray's − / + change how many ropes the player takes (${JSON.stringify(bought?.view?.tray)})`);
     ctx.expect(bought?.result?.bought?.length === 1, `the player buys one rope (${JSON.stringify(bought?.result)})`);
     await pause(800);
     const log = await gm(`return game.modules.get("darsh-loot").api.salesLog(fromUuidSync(args.token));`, setup);

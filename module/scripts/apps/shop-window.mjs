@@ -69,7 +69,8 @@ export class ShopWindow extends ApplicationV2 {
       clearLog: ShopWindow.#onClearLog,
       removeTable: ShopWindow.#onRemoveTable,
       memorize: ShopWindow.#onMemorize,
-      convert: ShopWindow.#onConvert
+      convert: ShopWindow.#onConvert,
+      stockStep: ShopWindow.#onStockStep
     }
   };
 
@@ -249,8 +250,14 @@ export class ShopWindow extends ApplicationV2 {
         ${itemPicture(e.img)}
         <span class="dlo-row-name">${escape(e.name)}${e.contents ? ` <span class="dlo-muted">(${e.contents})</span>` : ""}
           <span class="dlo-shop-badge">${e.stuck ? `<i class="fa-solid fa-ban dlo-warn" data-tooltip="${escape(loc("Shop.StuckNote"))}"></i>` : ""}</span></span>
-        <input type="number" class="dlo-row-qty-input" min="0" step="1" value="${e.quantity}" data-tooltip="${loc("Shop.Quantity")}"
-          ${Number.isFinite(e.available) ? "" : "disabled"}>
+        <span class="dlo-row-qty-field dlo-stepper">
+          <button type="button" data-action="stockStep" data-step="-1" data-tooltip="${loc("Shop.LessOne")}" aria-label="${loc("Shop.LessOne")}"
+            ${(Number.isFinite(e.available) && (e.quantity > 0)) ? "" : "disabled"}><i class="fa-solid fa-minus"></i></button>
+          <input type="number" class="dlo-row-qty-input" min="0" step="1" value="${e.quantity}" data-tooltip="${loc("Shop.Quantity")}"
+            ${Number.isFinite(e.available) ? "" : "disabled"}>
+          <button type="button" data-action="stockStep" data-step="1" data-tooltip="${loc("Shop.MoreOne")}" aria-label="${loc("Shop.MoreOne")}"
+            ${Number.isFinite(e.available) ? "" : "disabled"}><i class="fa-solid fa-plus"></i></button>
+        </span>
         <span class="dlo-row-price-field ${fixed ? "dlo-fixed" : ""}">
           <input type="text" class="dlo-row-price-input" value="${fixed ? goldText(e.priceCp) : ""}" placeholder="${fixed ? "" : goldText(e.unit)}"
             data-tooltip="${escape(loc("Shop.PriceHint", { price: formatPrice(e.unit) }))}">
@@ -275,15 +282,28 @@ export class ShopWindow extends ApplicationV2 {
       </section>`).join("");
   }
 
-  /** A line on a tray. */
-  #tray(lines, side) {
-    return lines.map(l => `
+  /**
+   * A line on a tray, with − / + to change how many (user's request, 2026-11-27): a click on the picture still takes one back,
+   * Shift the whole line. `+` is off once everything left is on the tray.
+   */
+  #tray(lines, side, entries=[]) {
+    return lines.map(l => {
+      const entry = entries.find(e => e.id === l.id);
+      const full = !!entry && Number.isFinite(entry.available) && (l.quantity >= entry.available);
+      return `
       <li class="dlo-slot dlo-shop-slot" data-action="remove" data-side="${side}" data-item-id="${l.id}"
           data-tooltip="${escape(`${escape(l.name)} — ${formatPrice(l.price)}`)}">
         ${itemPicture(l.img)}
+        <span class="dlo-tray-step dlo-stepper">
+          <button type="button" data-action="remove" data-side="${side}" data-item-id="${l.id}" aria-label="${loc("Shop.LessOne")}"
+            data-tooltip="${loc("Shop.LessOne")}"><i class="fa-solid fa-minus"></i></button>
+          <button type="button" data-action="add" data-side="${side}" data-item-id="${l.id}" aria-label="${loc("Shop.MoreOne")}"
+            data-tooltip="${loc("Shop.MoreOne")}" ${full ? "disabled" : ""}><i class="fa-solid fa-plus"></i></button>
+        </span>
         ${(l.quantity > 1) ? `<span class="dlo-qty">${l.quantity}</span>` : ""}
         <span class="dlo-shop-price">${formatPrice(l.price)}</span>
-      </li>`).join("");
+      </li>`;
+    }).join("");
   }
 
   #purse(actor) {
@@ -327,9 +347,9 @@ export class ShopWindow extends ApplicationV2 {
         </section>
         <section class="dlo-shop-col dlo-shop-deal ${off}">
           <h3>${loc("Shop.YouGive")} <span class="dlo-shop-total">${deal ? formatPrice(deal.sellTotal) : ""}</span></h3>
-          <ol class="dlo-grid dlo-shop-tray">${deal ? this.#tray(deal.sell, "sell") : ""}</ol>
+          <ol class="dlo-grid dlo-shop-tray">${deal ? this.#tray(deal.sell, "sell", mine) : ""}</ol>
           <h3>${loc("Shop.YouGet")} <span class="dlo-shop-total">${deal ? formatPrice(deal.buyTotal) : ""}</span></h3>
-          <ol class="dlo-grid dlo-shop-tray">${deal ? this.#tray(deal.buy, "buy") : ""}</ol>
+          <ol class="dlo-grid dlo-shop-tray">${deal ? this.#tray(deal.buy, "buy", stock) : ""}</ol>
           <p class="dlo-shop-balance">${balance}</p>
           ${warning ? `<p class="dlo-blocked">${warning}</p>` : ""}
           ${blocked ? `<p class="dlo-blocked">${blocked}</p>` : ""}
@@ -701,6 +721,14 @@ export class ShopWindow extends ApplicationV2 {
     if ( event.shiftKey || (now <= 1) ) this.cart[side].delete(itemId);
     else this.cart[side].set(itemId, now - 1);
     return this.render();
+  }
+
+  /** GM, stall list: one more or one less in stock (also the restock reference, as when typed). */
+  static async #onStockStep(event, target) {
+    const item = this.#item(target);
+    if ( !item ) return;
+    const next = Math.max(0, (Number(item.system.quantity) || 0) + Number(target.dataset.step || 0));
+    await this.actions.quantity(item, next);
   }
 
   static #onClear() {
