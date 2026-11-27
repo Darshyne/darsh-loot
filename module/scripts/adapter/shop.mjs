@@ -8,10 +8,10 @@
  * un joueur).
  */
 import { MODULE_ID } from "../shared.mjs";
-import { COINS, canLeaveOwner } from "../core/loot.mjs";
+import { COINS, canLeaveOwner, PHYSICAL_TYPES } from "../core/loot.mjs";
 import {
   normalizeMerchant, toCp, modifiersFor, buyPrice, sellPrice, goodsOf, wares, stolenVerdict, worstVerdict, settle, cleanCart,
-  restockPlan, coinsFor, purseValue, fromItemPiles
+  restockPlan, coinsFor, purseValue, fromItemPiles, appendLog
 } from "../core/shop.mjs";
 import { drawItems } from "./treasure.mjs";
 import { moveItemNow } from "./drop.mjs";
@@ -34,6 +34,21 @@ export function merchantAlive(actor) {
   const hp = actor.system.attributes?.hp;
   if ( !(Number(hp?.max) > 0) ) return true;
   return (hp.value ?? 1) > 0;
+}
+
+/**
+ * How long a shop the GM has shown stays open to the players it was shown to (ms): a session. Lot 0 (audit of 2026-11-26,
+ * defect 10): a shop addressed by its **actor** has neither place nor reach — that is meant for a shop without a token, which the
+ * GM shows. The GM client only accepts it for a shop it has shown (`flags.darsh-loot.shown`: when, and to whom), or for a merchant
+ * set to trade from anywhere (`remote`, 2026-11-27: journal links, the sheet button).
+ */
+export const SHOWN_VALID_MS = 12 * 3600000;
+
+/** May this user trade with this shop through its actor (no token, no reach)? */
+export function shopOpenTo(actor, user) {
+  if ( user?.isGM || merchantOf(actor).remote ) return true;
+  const shown = actor?.getFlag(MODULE_ID, "shown");
+  return !!shown && ((Date.now() - (Number(shown.time) || 0)) < SHOWN_VALID_MS) && (shown.users ?? []).includes(user?.id);
 }
 
 /** Un token de marchand vivant, sur sa scène. */
@@ -88,6 +103,8 @@ function plainItems(actor) {
       baseCp: baseCpOf(i, actor),
       hidden: shop.hidden === true, notForSale: shop.notForSale === true,
       base: Number.isFinite(shop.base) ? shop.base : null, rolled: shop.rolled === true, bought: shop.bought === true,
+      // The GM's own price for this item in this shop (copper pieces), and whether restocks leave it alone.
+      priceCp: (Number.isFinite(shop.price) && (shop.price >= 0)) ? shop.price : null, locked: shop.locked === true,
       stolen: i.getFlag(MODULE_ID, "stolen") ?? null,
       // Lot 0 (defect 15): the stolen marks of everything stored in this bag, at any depth.
       stolenInside: (i.type === "container") ? stolenInside(actor, i.id) : [],
@@ -105,8 +122,10 @@ function plainItems(actor) {
  */
 export function stockView(actor, buyer=null, { gm=false }={}) {
   const merchant = merchantOf(actor);
-  return goodsOf(plainItems(actor), { gm, infiniteStock: merchant.infiniteStock }).map(e => {
-    const modifiers = modifiersFor(merchant, { type: e.type, characterId: buyer?.id ?? null });
+  // A price typed by the GM replaces the item's own (and the merchant and type factors, see `modifiersFor`).
+  const items = plainItems(actor).map(i => ((i.priceCp !== null) ? { ...i, autoCp: i.baseCp, baseCp: i.priceCp } : i));
+  return goodsOf(items, { gm, infiniteStock: merchant.infiniteStock }).map(e => {
+    const modifiers = modifiersFor(merchant, { type: e.type, characterId: buyer?.id ?? null, fixed: e.priceCp !== null });
     return { ...e, modifiers, unit: buyPrice(e.baseCp, 1, modifiers), available: merchant.infiniteStock ? Infinity : e.quantity };
   });
 }
@@ -224,21 +243,22 @@ export async function memorizeStock(actor) {
 }
 
 /**
- * Réassort — chez le MJ : ce qui avait été tiré sur table ou racheté aux joueurs part, le stock fixe revient à sa
- * quantité de référence, la caisse à la sienne, puis chaque table du marchand est tirée (objets identiques empilés).
+ * Restock — on the GM's side. `mode` (core/shop.mjs `restockPlan`): `full` (drawn and bought items leave, the fixed stock and the
+ * till go back to their reference, the tables are drawn), `add` (the tables are drawn on top), `tables` (only the drawn items are
+ * renewed). Locked items are left alone. Identical drawn items are stacked.
  * @returns {Promise<{ removed: number, restored: number, drawn: string[] }>}
  */
-export async function restock(actor) {
+export async function restock(actor, mode="full") {
   const merchant = merchantOf(actor);
-  const plan = restockPlan(plainItems(actor));
+  const plan = restockPlan(plainItems(actor), mode);
   const removable = plan.remove.filter(id => actor.items.has(id));
   if ( removable.length ) await actor.deleteEmbeddedDocuments("Item", removable, { deleteContents: true });
   if ( plan.restore.length ) await actor.updateEmbeddedDocuments("Item", plan.restore.map(r => ({ _id: r.id, "system.quantity": r.quantity })));
   const purse = actor.getFlag(MODULE_ID, "merchant")?.purse;
-  if ( purse ) await actor.update({ "system.currency": purse });
+  if ( plan.purse && purse ) await actor.update({ "system.currency": purse });
 
   const drawn = [];
-  for ( const table of merchant.tables ) {
+  for ( const table of (plan.draw ? merchant.tables : []) ) {
     const rolls = Math.max(0, (await new Roll(table.rolls).evaluate({ allowInteractive: false })).total);
     for ( const result of await drawItems(table.uuid, rolls) ) {
       const data = await asWare(result);
@@ -250,6 +270,114 @@ export async function restock(actor) {
   }
   if ( drawn.length ) await actor.createEmbeddedDocuments("Item", drawn);
   return { removed: removable.length, restored: plan.restore.length, drawn: drawn.map(d => d.name) };
+}
+
+/* -------------------------------------------- */
+/*  Stall editing (GM, from the shop window)    */
+/* -------------------------------------------- */
+
+/** The GM's price for this item in this shop, in copper pieces; null goes back to the automatic price. */
+export function setStallPrice(item, cp) {
+  if ( (cp === null) || (cp === undefined) ) return item.update({ [`flags.${MODULE_ID}.shop.-=price`]: null });
+  return item.update({ [`flags.${MODULE_ID}.shop.price`]: Math.max(0, Math.round(Number(cp) || 0)) });
+}
+
+/**
+ * The quantity on the stall. An item of the fixed stock (not drawn, not bought) also takes it as its restock reference: the GM
+ * who sets « 10 arrows » wants 10 after the next restock.
+ */
+export function setStallQuantity(item, quantity) {
+  const q = Math.max(0, Math.floor(Number(quantity) || 0));
+  const shop = item.getFlag(MODULE_ID, "shop") ?? {};
+  const update = { "system.quantity": q };
+  if ( !shop.rolled && !shop.bought ) update[`flags.${MODULE_ID}.shop.base`] = q;
+  return item.update(update);
+}
+
+/** The stall flags of an item, merged (`hidden`, `notForSale`, `locked`…). */
+export function setStallFlags(item, flags) {
+  return item.update(Object.fromEntries(Object.entries(flags).map(([k, v]) => [`flags.${MODULE_ID}.shop.${k}`, v])));
+}
+
+/** An item that is not gear (legacy NPC item) becomes gear: the merchant can hand it over. */
+export function makeSellable(item) {
+  const properties = new Set(item.system.properties ?? []);
+  properties.add("gear");
+  return item.update({ "system.properties": [...properties] });
+}
+
+/**
+ * Items dropped on the stall by the GM (from the sidebar, a compendium, another sheet): copied onto the merchant as fixed stock
+ * (their quantity is the restock reference). An identical item already on the stall (same type and name, fixed stock) is stacked.
+ * @param {Actor} actor
+ * @param {object[]} sources  Item data (`toObject()`).
+ * @returns {Promise<string[]>}  The names added.
+ */
+export async function addToStall(actor, sources) {
+  const create = [];
+  const names = [];
+  for ( const source of sources ) {
+    if ( !PHYSICAL_TYPES.has(source?.type) ) continue;
+    const data = foundry.utils.deepClone(source);
+    delete data._id;
+    if ( data.system ) { delete data.system.container; data.system.equipped = false; }
+    const quantity = Math.max(1, Math.floor(Number(data.system?.quantity) || 1));
+    const same = (data.type !== "container") && actor.items.find(i => (i.type === data.type) && (i.name === data.name)
+      && !i.system.container && !i.getFlag(MODULE_ID, "shop")?.rolled && !i.getFlag(MODULE_ID, "shop")?.bought);
+    if ( same ) await setStallQuantity(same, (same.system.quantity ?? 0) + quantity);
+    else {
+      if ( data.flags?.[MODULE_ID] ) { delete data.flags[MODULE_ID].shop; delete data.flags[MODULE_ID].stolen; }
+      foundry.utils.setProperty(data, `flags.${MODULE_ID}.shop`, { base: quantity });
+      create.push(data);
+    }
+    names.push(data.name);
+  }
+  if ( create.length ) await actor.createEmbeddedDocuments("Item", create);
+  return names;
+}
+
+/** Remove an item from the stall (a bag leaves with what it holds). */
+export function removeFromStall(item) {
+  return item.delete({ deleteContents: true });
+}
+
+/** Rename the merchant: the actor, its prototype token, and the token the shop was opened from. */
+export async function renameMerchant(actor, token, name) {
+  const n = String(name ?? "").trim();
+  if ( !n ) return false;
+  if ( n !== actor.name ) await actor.update({ name: n, "prototypeToken.name": n });
+  if ( token && (token.documentName === "Token") && (token.name !== n) ) await token.update({ name: n });
+  return true;
+}
+
+/** Open or close the shop (`closed` in the merchant flag). Returns whether it is now closed. */
+export async function setClosed(actor, closed) {
+  await actor.setFlag(MODULE_ID, "merchant.closed", !!closed);
+  return !!closed;
+}
+
+/* -------------------------------------------- */
+/*  Sales log                                   */
+/* -------------------------------------------- */
+
+/** The merchant's sales and theft log, oldest first. */
+export function salesLog(actor) {
+  const log = actor?.getFlag(MODULE_ID, "log");
+  return Array.isArray(log) ? log : [];
+}
+
+/**
+ * One more line in the merchant's log — on the GM's side. `entry`: `{ kind: "deal"|"theft"|"caught", who, user, bought?, sold?,
+ * net?, item? }`; the real and the world time are added.
+ */
+export function recordSale(actor, entry) {
+  const line = { ...entry, time: Date.now(), worldTime: game.time?.worldTime ?? 0 };
+  return actor.setFlag(MODULE_ID, "log", appendLog(salesLog(actor), line));
+}
+
+/** Empty the log. */
+export function clearSalesLog(actor) {
+  return actor.unsetFlag(MODULE_ID, "log");
 }
 
 /**

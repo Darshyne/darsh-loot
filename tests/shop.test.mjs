@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   normalizeMerchant, toCp, modifiersFor, buyPrice, sellPrice, goodsOf, wares, stolenVerdict,
-  purseValue, coinsFor, receive, pay, settle, cleanCart, restockPlan, fromItemPiles, DEFAULT_MERCHANT
+  purseValue, coinsFor, receive, pay, settle, cleanCart, restockPlan, fromItemPiles, DEFAULT_MERCHANT,
+  matchesSearch, byCategory, parseGold, appendLog
 } from "../module/scripts/core/shop.mjs";
 import { stackTarget } from "../module/scripts/core/loot.mjs";
 
@@ -214,7 +215,71 @@ describe("marchand — réassort", () => {
       { id: "bought", quantity: 2, bought: true },
       { id: "loose", quantity: 5 }
     ]);
-    expect(plan).toEqual({ remove: ["rolled", "bought"], restore: [{ id: "fixed", quantity: 10 }] });
+    expect(plan).toEqual({ remove: ["rolled", "bought"], restore: [{ id: "fixed", quantity: 10 }], purse: true, draw: true });
+  });
+
+  const stock = [
+    { id: "fixed", quantity: 3, base: 10 },
+    { id: "fixedLocked", quantity: 3, base: 10, locked: true },
+    { id: "rolled", quantity: 1, rolled: true },
+    { id: "rolledLocked", quantity: 1, rolled: true, locked: true },
+    { id: "bought", quantity: 2, bought: true },
+    { id: "boughtLocked", quantity: 2, bought: true, locked: true }
+  ];
+
+  it("a locked item is never removed nor reset by a full restock", () => {
+    expect(restockPlan(stock, "full")).toEqual({ remove: ["rolled", "bought"], restore: [{ id: "fixed", quantity: 10 }], purse: true, draw: true });
+  });
+
+  it("« add » removes nothing and keeps the till: the tables are drawn on top", () => {
+    expect(restockPlan(stock, "add")).toEqual({ remove: [], restore: [], purse: false, draw: true });
+  });
+
+  it("« tables » only renews what was drawn (not locked), nothing else", () => {
+    expect(restockPlan(stock, "tables")).toEqual({ remove: ["rolled"], restore: [], purse: false, draw: true });
+  });
+
+  it("an unknown mode is a full restock", () => {
+    expect(restockPlan(stock, "nope").purse).toBe(true);
+  });
+});
+
+describe("merchant — shop window helpers", () => {
+  it("search: every word, any order, without accents or case", () => {
+    expect(matchesSearch("Épée longue +1", "epee")).toBe(true);
+    expect(matchesSearch("Épée longue +1", "LONGUE épée")).toBe(true);
+    expect(matchesSearch("Épée longue +1", "courte")).toBe(false);
+    expect(matchesSearch("Dague", "  ")).toBe(true);
+  });
+
+  it("categories in a fixed order, unknown types last, names sorted", () => {
+    const groups = byCategory([{ type: "loot", name: "b" }, { type: "weapon", name: "z" }, { type: "weird", name: "x" },
+      { type: "weapon", name: "a" }]);
+    expect(groups.map(g => g.type)).toEqual(["weapon", "loot", "weird"]);
+    expect(groups[0].entries.map(e => e.name)).toEqual(["a", "z"]);
+  });
+
+  it("a price typed in gold becomes copper; empty means automatic", () => {
+    expect(parseGold("12,5")).toBe(1250);
+    expect(parseGold("0.01")).toBe(1);
+    expect(parseGold("")).toBeNull();
+    expect(parseGold("abc")).toBeNaN();
+    expect(parseGold("-2")).toBeNaN();
+  });
+
+  it("a fixed price skips the merchant and type factors, not the attitude", () => {
+    const m = merchant({ buy: 2, types: { weapon: { buy: 3, sell: 1 } }, attitude: "hostile" });
+    expect(modifiersFor(m, { type: "weapon" }).buy).toBeCloseTo(2 * 3 * 1.2);
+    expect(modifiersFor(m, { type: "weapon", fixed: true }).buy).toBeCloseTo(1.2);
+  });
+});
+
+describe("merchant — sales log", () => {
+  it("keeps the newest entries", () => {
+    let log = [];
+    for ( let i = 0; i < 5; i++ ) log = appendLog(log, { i }, 3);
+    expect(log.map(e => e.i)).toEqual([2, 3, 4]);
+    expect(appendLog("broken", { i: 1 })).toEqual([{ i: 1 }]);
   });
 });
 

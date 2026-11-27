@@ -41,7 +41,8 @@ export const DEFAULT_MERCHANT = Object.freeze({
   owner: "",
   description: "",
   tables: [],
-  closed: false
+  closed: false,
+  remote: false
 });
 
 const factor = (value, fallback) => {
@@ -71,7 +72,9 @@ export function normalizeMerchant(flag) {
     description: String(f.description ?? ""),
     tables: (Array.isArray(f.tables) ? f.tables : []).filter(t => t && t.uuid)
       .map(t => ({ uuid: String(t.uuid), rolls: String(t.rolls ?? "1") || "1" })),
-    closed: f.closed === true
+    closed: f.closed === true,
+    // Players may trade with this shop from anywhere (a journal link, the sheet button) without the GM showing it first.
+    remote: f.remote === true
   };
 }
 
@@ -89,13 +92,16 @@ export function toCp(value, denomination="gp") {
  * La remise d'un personnage (en %, positive : en sa faveur) baisse ce qu'il paie et monte ce qu'on lui donne.
  * @returns {{ buy: number, sell: number }}
  */
-export function modifiersFor(merchant, { type=null, characterId=null }={}) {
+export function modifiersFor(merchant, { type=null, characterId=null, fixed=false }={}) {
   const perType = merchant.types?.[type] ?? { buy: 1, sell: 1 };
   const own = merchant.characters?.[characterId] ?? null;
   const attitude = ATTITUDES[own?.attitude ?? merchant.attitude] ?? ATTITUDES.indifferent;
   const discount = (own?.discount ?? 0) / 100;
+  // `fixed`: the GM typed this item's price in the shop — it already is the merchant's asking price, so the merchant and per-type
+  // factors no longer apply; the attitude and the character's discount still do (they are about who is buying).
+  const asking = fixed ? 1 : (merchant.buy * perType.buy);
   return {
-    buy: merchant.buy * perType.buy * attitude.buy * (1 - discount),
+    buy: asking * attitude.buy * (1 - discount),
     sell: merchant.sell * perType.sell * attitude.sell * (1 + discount)
   };
 }
@@ -273,16 +279,87 @@ export function cleanCart(lines=[], available={}) {
 /*  Réassort                                    */
 /* -------------------------------------------- */
 
+/** The three restocks the GM can choose. */
+export const RESTOCK_MODES = Object.freeze(["full", "add", "tables"]);
+
 /**
- * Ce qu'un réassort fait du stock : les objets tirés sur table et ceux rachetés aux joueurs partent (`remove`), les
- * objets du stock fixe reviennent à leur quantité de référence (`restore`). Les tables sont retirées ensuite.
- * @param {Array<{ id, quantity, base?: number|null, rolled?: boolean, bought?: boolean }>} items
+ * What a restock does to the stock. `full`: items drawn from tables and items bought from players leave, the fixed stock goes back
+ * to its reference quantity, the till to its reference, then the tables are drawn. `add`: nothing leaves, the tables are drawn on
+ * top. `tables`: only the items drawn from tables leave and are drawn again; fixed stock, bought items and till are untouched.
+ * A `locked` item is never removed nor reset, whatever the mode.
+ * @param {Array<{ id, quantity, base?: number|null, rolled?: boolean, bought?: boolean, locked?: boolean }>} items
+ * @param {string} [mode]
+ * @returns {{ remove: string[], restore: Array<{ id, quantity }>, purse: boolean, draw: boolean }}
  */
-export function restockPlan(items) {
-  const remove = items.filter(i => i.rolled || i.bought).map(i => i.id);
-  const restore = items.filter(i => !i.rolled && !i.bought && Number.isFinite(i.base) && (i.base !== i.quantity))
+export function restockPlan(items, mode="full") {
+  const m = RESTOCK_MODES.includes(mode) ? mode : "full";
+  const free = items.filter(i => !i.locked);
+  if ( m === "add" ) return { remove: [], restore: [], purse: false, draw: true };
+  if ( m === "tables" ) return { remove: free.filter(i => i.rolled).map(i => i.id), restore: [], purse: false, draw: true };
+  const remove = free.filter(i => i.rolled || i.bought).map(i => i.id);
+  const restore = free.filter(i => !i.rolled && !i.bought && Number.isFinite(i.base) && (i.base !== i.quantity))
     .map(i => ({ id: i.id, quantity: i.base }));
-  return { remove, restore };
+  return { remove, restore, purse: true, draw: true };
+}
+
+/* -------------------------------------------- */
+/*  Shop window helpers                         */
+/* -------------------------------------------- */
+
+/** The order of the categories in the list view (dnd5e physical item types). */
+export const CATEGORY_ORDER = Object.freeze(["weapon", "equipment", "consumable", "tool", "container", "loot"]);
+
+/** Lower case, without accents: what the search compares. */
+export function searchKey(text) {
+  return String(text ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase().trim();
+}
+
+/** Does this name match the search (every word of the query, in any order)? An empty query matches everything. */
+export function matchesSearch(name, query) {
+  const words = searchKey(query).split(/\s+/).filter(Boolean);
+  if ( !words.length ) return true;
+  const key = searchKey(name);
+  return words.every(w => key.includes(w));
+}
+
+/**
+ * Entries grouped by category, in `CATEGORY_ORDER` (unknown types last), each group sorted by name.
+ * @param {Array<{ type: string, name: string }>} entries
+ * @returns {Array<{ type: string, entries: object[] }>}
+ */
+export function byCategory(entries) {
+  const groups = new Map();
+  for ( const e of entries ) {
+    if ( !groups.has(e.type) ) groups.set(e.type, []);
+    groups.get(e.type).push(e);
+  }
+  const rank = t => { const i = CATEGORY_ORDER.indexOf(t); return (i < 0) ? CATEGORY_ORDER.length : i; };
+  return [...groups].sort(([a], [b]) => (rank(a) - rank(b)) || a.localeCompare(b))
+    .map(([type, list]) => ({ type, entries: [...list].sort((x, y) => String(x.name).localeCompare(String(y.name))) }));
+}
+
+/**
+ * A price typed by the GM, in gold pieces (« 12.5 », « 12,5 ») → copper pieces; null for an empty field (back to the automatic
+ * price), NaN for something that is not a price.
+ */
+export function parseGold(text) {
+  const t = String(text ?? "").trim().replace(",", ".");
+  if ( !t ) return null;
+  const n = Number(t);
+  return (Number.isFinite(n) && (n >= 0)) ? Math.round(n * CP_PER.gp) : NaN;
+}
+
+/* -------------------------------------------- */
+/*  Sales log                                   */
+/* -------------------------------------------- */
+
+/** How many entries a merchant's sales log keeps (the oldest leave first). */
+export const LOG_SIZE = 200;
+
+/** The log with one more entry at its end, trimmed to `max`. */
+export function appendLog(log, entry, max=LOG_SIZE) {
+  const list = Array.isArray(log) ? log.filter(e => e && (typeof e === "object")) : [];
+  return [...list, entry].slice(-max);
 }
 
 /* -------------------------------------------- */
