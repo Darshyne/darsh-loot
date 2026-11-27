@@ -2,7 +2,7 @@
  * The merchant revision of 2026-11-27 (user's list): ways into a shop and the GM's shop window. On a temporary scene with a merchant
  * NPC and « claude player »'s character:
  *  1. ways in — the sidebar menu (« Open the shop », « Make it a merchant », routed at init), the Core's token menu on the merchant's
- *     own token (GM), the shop button in the merchant's sheet header, a `@Shop[…]` journal link, a double click on the token (the shop
+ *     own token (GM), the entries of the merchant sheet's header menu, a `@Shop[…]` journal link, a double click on the token (the shop
  *     opens, not the sheet);
  *  2. the GM window — tabs, open / closed in the header, an item dropped on the window joins the stall, price and quantity typed in
  *     the list, lock, search, the right-click menu, the settings tab renames the merchant;
@@ -115,56 +115,87 @@ export default {
       `the Core's menu on the merchant's own token (GM): « Open the shop » opens the stall tab, with tabs and the open / closed button (${JSON.stringify(menu)})`);
     await closeAll();
 
+    // The sheet's own header menu (the « ⋮ » toggle): a real click on the toggle, then on an entry of the menu it opens (user's
+    // request, 2026-11-27: the shop's entries live there, not as a header button).
+    const sheetMenu = `
+      const headerMenu = async (actor, label=null) => {
+        const toggle = actor.sheet.element?.querySelector('.window-header [data-action="toggleControls"]');
+        if ( !toggle ) return { labels: null };
+        toggle.click();
+        await new Promise(r => setTimeout(r, 400));
+        const items = [...document.querySelectorAll("#context-menu li")];
+        const labels = items.map(li => li.textContent.trim());
+        const item = label ? items.find(li => li.textContent.trim() === game.i18n.localize(label)) : null;
+        if ( item ) item.click();
+        else document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        ui.context?.close?.({ animate: false });
+        await new Promise(r => setTimeout(r, 1200));
+        return { labels, picked: !!item };
+      };
+      const L = k => game.i18n.localize(k);`;
     const sheet = await gm(`
+      ${sheetMenu}
       const actor = game.actors.get(args.merchant);
       await actor.sheet.render({ force: true });
       await new Promise(r => setTimeout(r, 1500));
-      const button = actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop");
-      button?.click();
-      await new Promise(r => setTimeout(r, 800));
+      const first = await headerMenu(actor, "DLO.Shop.HudOpen");
       const opened = [...foundry.applications.instances.values()].some(a => a.id?.startsWith("darsh-loot-merchant") && a.rendered);
-      // Closing then reopening the shop, sheet open: the button stays (user report, 2026-11-27).
-      const api = game.modules.get("darsh-loot").api;
-      const has = () => !!actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop");
-      await api.toggleShop(actor);
-      await new Promise(r => setTimeout(r, 1200));
-      const afterClose = has();
-      await api.toggleShop(actor);
-      await new Promise(r => setTimeout(r, 1200));
-      const afterOpen = has();
+      for ( const app of [...foundry.applications.instances.values()] ) if ( app.id?.startsWith("darsh-loot-merchant") ) await app.close();
+      const closing = await headerMenu(actor, "DLO.Shop.CloseShop");
+      const closed = actor.getFlag("darsh-loot", "merchant")?.closed === true;
+      const reopening = await headerMenu(actor, "DLO.Shop.OpenShop");
+      const open = actor.getFlag("darsh-loot", "merchant")?.closed === false;
       await actor.sheet.close();
-      return { button: !!button, opened, afterClose, afterOpen, closedNow: actor.getFlag("darsh-loot", "merchant")?.closed };`, setup);
-    ctx.expect(sheet?.button && sheet.opened, `a shop button in the merchant's sheet header opens the shop (${JSON.stringify(sheet)})`);
-    ctx.expect(sheet?.afterClose && sheet.afterOpen && (sheet.closedNow === false),
-      `the sheet header keeps its shop button when the shop is closed then reopened (${JSON.stringify(sheet)})`);
+      const want = ["DLO.Shop.HudOpen", "DLO.Shop.CloseShop", "DLO.Merchant.Menu", "DLO.Shop.Unmake"].map(L);
+      return { labels: first.labels, all: want.every(w => first.labels?.includes(w)), noMake: !first.labels?.includes(L("DLO.Shop.HudMake")),
+        noOpen: !first.labels?.includes(L("DLO.Shop.OpenShop")), opened, closing: closing.picked, closed,
+        closedOffersOpen: reopening.labels?.includes(L("DLO.Shop.OpenShop")), reopening: reopening.picked, open };`, setup);
+    ctx.expect(sheet?.all && sheet.noMake && sheet.noOpen,
+      `the merchant sheet's header menu lists « View the shop », « Close the shop », « Merchant settings », « Cancel the shop » (${JSON.stringify(sheet)})`);
+    ctx.expect(sheet?.opened, `« View the shop » in the sheet's header menu opens the shop (${JSON.stringify(sheet)})`);
+    ctx.expect(sheet?.closing && sheet.closed && sheet.closedOffersOpen && sheet.reopening && sheet.open,
+      `the sheet's header menu closes the shop, then offers and does « Open the shop » (${JSON.stringify(sheet)})`);
 
-    // The same through the real actors sidebar: a right click on the merchant's entry, then « Close » / « Open » (user report, 2026-11-27).
+    // After a close / open from the actors sidebar's real right-click menu, the sheet's header menu still holds the shop's entries.
     const viaSidebar = await gm(`
+      ${sheetMenu}
       const actor = game.actors.get(args.merchant);
       await ui.sidebar.changeTab?.("actors", "primary");
       await ui.actors.render({ force: true });
       await actor.sheet.render({ force: true });
       await new Promise(r => setTimeout(r, 1500));
-      const has = () => !!actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop");
       const pick = async label => {
         const entry = ui.actors.element.querySelector('[data-entry-id="' + args.merchant + '"]');
         if ( !entry ) return false;
         const r = entry.getBoundingClientRect();
         entry.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5, button: 2 }));
         await new Promise(r => setTimeout(r, 500));
-        const item = [...document.querySelectorAll("#context-menu li, .context-menu li")].find(li => li.textContent.trim() === game.i18n.localize(label));
+        const item = [...document.querySelectorAll("#context-menu li, .context-menu li")].find(li => li.textContent.trim() === L(label));
         item?.click();
         await new Promise(r => setTimeout(r, 1800));
         return !!item;
       };
       const closedPicked = await pick("DLO.Shop.CloseShop");
-      const afterClose = has(), closed = actor.getFlag("darsh-loot", "merchant")?.closed === true;
+      const afterClose = (await headerMenu(actor)).labels ?? [];
       const openedPicked = await pick("DLO.Shop.OpenShop");
-      const afterOpen = has(), open = actor.getFlag("darsh-loot", "merchant")?.closed === false;
+      const afterOpen = (await headerMenu(actor)).labels ?? [];
       await actor.sheet.close();
-      return { closedPicked, afterClose, closed, openedPicked, afterOpen, open };`, setup);
-    ctx.expect(viaSidebar?.closedPicked && viaSidebar.closed && viaSidebar.afterClose && viaSidebar.openedPicked && viaSidebar.open && viaSidebar.afterOpen,
-      `closing then opening from the actors sidebar's right-click menu keeps the sheet's shop button (${JSON.stringify(viaSidebar)})`);
+      return { closedPicked, openedPicked, afterClose: afterClose.includes(L("DLO.Shop.HudOpen")) && afterClose.includes(L("DLO.Shop.OpenShop")),
+        afterOpen: afterOpen.includes(L("DLO.Shop.HudOpen")) && afterOpen.includes(L("DLO.Shop.CloseShop")),
+        open: actor.getFlag("darsh-loot", "merchant")?.closed === false };`, setup);
+    ctx.expect(viaSidebar?.closedPicked && viaSidebar.openedPicked && viaSidebar.afterClose && viaSidebar.afterOpen && viaSidebar.open,
+      `after closing then opening from the actors sidebar, the sheet's header menu follows: « View », then « Open » / « Close » (${JSON.stringify(viaSidebar)})`);
+
+    // Another NPC's sheet: its header menu offers « Make it a merchant » only.
+    const npcSheet = await gm(`
+      ${sheetMenu}
+      const actor = game.actors.get(args.npc);
+      await actor.sheet.render({ force: true });
+      await new Promise(r => setTimeout(r, 1200));
+      const { labels } = await headerMenu(actor);
+      await actor.sheet.close();
+      return { labels, make: labels?.includes(L("DLO.Shop.HudMake")), view: labels?.includes(L("DLO.Shop.HudOpen")) };`, setup);
+    ctx.expect(npcSheet?.make && !npcSheet.view, `a plain NPC's sheet header menu offers « Make it a merchant » only (${JSON.stringify(npcSheet)})`);
     await closeAll();
 
     const link = await gm(`
@@ -355,6 +386,7 @@ export default {
 
     // 5. « Cancel the shop » from the actors sidebar, confirmed: a plain NPC again, its items kept, its sheet without the button.
     const cancel = await gm(`
+      ${sheetMenu}
       const actor = game.actors.get(args.merchant);
       const items = actor.items.size;
       await actor.sheet.render({ force: true });
@@ -373,10 +405,11 @@ export default {
       const out = { asked: !!dialog, merchant: game.modules.get("darsh-loot").api.isMerchant?.(actor) ?? actor.getFlag("darsh-loot", "merchant")?.enabled === true,
         flag: actor.getFlag("darsh-loot", "merchant") ?? null, log: actor.getFlag("darsh-loot", "log") ?? null,
         marks: actor.items.filter(i => i.getFlag("darsh-loot", "shop")).length, items: actor.items.size, itemsBefore: items,
-        button: !!actor.sheet.element?.querySelector(".window-header .dlo-sheet-shop") };
+        menu: (await headerMenu(actor)).labels ?? null };
+      out.button = !!out.menu?.includes(L("DLO.Shop.HudOpen"));
       await actor.sheet.close();
       return out;`, setup);
     ctx.expect(cancel?.asked && !cancel.merchant && !cancel.flag && !cancel.log && (cancel.marks === 0) && (cancel.items === cancel.itemsBefore) && !cancel.button,
-      `« Cancel the shop » asks first, then makes a plain NPC: no merchant flag, log or stall marks, items kept, no sheet button (${JSON.stringify(cancel)})`);
+      `« Cancel the shop » asks first, then makes a plain NPC: no merchant flag, log or stall marks, items kept, no « View the shop » left in its sheet's header menu (${JSON.stringify(cancel)})`);
   }
 };

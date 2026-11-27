@@ -2,7 +2,7 @@
  * Merchants (SPEC §3.7, step 8): the deal a player asks for is quoted again and carried out by the active GM (the player has no
  * right on the merchant); restock, settings and stall editing are the GM's. Ways in: a click on the merchant out of combat or a
  * double click (runtime/pointer.mjs), « Trade » / « Open the shop » in the Core's token menu, the token HUD button (GM), the actors
- * sidebar (GM), the shop button in the merchant's sheet header, a `@Shop[…]` link in a journal.
+ * sidebar (GM), the shop entries of the merchant's sheet header menu, a `@Shop[…]` link in a journal.
  */
 import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
@@ -385,76 +385,38 @@ function folderMenu(open) {
 }
 
 /**
- * A shop button in the merchant's sheet header, beside the core controls (user's request, 2026-11-27): it opens the shop for whoever
- * looks — the GM to manage it, a player for their character.
+ * The shop's entries in the sheet's own header menu (the « ⋮ » toggle, beside « Configure Sheet »), like the dnd5e system's own
+ * entries (user's request, 2026-11-27): a button drawn in the header kept vanishing in the user's worlds when the shop was opened or
+ * closed. The core asks for these entries each time the menu opens (`_headerControlButtons`, hook `getHeaderControls<Class>`), so
+ * they always match the actor's state — nothing to keep in sync. « View the shop » for whoever looks at a merchant (the GM to manage
+ * it, a player for their character); the rest is the GM's, as in the actors sidebar's menu.
  */
-function sheetButton(openFor) {
-  return (app, element) => syncSheetButton(app, element, openFor);
-}
-
-/** Add the shop button to a sheet's header when its actor keeps a shop, remove it when not. */
-function syncSheetButton(app, element, openFor) {
-  const actor = app.document ?? app.actor;
-  if ( !(actor instanceof Actor) ) return;
-  const header = (element instanceof HTMLElement ? element : app.element)?.querySelector(".window-header");
-  if ( !header ) return;
-  watchSheet(app, openFor);
-  const present = header.querySelector(".dlo-sheet-shop");
-  if ( !isMerchant(actor) ) return present?.remove();
-  if ( present ) return;
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "header-control icon fa-solid fa-store dlo-sheet-shop";
-  button.dataset.tooltip = loc("Shop.HudOpen");
-  button.setAttribute("aria-label", loc("Shop.HudOpen"));
-  button.addEventListener("click", event => {
-    event.preventDefault();
-    event.stopPropagation();
-    openFor(app.token ?? actor);
-  });
-  const first = header.querySelector(".header-control");
-  if ( first ) first.before(button);
-  else header.append(button);
-}
-
-/**
- * Something redraws the sheet's header after our hook and drops the button (user report, 2026-11-27: opening or closing the shop from
- * the actors sidebar, in a world whose modules the bench does not have). A watcher on the sheet's window puts it back whenever it is
- * missing — or takes it away when the actor no longer keeps a shop. One per window element, gone with it.
- */
-const watched = new WeakSet();
-function watchSheet(app, openFor) {
-  const root = app.element;
-  if ( !(root instanceof HTMLElement) || watched.has(root) || (typeof MutationObserver === "undefined") ) return;
-  watched.add(root);
-  let pending = false;
-  const observer = new MutationObserver(() => {
-    if ( pending ) return;
-    pending = true;
-    requestAnimationFrame(() => {
-      pending = false;
-      if ( !root.isConnected ) return observer.disconnect();
-      const actor = app.document ?? app.actor;
-      const has = !!root.querySelector(".window-header .dlo-sheet-shop");
-      if ( has !== isMerchant(actor) ) syncSheetButton(app, root, openFor);
+function sheetControls({ open, openFor }) {
+  return (app, controls) => {
+    const actor = app.document ?? app.actor;
+    if ( !(actor instanceof Actor) || !Array.isArray(controls) ) return;
+    const merchant = () => isMerchant(actor);
+    const gmMerchant = () => game.user.isGM && merchant();
+    controls.push({
+      icon: "fa-solid fa-store", label: "DLO.Shop.HudOpen", visible: merchant,
+      onClick: () => openFor(app.token ?? actor)
+    }, {
+      icon: "fa-solid fa-store", label: "DLO.Shop.HudMake",
+      visible: () => game.user.isGM && (actor.type === "npc") && !merchant(),
+      onClick: () => makeMerchant(actor, open)
+    }, {
+      icon: "fa-solid fa-door-open", label: "DLO.Shop.OpenShop", visible: () => gmMerchant() && merchantOf(actor).closed,
+      onClick: () => toggleClosed(actor)
+    }, {
+      icon: "fa-solid fa-door-closed", label: "DLO.Shop.CloseShop", visible: () => gmMerchant() && !merchantOf(actor).closed,
+      onClick: () => toggleClosed(actor)
+    }, {
+      icon: "fa-solid fa-gear", label: "DLO.Merchant.Menu", visible: gmMerchant,
+      onClick: () => configureMerchant(actor)
+    }, {
+      icon: "fa-solid fa-store-slash", label: "DLO.Shop.Unmake", visible: gmMerchant,
+      onClick: () => cancelMerchant(actor)
     });
-  });
-  observer.observe(root, { childList: true, subtree: true });
-}
-
-/**
- * When an actor's merchant flag changes (opened, closed, made or unmade a merchant), its open sheets get their button back — or
- * lose it. A sheet re-rendered on such an update lost the button (user report, 2026-11-27): this puts it back once the render is
- * over, whatever removed it.
- */
-function resyncSheets(openFor) {
-  return (actor, changes) => {
-    if ( !foundry.utils.hasProperty(changes, `flags.${MODULE_ID}`) ) return;
-    setTimeout(() => {
-      for ( const app of Object.values(actor.apps ?? {}) ) {
-        if ( app.rendered && (app.element instanceof HTMLElement) ) syncSheetButton(app, app.element, openFor);
-      }
-    }, 250);
   };
 }
 
@@ -533,8 +495,7 @@ export function registerShop({ open, visit }) {
   route(TOKEN_MENU_HOOK, "menu: Shop", tokenMenu({ open, visit }));
   route("renderTokenHUD", "Shop button", hudButton(open));
   const openFor = doc => openShopOf(doc, open);
-  route("renderActorSheetV2", "sheet: Shop button", sheetButton(openFor));
-  route("updateActor", "sheet: Shop button after a merchant change", resyncSheets(openFor));
+  route("getHeaderControlsActorSheetV2", "sheet: Shop entries in the header menu", sheetControls({ open, openFor }));
 }
 
 /** How long a shown shop stays open to its players (re-exported for the tests and the API). */
