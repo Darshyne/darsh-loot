@@ -1181,6 +1181,58 @@ async function shareCoinsPart(b) {
   } finally { await party.restore(); }
 }
 
+/** Makes the next call of this method of a document fail like a server error, once (`failNextUpdate` for any write). */
+function failNext(doc, method) {
+  const real = doc[method];
+  doc[method] = async function() { doc[method] = real; throw new Error("selftest: simulated server error"); };
+  return () => { doc[method] = real; };
+}
+
+/** Partial quantities (audit defect 21): N of a stack leave, the rest stays; the window asks how many, Shift takes all. */
+async function partialTake(b) {
+  const looter = await b.token(await testCharacter(b, "Test taker"), 0, 0);
+  const corpse = await testCorpse(b, "Test archer", 1, 0, { items: [
+    { name: "Test arrows", type: "consumable", system: { quantity: 20, properties: ["gear"] } },
+    { name: "Test darts", type: "weapon", system: { quantity: 6, properties: ["gear"] } }] });
+  const source = corpseSource(corpse);
+  const at = (token, name) => token.actor.items.filter(i => i.name === name).reduce((n, i) => n + (i.system.quantity ?? 1), 0);
+  const id = name => corpse.actor.items.find(i => i.name === name)?.id;
+
+  const taken = await requestTake(source, looter, { itemIds: [id("Test arrows")], quantities: { [id("Test arrows")]: 5 } });
+  await sleep(500);
+  b.expect(at(corpse, "Test arrows") === 15 && at(looter, "Test arrows") === 5, `5 of 20 arrows taken: ${at(corpse, "Test arrows")} left, ${at(looter, "Test arrows")} with the character (${JSON.stringify(taken?.names)})`);
+
+  // The source cannot be reduced: what arrived goes back.
+  let since = Date.now() - 1;
+  const restore = failNext(corpse.actor, "updateEmbeddedDocuments");
+  const failed = await requestTake(source, looter, { itemIds: [id("Test darts")], quantities: { [id("Test darts")]: 2 } });
+  restore();
+  await sleep(500);
+  b.expect(failed === null && at(corpse, "Test darts") === 6 && at(looter, "Test darts") === 0, `a source that cannot be reduced: nothing moved (${at(corpse, "Test darts")} / ${at(looter, "Test darts")})`);
+  b.expect(tracesAfter(since).length === 1, "the GM gets one trace of the failed take");
+
+  // The window: a stack says how to take part of it; a click asks how many; Shift+click takes the rest.
+  const before = new Set(foundry.applications.instances.keys());
+  await openSource(source, looter);
+  const slot = () => document.querySelector(`.dlo-loot .dlo-slot[data-item-id="${id("Test darts")}"]`);
+  await until(() => !!slot(), 4000);
+  b.expect(slot()?.dataset.quantity === "6" && slot().dataset.tooltip.includes("Shift"), `the stack's tooltip tells how to take part of it (« ${slot()?.dataset.tooltip} »)`);
+  slot()?.click();
+  const field = await until(() => document.querySelector("dialog input[name=quantity], .application input[name=quantity]"), 4000);
+  b.expect(!!field && Number(field.max) === 6 && Number(field.value) === 6, "a click on a stack asks how many, the whole stack by default");
+  if ( field ) {
+    field.value = "2";
+    field.closest("form").querySelector('button[data-action="ok"]').click();
+    await until(() => at(looter, "Test darts") === 2, 4000);
+  }
+  b.expect(at(corpse, "Test darts") === 4 && at(looter, "Test darts") === 2, `2 chosen: 4 darts stay (${at(corpse, "Test darts")} / ${at(looter, "Test darts")})`);
+  await until(() => !!slot(), 3000);
+  slot()?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, shiftKey: true }));
+  await until(() => at(corpse, "Test darts") === 0, 4000);
+  b.expect(at(corpse, "Test darts") === 0 && at(looter, "Test darts") === 6, `Shift+click takes the rest at once (${at(corpse, "Test darts")} / ${at(looter, "Test darts")})`);
+  await closeNew(before);
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
@@ -1188,7 +1240,7 @@ const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap,
   // Lot 0 (2026-11-26)
   shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4],
   // Lot 1 (2026-11-27)
-  "share-coins": [shareCoinsPart, 7, 3] };
+  "share-coins": [shareCoinsPart, 7, 3], "partial-take": [partialTake, 4, 2] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

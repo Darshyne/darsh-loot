@@ -2,7 +2,7 @@
  * Ce qui connaît dnd5e et le canevas : lecture d'un cadavre, distance, transfert d'objets (exécuté par le MJ).
  */
 import { MODULE_ID, loc } from "../shared.mjs";
-import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, COINS } from "../core/loot.mjs";
+import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, takenQuantity, COINS } from "../core/loot.mjs";
 import { sizeOfSpan } from "../core/traps.mjs";
 import { nextStolenMark } from "../core/theft.mjs";
 import { inTurn, operation } from "./ledger.mjs";
@@ -123,9 +123,11 @@ export function keyItem(actor, keyName) {
  * with its contents (`createWithContents`, documents/item.mjs:1303).
  * @param {Actor} corpse
  * @param {Actor} recipient
- * @param {{ itemIds?: string[], coins?: boolean, stolen?: object|null }} what
+ * @param {{ itemIds?: string[], coins?: boolean, stolen?: object|null, quantities?: Record<string, number> }} what
  *   stolen: the `flags.darsh-loot.stolen` flag to put on each created item (contents included); a stolen item never stacks on
  *   an honest one.
+ *   quantities (lot 1): how many of a stack to take, by item id — the rest stays at the source. Missing, zero or not a
+ *   number: the whole stack, as before. Never more than what is there; a bag always leaves whole.
  * @returns {Promise<{ names: string[], coins: object[] }>}  What was taken.
  */
 export function transfer(corpse, recipient, what={}) {
@@ -162,7 +164,7 @@ export function transferNow(corpse, recipient, what={}) {
     op => transferSteps(corpse, recipient, { ...what, op }));
 }
 
-async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stolen=null, op }) {
+async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stolen=null, quantities=null, op }) {
   // A repeated id creates one item only (journal, 2026-11-18).
   itemIds = [...new Set(itemIds ?? [])];
   const Item5e = CONFIG.Item.documentClass;
@@ -170,6 +172,9 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
   const taken = { names: [], coins: [] };
   const toCreate = [];
   const toUpdate = [];
+  // Lot 1 (audit defect 21): stacks taken in part — what leaves, what stays.
+  const whole = [];
+  const partial = [];
   const owned = recipient.items.map(i => ({ id: i.id, type: i.type, name: i.name,
     source: i._stats?.compendiumSource ?? null, container: i.system.container ?? null }));
 
@@ -177,15 +182,20 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
     if ( !available.has(id) ) continue;
     const item = corpse.items.get(id);
     const gear = await item.system.asGear?.() ?? item;
+    const have = item.system.quantity ?? 1;
+    const moved = (gear.type === "container") ? have : takenQuantity(have, quantities?.[id]);
+    if ( moved < have ) partial.push({ _id: id, moved });
+    else whole.push(id);
     const incoming = { type: gear.type, name: gear.name, source: gear._stats?.compendiumSource ?? null };
     const stackOn = ((gear.type !== "container") && !stolen) ? stackTarget(owned, incoming) : null;
     if ( stackOn ) {
       const current = recipient.items.get(stackOn);
       const pending = toUpdate.find(u => u._id === stackOn);
-      if ( pending ) { pending.quantity += item.system.quantity; pending.added += item.system.quantity; }
-      else toUpdate.push({ _id: stackOn, quantity: (current.system.quantity ?? 0) + item.system.quantity, added: item.system.quantity });
+      if ( pending ) { pending.quantity += moved; pending.added += moved; }
+      else toUpdate.push({ _id: stackOn, quantity: (current.system.quantity ?? 0) + moved, added: moved });
     } else {
       const created = await Item5e.createWithContents([gear]);
+      if ( moved < have ) foundry.utils.setProperty(created[0], "system.quantity", moved);
       // 0.21.0 (issue #5): an item that comes back to the one it was stolen from loses its mark, even taken back by stealing.
       for ( const data of created ) {
         const mark = nextStolenMark(foundry.utils.getProperty(data, `flags.${MODULE_ID}.stolen`) ?? null, stolen, recipient.uuid);
@@ -195,7 +205,7 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
       }
       toCreate.push({ top: created[0]._id, data: created });
     }
-    taken.names.push(item.system.quantity > 1 ? `${gear.name} (${item.system.quantity})` : gear.name);
+    taken.names.push(((moved > 1) || (moved < have)) ? `${gear.name} (${moved})` : gear.name);
   }
   const what = taken.names.join(", ");
 
@@ -213,7 +223,13 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
       .map(u => ({ _id: u._id, "system.quantity": Math.max(0, (recipient.items.get(u._id).system.quantity ?? 0) - u.added) }))));
   }
   // Removed from the source after the creation: a failure here is undone above (what was created leaves the recipient).
-  const removed = itemIds.filter(id => available.has(id));
+  const removed = whole;
+  if ( partial.length ) {
+    await corpse.updateEmbeddedDocuments("Item", partial.map(p => ({ _id: p._id, "system.quantity": (corpse.items.get(p._id).system.quantity ?? 1) - p.moved })));
+    op.did(loc("Op.Step.Removed", { who: corpse.name, what }), () => corpse.updateEmbeddedDocuments("Item", partial
+      .filter(p => corpse.items.has(p._id))
+      .map(p => ({ _id: p._id, "system.quantity": (corpse.items.get(p._id).system.quantity ?? 0) + p.moved }))));
+  }
   if ( removed.length ) {
     const snapshot = removed.flatMap(id => snapshotWithContents(corpse, id));
     await corpse.deleteEmbeddedDocuments("Item", removed, { deleteContents: true });

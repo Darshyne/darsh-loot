@@ -11,7 +11,11 @@
       "Container": "Container",
       "SearchCorpse": "Search the body",
       "SearchContainer": "Search",
-      "OpenStore": "Contents sheet"
+      "OpenStore": "Contents sheet",
+      "QuantityTitle": "Take: {name}",
+      "Quantity": "How many?",
+      "TakeSome": "Take",
+      "StackHint": "{name} — click to choose how many, Shift+click to take them all"
     },
     "Hud": {
       "Search": "Search the corpse"

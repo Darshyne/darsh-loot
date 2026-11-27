@@ -92,11 +92,13 @@ export function checkAccess({ source: ref, looter: looterUuid, force=false }, us
  * Demande au MJ actif de déplacer des objets de la source vers le personnage du token qui agit.
  * @param {object} source
  * @param {TokenDocument} looter
- * @param {{ itemIds?: string[], coins?: boolean }} what
+ * @param {{ itemIds?: string[], coins?: boolean, quantities?: Record<string, number> }} what
+ *   quantities (lot 1): how many of a stack, by item id; the whole stack without it.
  */
 export function requestTake(source, looter, what) {
   return askGM(TAKE_QUERY, handleTake,
-    { source: sourceRef(source), looter: looter.uuid, itemIds: what.itemIds ?? [], coins: !!what.coins });
+    { source: sourceRef(source), looter: looter.uuid, itemIds: what.itemIds ?? [], coins: !!what.coins,
+      ...(what.quantities ? { quantities: what.quantities } : {}) });
 }
 
 /** Chez le MJ : contrôle puis transfert. Une erreur levée ici revient au joueur comme refus. */
@@ -115,7 +117,8 @@ async function handleTake(payload, { user }) {
   const taken = await inTurn([source.actor, looter.actor], async () => {
     // Le tour venu, la source a pu disparaître : un tas vidé par la prise d'avant est parti avec sa région.
     if ( !source.exists() ) throw new Error(loc("Refus.Introuvable"));
-    const moved = await transferNow(source.actor, looter.actor, { itemIds: payload.itemIds, coins: payload.coins, stolen });
+    const quantities = (payload.quantities && (typeof payload.quantities === "object")) ? payload.quantities : null;
+    const moved = await transferNow(source.actor, looter.actor, { itemIds: payload.itemIds, coins: payload.coins, stolen, quantities });
     if ( source.kind === "container" ) await clearIfEmpty(source.doc.parent);   // un tas au sol vidé disparaît (§3.8)
     return moved;
   });

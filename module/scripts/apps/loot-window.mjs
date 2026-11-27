@@ -6,6 +6,7 @@
 import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
 import { lootView, hasThievesTools, keyItem } from "../adapter/dnd5e.mjs";
 import { partyMembers, sceneOfSource } from "../adapter/party.mjs";
+import { askQuantity } from "./quantity-dialog.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 const escape = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -111,7 +112,8 @@ export class LootWindow extends ApplicationV2 {
     }
 
     const slots = context.entries.map(e => `
-      <li class="dlo-slot" data-action="take" data-item-id="${e.id}" data-tooltip="${escape(e.name)}">
+      <li class="dlo-slot" data-action="take" data-item-id="${e.id}" data-quantity="${e.quantity}"
+        data-tooltip="${escape(((e.quantity > 1) && (e.type !== "container")) ? loc("Window.StackHint", { name: e.name }) : e.name)}">
         <img src="${e.img}" alt="" draggable="false">
         ${(e.quantity > 1) ? `<span class="dlo-qty">${e.quantity}</span>` : ""}
         ${e.contents ? `<span class="dlo-inside"><i class="fa-solid fa-box-open"></i> ${e.contents}</span>` : ""}
@@ -162,7 +164,18 @@ export class LootWindow extends ApplicationV2 {
 
   static async #onTake(event, target) {
     if ( this.#blocked() || this.source.locked() ) return;
-    await this.handlers.onTake(this.source, this.looter, { itemIds: [target.dataset.itemId] });
+    const id = target.dataset.itemId;
+    const entry = lootView(this.source.actor).entries.find(e => e.id === id);
+    if ( !entry ) return;
+    // Lot 1 (audit defect 21): a stack asks how many; Shift takes it whole at once.
+    if ( (entry.quantity > 1) && (entry.type !== "container") && !event.shiftKey ) {
+      const quantity = await askQuantity({ title: loc("Window.QuantityTitle", { name: entry.name }), label: loc("Window.Quantity"),
+        max: entry.quantity, ok: loc("Window.TakeSome"), icon: "fa-solid fa-hand-holding" });
+      if ( !quantity ) return;
+      if ( this.#blocked() || this.source.locked() ) return;
+      return this.handlers.onTake(this.source, this.looter, { itemIds: [id], quantities: { [id]: quantity } });
+    }
+    await this.handlers.onTake(this.source, this.looter, { itemIds: [id] });
   }
 
   static async #onTakeCoins() {

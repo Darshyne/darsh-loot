@@ -14,6 +14,7 @@ import { FLIGHT_MS, clampDrop, outsideRect, soundKind, pileSpot } from "../core/
 import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, createPlacedContainer, fillWithContents, MIXED_PILE_IMG } from "../adapter/drop.mjs";
 import { DROP_ITEMS_HOOK } from "../adapter/engine.mjs";
 import { levelBase } from "../adapter/sight.mjs";
+import { askQuantity as askStack } from "../apps/quantity-dialog.mjs";
 
 export { clearIfEmpty } from "../adapter/drop.mjs";
 
@@ -34,18 +35,9 @@ function dropperToken(actor) {
 }
 
 /** Combien en poser ? Toute la pile par défaut ; null si l'on renonce. */
-async function askQuantity(item) {
-  const max = item.system.quantity ?? 1;
-  if ( max <= 1 ) return 1;
-  const value = await foundry.applications.api.DialogV2.prompt({
-    window: { title: loc("Drop.QuantityTitle", { name: item.name }), icon: "fa-solid fa-hand-holding" },
-    content: `<label class="dlo-qty-field">${loc("Drop.Quantity")}
-      <input type="number" name="quantity" min="1" max="${max}" value="${max}" autofocus></label>`,
-    ok: { label: loc("Drop.Confirm"), callback: (event, button) => button.form.elements.quantity.valueAsNumber },
-    rejectClose: false
-  });
-  if ( !Number.isFinite(value) || (value < 1) ) return null;
-  return Math.min(Math.floor(value), max);
+function askQuantity(item) {
+  return askStack({ title: loc("Drop.QuantityTitle", { name: item.name }), label: loc("Drop.Quantity"),
+    max: item.system.quantity ?? 1, ok: loc("Drop.Confirm"), icon: "fa-solid fa-hand-holding" });
 }
 
 async function onDropCanvasData(board, data) {

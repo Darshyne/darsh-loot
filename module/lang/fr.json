@@ -11,7 +11,11 @@
       "Container": "Conteneur",
       "OpenStore": "Fiche du contenu",
       "SearchContainer": "Fouiller",
-      "SearchCorpse": "Fouiller le corps"
+      "SearchCorpse": "Fouiller le corps",
+      "QuantityTitle": "Prendre : {name}",
+      "Quantity": "Combien ?",
+      "TakeSome": "Prendre",
+      "StackHint": "{name} — clic pour choisir combien, Maj+clic pour tout prendre"
     },
     "Hud": {
       "Search": "Fouiller le cadavre"

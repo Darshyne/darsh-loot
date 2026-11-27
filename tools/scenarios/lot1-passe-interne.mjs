@@ -4,6 +4,8 @@
  *  - `share-coins`: the coins of a corpse are split between the primary party (absent members included, or only those on the
  *    scene), what does not divide stays or goes to the sharer, everyone sees and hears it, a write that fails gives every coin
  *    back with a trace for the GM, and « too far » is refused to a player with a reason he may force — the GM is then told.
+ *  - `partial-take`: N of a stack are taken and the rest stays; a source that cannot be reduced takes back what arrived; in the
+ *    window a click on a stack asks how many and Shift+click takes it whole.
  * Each part creates its own test documents and removes them. Restored: the viewed scene, the world's primary party and the
  * sharing settings; the test scene is deleted.
  *
@@ -11,7 +13,7 @@
  * (on the bench: `npm run banc:passe -- "<that path>"`). `PARTS=share-coins` in the environment plays only those.
  */
 const MODULE = "darsh-loot";
-const ALL = ["share-coins"];
+const ALL = ["share-coins", "partial-take"];
 const PARTS = process.env.PARTS ? process.env.PARTS.split(",").filter(p => ALL.includes(p)) : ALL;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 

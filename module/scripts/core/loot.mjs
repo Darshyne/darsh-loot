@@ -61,6 +61,16 @@ export function addCoins(a={}, b={}) {
   return sum;
 }
 
+/**
+ * How many of a stack a take moves (lot 1, audit defect 21): a whole number, 1 at least, the whole stack at most — and the
+ * whole stack when nothing usable is asked (missing, zero, negative, not a number).
+ */
+export function takenQuantity(have, asked) {
+  const all = Math.max(1, Math.floor(Number(have) || 1));
+  const n = Math.floor(Number(asked));
+  return (Number.isFinite(n) && (n >= 1)) ? Math.min(n, all) : all;
+}
+
 /** Reste-t-il quelque chose à prendre ? */
 export function hasLoot(entries, currency) {
   return (entries.length > 0) || (coinsOf(currency).length > 0);
