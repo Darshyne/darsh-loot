@@ -163,6 +163,15 @@ function table() {
 }
 
 const xp = actors => actors.map(a => a.system.details.xp.value);
+
+/** The Core's `combatEnded` (§555), with its verdict: the dead goblin and the one at 0 HP are defeated. */
+function ended(t, defeated=[t.tokens.g1, t.tokens.g2]) {
+  Hooks.callAll("dnd5e-combat.combatEnded", { combat: t.combat, scene: t.scene, round: t.combat.round, combatants: [], defeated });
+}
+/** The Core's `creatureDefeated` (§555). */
+function defeat(t, token, cause="dead") {
+  Hooks.callAll("dnd5e-combat.creatureDefeated", { token, actor: token.actor, combat: t.combat, cause });
+}
 const opened = [];
 
 beforeAll(() => {
@@ -191,7 +200,7 @@ beforeEach(async () => {
 describe("end of combat — the encounter record", () => {
   it("semi-automatic (default): the record is kept and the window opens on it; nothing is given yet", async () => {
     const t = table();
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await until(() => opened.length);
     const [record] = rewardsApi.records();
     expect(opened).toEqual([record.id]);
@@ -202,20 +211,26 @@ describe("end of combat — the encounter record", () => {
     expect(xp(t.pcs)).toEqual([250, 0, 0]);
   });
 
+  it("who is defeated is the Core's verdict: a creature it does not list stays unticked", async () => {
+    const t = table();
+    ended(t, [t.tokens.g1]);
+    await until(() => opened.length);
+    expect(rewardsApi.records()[0].foes.map(f => [f.name, f.defeated])).toEqual([["Gobelin 1", true], ["Gobelin 2", false], ["Orc", false]]);
+  });
+
   it("the record survives a reload: it is a world setting, the window is only a view", async () => {
     const t = table();
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await until(() => opened.length);
     const stored = game.settings.get("darsh-loot", "rewards");
     expect(stored.records).toHaveLength(1);
     expect(stored.records[0].combat).toBe("c1");
   });
 
-  it("a combat with nobody hostile, or never begun, makes no record", async () => {
+  it("a combat with nobody hostile makes no record (one never begun: the Core does not announce it)", async () => {
     const t = table();
     t.combat.combatants = new FakeCollection([["pc0", { actor: t.pcs[0], token: t.tokens.pc0 }]]);
-    Hooks.callAll("deleteCombat", t.combat);
-    Hooks.callAll("deleteCombat", { ...table().combat, started: false, round: 0 });
+    ended(t, []);
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(rewardsApi.records()).toEqual([]);
   });
@@ -223,7 +238,7 @@ describe("end of combat — the encounter record", () => {
   it("automatic: given at once — 100 XP between the two who fought and the ally, the ally's share lost; a public card", async () => {
     const t = table();
     settings.xpWhen = "auto";
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await until(() => chat.length);
     expect(xp(t.pcs)).toEqual([250 + 33, 33, 0]);
     expect(t.party.system.details.xp.value).toBe(1);
@@ -237,7 +252,7 @@ describe("end of combat — the encounter record", () => {
   it("manual: the record is kept, no window, nothing given", async () => {
     const t = table();
     settings.xpWhen = "manual";
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await until(() => rewardsApi.records().length);
     expect(opened).toEqual([]);
     expect(xp(t.pcs)).toEqual([250, 0, 0]);
@@ -247,7 +262,7 @@ describe("end of combat — the encounter record", () => {
     const t = table();
     settings.levelingMode = "noxp";
     settings.xpWhen = "auto";
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(rewardsApi.records()).toEqual([]);
     expect(xp(t.pcs)).toEqual([250, 0, 0]);
@@ -259,7 +274,7 @@ describe("the switches (user's requests of 2026-11-27)", () => {
     const t = table();
     settings.xpManage = false;
     settings.xpWhen = "auto";
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(rewardsApi.records()).toEqual([]);
     expect(rewardsApi.open()).toBe(null);
@@ -284,15 +299,17 @@ describe("per kill", () => {
     settings.xpWhen = "kill";
     game.combats.set("c1", t.combat);
     // Gobelin 1 dies (the Core's `dead` status): 50 XP between Clerc, Guerrier and the ally → 16 each, 2 to the pool.
-    Hooks.callAll("createActiveEffect", { statuses: new Set(["dead"]), parent: Object.assign(t.goblins[0], { token: t.tokens.g1 }) });
+    defeat(t, t.tokens.g1);
     await until(() => chat.length === 1);
     expect(xp(t.pcs)).toEqual([266, 16, 0]);
+    // A character going down gives nothing.
+    defeat(t, t.tokens.pc1);
     // The same death seen again (raised then killed): nothing more.
-    Hooks.callAll("updateCombatant", t.combat.combatants.get("g1"), { defeated: true });
+    defeat(t, t.tokens.g1, "tracker");
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(chat).toHaveLength(1);
     // End of combat: Gobelin 2 (0 hp, not marked) is given now.
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await until(() => chat.length === 2);
     expect(xp(t.pcs)).toEqual([282, 32, 0]);
     expect(rewardsApi.records()[0].status).toBe("awarded");
@@ -303,7 +320,7 @@ describe("giving from the window (the request)", () => {
   async function recorded() {
     const t = table();
     settings.xpWhen = "manual";
-    Hooks.callAll("deleteCombat", t.combat);
+    ended(t);
     await until(() => rewardsApi.records().length);
     return { ...t, id: rewardsApi.records()[0].id };
   }

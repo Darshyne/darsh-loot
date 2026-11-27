@@ -97,6 +97,18 @@ export const engineGivenTargetsMessage = (targetModes=null) => ({ data: { flags:
  * round. null sans cette API (moteur plus ancien).
  */
 export const EVENT_TURN_HOOK = `${ENGINE_ID}.eventTurn`;
+
+/**
+ * End of a combat (Core §555, after 0.294.0): on the active GM, when a combat that was played is deleted —
+ * `({ combat, scene, round, combatants, defeated })`, `defeated` the TokenDocuments dead, ticked defeated or a non-character at 0 HP.
+ */
+export const COMBAT_ENDED_HOOK = `${ENGINE_ID}.combatEnded`;
+
+/**
+ * A creature defeated (Core §555, after 0.294.0): on the active GM, once per creature until it is back —
+ * `({ token, actor, combat, cause })`, `combat` the running combat it takes part in or null, characters included.
+ */
+export const CREATURE_DEFEATED_HOOK = `${ENGINE_ID}.creatureDefeated`;
 export function engineCombatEvents() {
   const api = engineApi()?.combat;
   return (typeof api?.addEvent === "function") ? api : null;

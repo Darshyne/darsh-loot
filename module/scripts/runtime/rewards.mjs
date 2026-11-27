@@ -12,8 +12,8 @@
  * - **Shortcuts** (GM): the toolbar of tokens, a button in the header of dnd5e's Group sheet, the Core's right-click menu on a
  *   character (also under the portraits of Combat UI's party column, which shows the Core's entries), the macro of the « GM
  *   tools » compendium, `api.rewards.open()`. Players have no entry: giving XP is the GM's (they get the card and the floats).
- * No Core hook says « combat over » or « creature defeated »: Foundry's `deleteCombat`, the `dead` status and the tracker's
- * « defeated » are read here (a generic Core hook would be cleaner: proposed in the lot 2 report).
+ * « Combat over » and « creature defeated » come from the Core (`dnd5e-combat.combatEnded` / `creatureDefeated`, §555, after
+ * 0.294.0): the Core decides who is defeated (dead, ticked in the tracker, a non-character at 0 HP) and says it once per creature.
  */
 import { MODULE_ID, loc, log, setting } from "../shared.mjs";
 import { route } from "./router.mjs";
@@ -23,7 +23,7 @@ import { inTurn } from "../adapter/ledger.mjs";
 import { forceableRefusal } from "../core/force.mjs";
 import { pendingXP } from "../core/xp.mjs";
 import { tokenOnScene } from "../adapter/party.mjs";
-import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
+import { TOKEN_MENU_HOOK, COMBAT_ENDED_HOOK, CREATURE_DEFEATED_HOOK } from "../adapter/engine.mjs";
 import {
   REWARDS_SETTING, xpEnabled, xpOffReason, xpOffText, readRecords, getRecord, recordOfCombat, currentRecord, putRecord, deleteRecord, recordFromCombat,
   emptyRecord, foeEntry, planAward, awardNow
@@ -123,13 +123,16 @@ function mergeRecords(kept, fresh) {
   return kept;
 }
 
-/** The active GM, when a combat is over (deleted): the record is made, then given, shown or kept according to `xpWhen`. */
-function onCombatEnd(combat) {
-  if ( !activeGM() || !xpEnabled() ) return;
-  if ( !combat?.started && !(combat?.round > 0) ) return;
+/**
+ * The active GM, when a combat is over (Core `combatEnded`, only for a combat that was played): the record is made, then given,
+ * shown or kept according to `xpWhen`.
+ */
+function onCombatEnd({ combat, defeated }={}) {
+  if ( !combat || !activeGM() || !xpEnabled() ) return;
   const when = setting("xpWhen");
+  const down = new Set((defeated ?? []).map(t => t?.uuid).filter(Boolean));
   return serial(async () => {
-    const fresh = recordFromCombat(combat);
+    const fresh = recordFromCombat(combat, { defeated: down });
     const kept = recordOfCombat(combat.id);
     if ( !fresh && !kept ) return null;
     const record = kept ? mergeRecords(kept, fresh) : fresh;
@@ -155,11 +158,10 @@ function combatOf(token) {
   return game.combats?.find(c => c.started && c.combatants.some(cb => (cb.tokenId === token.id) && (cb.sceneId === token.parent?.id))) ?? null;
 }
 
-/** « Per kill »: a hostile creature of a running combat was just defeated — its XP is given now, never twice. */
-function onDefeated(token) {
-  if ( !token || !activeGM() || !xpEnabled() || (setting("xpWhen") !== "kill") ) return;
-  const combat = combatOf(token);
-  if ( !combat ) return;
+/** « Per kill »: a hostile creature of a running combat was just defeated (Core `creatureDefeated`) — its XP given now, never twice. */
+function onDefeated({ token, actor, combat }={}) {
+  if ( !token || !combat || !activeGM() || !xpEnabled() || (setting("xpWhen") !== "kill") ) return;
+  if ( (actor ?? token.actor)?.type === "character" ) return;
   return serial(async () => {
     const record = recordOfCombat(combat.id) ?? recordFromCombat(combat);
     if ( !record ) return null;
@@ -177,17 +179,6 @@ function onDefeated(token) {
     await putRecord(record);
     return { id: record.id, key: foe.key };
   }).then(hit => (hit ? askForce(AWARD_QUERY, handleAward, { id: hit.id, only: [hit.key], keepOpen: true }) : null));
-}
-
-function onEffectCreated(effect) {
-  if ( !effect?.statuses?.has?.("dead") ) return;
-  const actor = effect.parent;
-  if ( !(actor instanceof Actor) || (actor.type === "character") ) return;
-  onDefeated(actor.token ?? actor.getActiveTokens?.(false, true)?.[0] ?? null);
-}
-
-function onCombatantUpdate(combatant, changes) {
-  if ( changes?.defeated === true ) onDefeated(combatant.token);
 }
 
 /* -------------------------------------------- */
@@ -299,9 +290,8 @@ export function registerRewardsInit() {
 
 /** At `ready`: combat end, defeats, menus, the Group sheet button, the window following its record. */
 export function registerRewards() {
-  route("deleteCombat", "rewards: end of combat", onCombatEnd);
-  route("createActiveEffect", "rewards: creature defeated (per kill)", onEffectCreated);
-  route("updateCombatant", "rewards: marked defeated (per kill)", onCombatantUpdate);
+  route(COMBAT_ENDED_HOOK, "rewards: end of combat", onCombatEnd);
+  route(CREATURE_DEFEATED_HOOK, "rewards: creature defeated (per kill)", onDefeated);
   route(TOKEN_MENU_HOOK, "menu: Rewards", tokenMenu);
   route("renderGroupActorSheet", "sheet: Rewards button", groupSheetButton);
   route(REWARDS_HOOK, "rewards: window follows its record", () => RewardsWindow.refresh());

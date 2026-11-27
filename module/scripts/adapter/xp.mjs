@@ -124,9 +124,11 @@ export function sideTowardsParty(token, partyToken=null) {
  * The record of a combat: the hostile creatures (ticked when defeated), the characters (those who fought ticked; with
  * `recipients: "party"` the absent ones too), the NPC allies (ticked: the DMG counts an NPC who helped as a share).
  * @param {Combat} combat
+ * @param {object} [options]
+ * @param {Set<string>|null} [options.defeated]  token uuids the Core calls defeated (`dnd5e-combat.combatEnded`); null: read here.
  * @returns {object|null}  null when nobody hostile took part.
  */
-export function recordFromCombat(combat) {
+export function recordFromCombat(combat, { defeated=null }={}) {
   const combatants = Array.from(combat?.combatants?.contents ?? combat?.combatants ?? []).filter(c => c?.actor);
   const pcs = combatants.filter(c => c.actor.type === "character");
   const partyToken = pcs.find(c => c.token)?.token ?? null;
@@ -135,8 +137,10 @@ export function recordFromCombat(combat) {
   for ( const c of combatants ) {
     if ( (c.actor.type === "character") || sideKick(c.actor) ) continue;
     const side = sideTowardsParty(c.token, partyToken);
-    if ( side === "hostile" ) foes.push(foeEntry(c.token, c.actor, { defeated: isDefeated({ dead: c.actor.statuses?.has?.("dead"),
-      defeated: c.defeated, hp: c.actor.system?.attributes?.hp?.value ?? null }) }));
+    // The Core's verdict when it gave one (`combatEnded`: dead, ticked in the tracker, or a non-character at 0 HP); else read here.
+    const down = defeated ? defeated.has(tokenDoc(c.token)?.uuid) : isDefeated({ dead: c.actor.statuses?.has?.("dead"),
+      defeated: c.defeated, hp: c.actor.system?.attributes?.hp?.value ?? null });
+    if ( side === "hostile" ) foes.push(foeEntry(c.token, c.actor, { defeated: down }));
     else if ( side === "allied" ) allies.push({ uuid: c.actor.uuid, name: c.token?.name ?? c.actor.name, img: c.actor.img, include: true });
   }
   if ( !foes.length ) return null;
