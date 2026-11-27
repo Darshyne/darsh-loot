@@ -12,6 +12,7 @@ import { registerContainersInit, registerContainers, ensureContainer, requestUnl
 import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
 import { registerWindows, openSource, visitSource, prepareLoot } from "./runtime/open.mjs";
 import { registerShareInit, registerShare, requestShareCoins } from "./runtime/share.mjs";
+import { registerGiveInit, registerGive, requestGive } from "./runtime/give.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerMechanismsInit, actuate, resetMechanism } from "./runtime/mechanisms.mjs";
@@ -51,6 +52,7 @@ Hooks.once("init", () => {
   registerOperations();
   registerTake();
   registerShareInit();
+  registerGiveInit();
   registerTreasure();
   registerContainersInit();
   registerZonesInit();
@@ -84,6 +86,7 @@ Hooks.once("ready", () => {
   registerThrow();
   registerTrade();
   registerShare({ prepare: prepareLoot });
+  registerGive();
   registerTheftMenu(visitSource);
   registerShop({ open: openSource, visit: visitSource });
   game.modules.get(MODULE_ID).api = {
@@ -129,6 +132,11 @@ Hooks.once("ready", () => {
     convertAllItemPiles: options => (game.user.isGM ? convertAllItemPiles(options) : null),
     /** Poser au sol sans glisser : un objet du personnage, un point de la scène, une quantité (toute la pile sinon). */
     drop: (item, point, quantity) => requestDrop(item, point, quantity),
+    /**
+     * Give an item and / or coins of a character to another one, token to token: `{ item: id, quantity, coins: { gp: 5 } }`.
+     * Also: drag the item onto the other token, or « Give… » in its right-click menu. Resolves to what moved, null when refused.
+     */
+    give: (giver, receiver, what={}) => requestGive(doc(giver), doc(receiver), what),
     /** Drop coins of a character (actor or token) on the ground at a point of the viewed scene: `{ gp: 5, sp: 2 }`. */
     dropCoins: (actorOrToken, point, coins) => requestDropCoins(actorOf(actorOrToken), point, coins),
     /** Ouvrir un échange entre son personnage et un autre PJ (acteurs, ou tokens). Aussi : « Échanger » au clic droit. */

@@ -36,6 +36,13 @@ Baldur's Gate 3-style interface:
   previous one, and the lever's tile can change image with its position. Hovering over anything you can interact with
   lightly highlights it, and every action is heard by the whole table;
 - **items dropped on the ground** (drag an item from a sheet onto the map), with a throw animation and sounds;
+- **sharing and giving**: "Share" splits the coins of a corpse, a container or a ground pile between the party's
+  characters (the dnd5e primary party, or the player characters on the scene; a setting leaves absent characters out,
+  another decides who keeps the coins that do not divide); a click on a stack in the search window takes only part of
+  it; an item or coins dragged onto another character's token — or "Give…" in its right-click menu — are handed over
+  at once (a setting asks the receiver first, or turns giving off); coins can be dropped on the ground from the
+  right-click menu of a square or by dragging them from the sheet. When a character is too far away, the player is
+  told why and may do it anyway: the GM is then informed;
 - **pickpocketing** (right-click an NPC → "Pickpocket", with your character selected; Sleight of Hand against passive Perception),
   stolen items are flagged; a setting turns it off or asks for the GM's approval, and the GM's NPCs can steal from characters too
   (hidden roll, secret success, failure seen by the whole table);

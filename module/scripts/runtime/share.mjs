@@ -7,11 +7,9 @@
  * goes to the one who shares (setting `shareRemainder`). One operation: a write that fails gives everything back.
  */
 import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
-import { route } from "./router.mjs";
 import { checkAccess, sourceRef, TAKE_KINDS } from "./take.mjs";
 import { askForce, tellForced } from "./force.mjs";
 import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
-import { playDrop } from "./drop-fx.mjs";
 import { canApproach, approachSource } from "./approach.mjs";
 import { inTurn } from "../adapter/ledger.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
@@ -89,12 +87,6 @@ function sourceCentre(source, scene) {
   return { x: (box.col + (box.w / 2)) * size, y: (box.row + (box.h / 2)) * size };
 }
 
-/** A token's centre, from its stored position. */
-function tokenCentre(token) {
-  const size = token.parent.grid.size;
-  return { x: token._source.x + ((token._source.width * size) / 2), y: token._source.y + ((token._source.height * size) / 2) };
-}
-
 /**
  * Seen and heard by all: a public card (who shared, what each one gets, what is left), « +3 gp » floating over each member on
  * the scene, the coins flying from the loot to each of them, the sound of coins.
@@ -110,7 +102,7 @@ function announceShare({ source, scene, looter, members, shared }) {
   const float = `+${each}`;
   const main = looter ?? tokens[0] ?? null;
   const from = sourceCentre(source, scene);
-  const flags = (from && tokens.length) ? { shareFx: { scene: scene.id, from, to: tokens.map(t => t.uuid), img: COIN_IMG } } : {};
+  const flags = (from && tokens.length) ? { flyFx: { scene: scene.id, from, to: tokens.map(t => t.uuid), img: COIN_IMG } } : {};
   if ( !main ) {
     // Nobody of the party is on the scene (a GM sharing a chest for absent characters): the card and the sound only.
     playForAll(SOUNDS.coins, 0.6);
@@ -119,16 +111,6 @@ function announceShare({ source, scene, looter, members, shared }) {
   }
   return feedbackCard(main, text, { kind: "gain", icon: "fa-solid fa-coins", sound: SOUNDS.coins, float: tokens.includes(main) ? float : text,
     also: tokens.filter(t => t !== main).map(t => ({ token: t, text: float, kind: "gain" })), flags: { share: true, ...flags } });
-}
-
-/** On every client: the coins of a share fly from the loot to each member's token (nothing is written). */
-function onCreateMessage(message) {
-  const fx = message.getFlag?.(MODULE_ID, "shareFx");
-  if ( !fx || !canvas?.ready || (canvas.scene?.id !== fx.scene) || ((Date.now() - (message.timestamp ?? 0)) > 10000) ) return;
-  for ( const uuid of fx.to ?? [] ) {
-    const token = fromUuidSync(uuid, { strict: false });
-    if ( token?.parent === canvas.scene ) playDrop(token, { from: fx.from, to: tokenCentre(token), img: fx.img, mute: true });
-  }
 }
 
 /* -------------------------------------------- */
@@ -159,5 +141,4 @@ export function registerShareInit() {
 /** @param {{ prepare: (source: object, looter: TokenDocument|null) => Promise<boolean> }} given */
 export function registerShare({ prepare }={}) {
   if ( prepare ) steps.prepare = prepare;
-  route("createChatMessage", "share: coins flying to each member", onCreateMessage);
 }

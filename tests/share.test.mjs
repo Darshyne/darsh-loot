@@ -123,7 +123,7 @@ describe("share the coins of a corpse (request to the GM)", () => {
     expect(cards[0].whisper ?? []).toEqual([]);
     const fb = cards[0].flags["darsh-loot"].feedback;
     expect([fb.token, ...fb.also.map(o => o.token)]).toHaveLength(3);
-    expect(cards[0].flags["darsh-loot"].shareFx.to).toHaveLength(3);
+    expect(cards[0].flags["darsh-loot"].flyFx.to).toHaveLength(3);
     expect(cards[0].content).not.toContain("Garde");
   });
 

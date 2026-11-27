@@ -1313,6 +1313,38 @@
       "Anyway": "Le faire quand même",
       "GiveUp": "Renoncer",
       "Told": "{user} a passé outre une règle — {what}. Raison écartée : {reason}"
+    },
+    "Give": {
+      "MenuItem": "Donner un objet…",
+      "MenuCoins": "Donner des pièces…",
+      "Title": "Donner à {to}",
+      "QuantityTitle": "Donner {name} à {to}",
+      "Quantity": "Combien ?",
+      "CoinsTitle": "Donner des pièces à {to}",
+      "Confirm": "Donner",
+      "Nothing": "Rien à donner.",
+      "NoCoins": "Aucune pièce à donner.",
+      "Off": "Le don est désactivé.",
+      "NotTo": "{name} ne peut pas recevoir de don.",
+      "Far": "Trop loin : approchez-vous du personnage pour donner.",
+      "NobodyThere": "Personne ne peut répondre pour {name}.",
+      "Declined": "{name} n'a pas accepté.",
+      "OfferTitle": "Un don",
+      "Offer": "{giver} veut donner à {receiver} : {what}.",
+      "Accept": "Accepter",
+      "Refuse": "Refuser",
+      "Card": "{giver} donne à {receiver} : {what}.",
+      "Op": "{from} donne à {to}",
+      "ForcedWhat": "{who} a donné quelque chose à {to}",
+      "Settings": {
+        "Mode": {
+          "Name": "Donner un objet ou des pièces",
+          "Hint": "Glisser un objet sur le token d'un autre personnage, ou « Donner… » dans son menu du clic droit. Les deux personnages doivent être à portée l'un de l'autre.",
+          "Direct": "Remis tout de suite",
+          "Ask": "Le receveur doit accepter (le MJ répond pour un joueur absent)",
+          "Off": "Désactivé"
+        }
+      }
     }
   },
   "TYPES": {

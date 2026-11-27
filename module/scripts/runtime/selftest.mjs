@@ -1138,7 +1138,7 @@ async function shareCoinsPart(b) {
     b.expect(purse(corpse.actor).gp === 1 && purse(corpse.actor).sp === 1, `what does not divide stays on the corpse (${JSON.stringify(purse(corpse.actor))})`);
     const card = messagesAfter(since, m => !!m.getFlag(MODULE_ID, "share"))[0];
     b.expect(card && !card.whisper.length && !!card.getFlag(MODULE_ID, "feedback"), "one public card, with the floating text over the members");
-    b.expect(card?.getFlag(MODULE_ID, "shareFx")?.to?.length === 2, "the coins fly to the two members who are on the scene");
+    b.expect(card?.getFlag(MODULE_ID, "flyFx")?.to?.length === 2, "the coins fly to the two members who are on the scene");
     b.expect(b.sounds.slice(sounds).some(x => x.broadcast && (x.src === SOUNDS.coins)), "the coins are heard by everyone");
 
     // « Only those on the scene », and the remainder to the one who shares.
@@ -1305,6 +1305,95 @@ async function dropCoinsPart(b) {
   } else b.note("no player user in this world: the crafted drop is not played");
 }
 
+/** Give: handed over at once or once accepted, seen by all, whole or undone, within reach unless forced. */
+async function givePart(b) {
+  const previous = setting("giveMode");
+  const player = somePlayer();
+  if ( !player ) return b.note("no player user in this world: gifts are not played");
+  try {
+    await game.settings.set(MODULE_ID, "giveMode", "direct");
+    const fromActor = await testCharacter(b, "Test giver");
+    await fromActor.update({ "system.currency": { gp: 10 } });
+    await fromActor.createEmbeddedDocuments("Item", [
+      { name: "Test potion", type: "consumable", system: { quantity: 4 } },
+      { name: "Test ring", type: "equipment", system: { quantity: 1, equipped: true, attunement: "required", attuned: true } }]);
+    // The receiver belongs to no player: in « ask » mode the GM answers for it.
+    const friend = () => b.actor({ name: "Test friend", type: "character", img: "icons/svg/mystery-man.svg",
+      system: { attributes: { hp: { value: 20, max: 20 } } }, prototypeToken: { actorLink: true, disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY } });
+    const giver = await b.token(fromActor, 0, 0);
+    const near = await b.token(await friend(), 1, 0);
+    const far = await b.token(await friend(), 6, 0);
+    const of = (token, name) => token.actor.items.filter(i => i.name === name).reduce((n, i) => n + (i.system.quantity ?? 1), 0);
+    const id = name => fromActor.items.find(i => i.name === name)?.id;
+    const gp = token => token.actor.system.currency.gp ?? 0;
+    const give = (to, what, user=player) => CONFIG.queries[`${MODULE_ID}.give`]({ giver: giver.uuid, receiver: to.uuid, ...what }, { user })
+      .then(r => ({ ok: r }), err => ({ error: err.message }));
+
+    const menu = engineTestApi()?.mcp?.menu?.({ tokenId: giver.id, targetId: near.id });
+    if ( menu ) b.expect(menu.labels.includes(loc("Give.MenuItem")) && menu.labels.includes(loc("Give.MenuCoins")), `right-click menu of another character: ${menu.labels.join(" | ")}`);
+    else b.note("the Core's test API is not there: the menu entries are not read");
+
+    let since = Date.now() - 1;
+    const first = await give(near, { item: id("Test potion"), quantity: 2 });
+    await sleep(500);
+    b.expect(!first.error && of(giver, "Test potion") === 2 && of(near, "Test potion") === 2, `2 of 4 potions given at once (${of(giver, "Test potion")} / ${of(near, "Test potion")}, ${JSON.stringify(first)})`);
+    const card = messagesAfter(since, m => !!m.getFlag(MODULE_ID, "give"))[0];
+    b.expect(card && !card.whisper.length && card.getFlag(MODULE_ID, "feedback")?.also?.length === 1 && card.getFlag(MODULE_ID, "flyFx")?.to?.[0] === near.uuid,
+      "one public card: floating texts over both characters, the potion flying to the receiver");
+    await give(near, { item: id("Test ring") });
+    await sleep(400);
+    const ring = near.actor.items.find(i => i.name === "Test ring");
+    b.expect(ring && ring.system.equipped === false && ring.system.attuned === false, "a worn, attuned ring arrives unworn and unattuned");
+    await give(near, { coins: { gp: 4 } });
+    await sleep(400);
+    b.expect(gp(giver) === 6 && gp(near) === 4, `4 gp given (${gp(giver)} / ${gp(near)})`);
+
+    // An item and coins in one gift, the purse cannot be written: everything goes back.
+    since = Date.now() - 1;
+    const restore = failNextUpdate(fromActor);
+    const broken = await give(near, { item: id("Test potion"), quantity: 1, coins: { gp: 2 } });
+    restore();
+    await sleep(500);
+    b.expect(!!broken.error && of(giver, "Test potion") === 2 && of(near, "Test potion") === 2 && gp(giver) === 6 && gp(near) === 4,
+      `a write that fails: potion and coins are back (« ${broken.error} »)`);
+    b.expect(tracesAfter(since).length === 1, "the GM gets one trace of the failed gift");
+
+    // Too far: forceable; forced: done, the GM is told.
+    const refusal = await give(far, { item: id("Test potion"), quantity: 1 });
+    b.expect(isForceable(refusal.error) && of(far, "Test potion") === 0, "five squares away: refused, with a reason that can be forced");
+    since = Date.now() - 1;
+    const forced = await give(far, { item: id("Test potion"), quantity: 1, force: true });
+    await sleep(500);
+    const told = messagesAfter(since, m => !!m.getFlag(MODULE_ID, "forced"))[0];
+    b.expect(!forced.error && of(far, "Test potion") === 1 && told && told.whisper.every(u => game.users.get(u)?.isGM), "forced: done, and the GM is told in a whisper");
+
+    // « Ask » mode: nobody plays the receiver, the GM answers — refuse, then accept.
+    await game.settings.set(MODULE_ID, "giveMode", "ask");
+    const answerOffer = async action => {
+      const button = await until(() => document.querySelector(`.dlo-give-offer button[data-action="${action}"]`), 5000);
+      button?.click();
+      return !!button;
+    };
+    let pending = give(near, { coins: { gp: 1 } });
+    const asked = await answerOffer("no");
+    const declined = await pending;
+    await sleep(300);
+    b.expect(asked && !!declined.error && gp(near) === 4, `« ask » mode: the GM answers for a character nobody plays; refused, nothing moves (« ${declined.error} »)`);
+    pending = give(near, { coins: { gp: 1 } });
+    await answerOffer("yes");
+    const accepted = await pending;
+    await sleep(400);
+    b.expect(!accepted.error && gp(near) === 5 && gp(giver) === 5, `accepted: the coin moves (${gp(giver)} / ${gp(near)})`);
+
+    // Switched off.
+    await game.settings.set(MODULE_ID, "giveMode", "off");
+    const off = await give(near, { coins: { gp: 1 } });
+    b.expect(!!off.error && gp(near) === 5, `giving switched off: refused to a player (« ${off.error} »)`);
+  } finally {
+    await game.settings.set(MODULE_ID, "giveMode", previous);
+  }
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
@@ -1313,7 +1402,7 @@ const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap,
   shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4],
   // Lot 1 (2026-11-27)
   "share-coins": [shareCoinsPart, 7, 3], "partial-take": [partialTake, 4, 2],
-  "drop-coins": [dropCoinsPart, 8, 3] };
+  "drop-coins": [dropCoinsPart, 8, 3], give: [givePart, 9, 2] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

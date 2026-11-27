@@ -105,7 +105,7 @@ export default {
       for ( let i = 0; i < 40 && !game.messages.contents.some(m => (m.timestamp >= since) && m.getFlag("darsh-loot", "share")); i++ ) await new Promise(r => setTimeout(r, 250));
       const card = game.messages.contents.find(m => (m.timestamp >= since) && m.getFlag("darsh-loot", "share"));
       await new Promise(r => setTimeout(r, 800));
-      return { button: true, disabled: button.disabled, tooltip, card: card ? { whisper: card.whisper.length, fx: card.getFlag("darsh-loot", "shareFx")?.to?.length ?? 0,
+      return { button: true, disabled: button.disabled, tooltip, card: card ? { whisper: card.whisper.length, fx: card.getFlag("darsh-loot", "flyFx")?.to?.length ?? 0,
         float: !!card.getFlag("darsh-loot", "feedback") } : null, coinsLeft: document.querySelector(".dlo-loot .dlo-coins")?.innerText ?? null };`, setup);
     ctx.expect(seen?.button && seen.tooltip?.includes(setup.actorName) && seen.tooltip.includes("DAS test companion"),
       `the search window shows « Share », naming the two members (${JSON.stringify(seen?.tooltip ?? seen)})`);

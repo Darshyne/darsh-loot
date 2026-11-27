@@ -16,6 +16,7 @@ import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, creat
 import { inTurn } from "../adapter/ledger.mjs";
 import { coinsLabel } from "../adapter/party.mjs";
 import { askCoins } from "../apps/coins-dialog.mjs";
+import { receiverAt, giveItemTo, giveCoinsTo } from "./give.mjs";
 import { DROP_ITEMS_HOOK } from "../adapter/engine.mjs";
 import { levelBase } from "../adapter/sight.mjs";
 import { askQuantity as askStack } from "../apps/quantity-dialog.mjs";
@@ -49,15 +50,31 @@ function askQuantity(item) {
 
 async function onDropCanvasData(board, data) {
   // Lot 1: coins dragged from a character sheet (the drag is added by `onRenderSheet`) — how many, then the request.
-  if ( (data.type === COINS_DRAG) && dropEnabled() ) return chooseAndDropCoins(fromUuidSync(data.actor, { strict: false }), data, data.key);
-  if ( (data.type !== "Item") || !dropEnabled() || !data.uuid ) return;
+  if ( data.type === COINS_DRAG ) {
+    const actor = fromUuidSync(data.actor, { strict: false });
+    // Dropped on another character: given, not left on the ground.
+    const giver = actor ? dropperToken(actor) : null;
+    const receiver = giver ? receiverAt(giver, data) : null;
+    if ( receiver ) return giveCoinsTo(giver, receiver, data.key);
+    return dropEnabled() ? chooseAndDropCoins(actor, data, data.key) : undefined;
+  }
+  if ( (data.type !== "Item") || !data.uuid ) return;
   const item = await fromUuid(data.uuid).catch(() => null);
   if ( !item || !PHYSICAL_TYPES.has(item.type) ) return;
+  // The pile gesture switched off: only a gift (an owned item dropped on a character) is still looked at.
+  if ( !dropEnabled() ) {
+    const giver = ((item.parent instanceof Actor) && item.parent.isOwner) ? dropperToken(item.parent) : null;
+    const receiver = giver ? receiverAt(giver, data) : null;
+    return receiver ? giveItemTo(giver, receiver, item) : undefined;
+  }
   const payload = { item: item.uuid, x: data.x, y: data.y, scene: canvas.scene.id, level: canvas.level?.id ?? null };
   if ( item.parent instanceof Actor ) {
     if ( !item.parent.isOwner ) return;
     const dropper = dropperToken(item.parent);
     if ( !dropper ) return ui.notifications.warn(loc("Drop.NotOnScene"));
+    // Lot 1: dropped on the token of someone who may receive it — a gift, not a pile.
+    const receiver = receiverAt(dropper, data);
+    if ( receiver ) return giveItemTo(dropper, receiver, item);
     const quantity = await askQuantity(item);
     if ( !quantity ) return;
     Object.assign(payload, { dropper: dropper.uuid, quantity });

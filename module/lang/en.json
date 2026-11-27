@@ -1313,6 +1313,38 @@
       "Anyway": "Do it anyway",
       "GiveUp": "Give up",
       "Told": "{user} overrode a rule — {what}. Reason set aside: {reason}"
+    },
+    "Give": {
+      "MenuItem": "Give an item…",
+      "MenuCoins": "Give coins…",
+      "Title": "Give to {to}",
+      "QuantityTitle": "Give {name} to {to}",
+      "Quantity": "How many?",
+      "CoinsTitle": "Give coins to {to}",
+      "Confirm": "Give",
+      "Nothing": "Nothing to give.",
+      "NoCoins": "No coins to give.",
+      "Off": "Giving is switched off.",
+      "NotTo": "{name} cannot receive a gift.",
+      "Far": "Too far away: step next to the character to give.",
+      "NobodyThere": "Nobody can answer for {name}.",
+      "Declined": "{name} did not accept.",
+      "OfferTitle": "A gift",
+      "Offer": "{giver} wants to give {receiver}: {what}.",
+      "Accept": "Accept",
+      "Refuse": "Refuse",
+      "Card": "{giver} gives {receiver}: {what}.",
+      "Op": "{from} gives to {to}",
+      "ForcedWhat": "{who} gave something to {to}",
+      "Settings": {
+        "Mode": {
+          "Name": "Giving an item or coins",
+          "Hint": "Drag an item onto another character's token, or use « Give… » in its right-click menu. Both characters must be within reach of each other.",
+          "Direct": "Handed over at once",
+          "Ask": "The receiver must accept (the GM answers for an absent player)",
+          "Off": "Switched off"
+        }
+      }
     }
   },
   "TYPES": {

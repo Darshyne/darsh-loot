@@ -88,7 +88,25 @@ function onUpdateTile(tile, changes) {
   playDrop(tile, tile.getFlag(MODULE_ID, "lastDrop"));
 }
 
+/**
+ * Lot 1: a card that says something flew from a point to tokens (`flags.darsh-loot.flyFx` = `{ scene, from, to: [token
+ * uuids], img }` — the coins of a share going to each member, a gift going to its receiver). Every client plays it; the sound
+ * is the card's own (played once for all by the GM client).
+ */
+function onCreateMessage(message) {
+  const fx = message.getFlag?.(MODULE_ID, "flyFx");
+  if ( !fx || !canvas?.ready || (canvas.scene?.id !== fx.scene) || ((Date.now() - (message.timestamp ?? 0)) > 10000) ) return;
+  for ( const uuid of fx.to ?? [] ) {
+    const token = fromUuidSync(uuid, { strict: false });
+    if ( token?.parent !== canvas.scene ) continue;
+    const size = canvas.scene.grid.size;
+    const to = { x: token._source.x + ((token._source.width * size) / 2), y: token._source.y + ((token._source.height * size) / 2) };
+    playDrop(token, { from: fx.from, to, img: fx.img, mute: true });
+  }
+}
+
 export function registerDropFx() {
+  route("createChatMessage", "something flies to a token (share, gift)", onCreateMessage);
   route("createTile", "throw effect", onCreateTile);
   route("updateTile", "throw effect", onUpdateTile);
 }

@@ -159,6 +159,13 @@ export function registerSettings() {
     scope: "world", config: true, type: String, default: "source",
     choices: { source: "DLO.Share.Settings.ShareRemainder.Source", sharer: "DLO.Share.Settings.ShareRemainder.Sharer" }
   });
+  // Lot 1: giving an item or coins to another character — handed over at once (like passing a potion at the table), only once
+  // the receiver has agreed, or switched off.
+  game.settings.register(MODULE_ID, "giveMode", {
+    name: "DLO.Give.Settings.Mode.Name", hint: "DLO.Give.Settings.Mode.Hint",
+    scope: "world", config: true, type: String, default: "direct",
+    choices: { direct: "DLO.Give.Settings.Mode.Direct", ask: "DLO.Give.Settings.Mode.Ask", off: "DLO.Give.Settings.Mode.Off" }
+  });
   // Lot 0: the journal of multi-write gestures in progress (runtime/operations.mjs), hidden. Empty unless a GM reloaded mid-gesture.
   game.settings.register(MODULE_ID, "operations", { scope: "world", config: false, type: Object, default: {} });
 }
