@@ -155,7 +155,9 @@ async function trapActor(b, name="Essai piège") {
   return b.actor({ ...data, name });
 }
 
-const messagesAfter = (since, test=() => true) => game.messages.contents.filter(m => (m.timestamp > since) && test(m));
+// `>=`: a card created in the very millisecond `since` was taken is after it — with `>`, the mechanism card (2 ms after the click
+// when measured) was missed now and then, and the part failed for nothing (bench, 2026-11-27).
+const messagesAfter = (since, test=() => true) => game.messages.contents.filter(m => (m.timestamp >= since) && test(m));
 const feedbackAfter = since => messagesAfter(since, m => !!m.getFlag(MODULE_ID, "feedback"));
 
 /** Fermer les fenêtres ouvertes depuis `before` (ids d'applications). */
@@ -652,7 +654,13 @@ async function mechanism(b) {
     await sleep(500);
     b.expect(out.did && (door.ds === CONST.WALL_DOOR_STATES.OPEN) && !light.hidden && m().system.active,
       `aller : porte ouverte (${door.ds}), lumière allumée (${!light.hidden}), levier abaissé (${m().system.active})`);
-    b.expect(await until(() => feedbackAfter(d0).length), "aller : carte de retour pour la table");
+    {
+      // What the chat holds when the card is missing (seen once in a long pass, 2026-11-27): how many messages since the click, with
+      // or without the feedback flag, and how old the newest feedback card of the log is.
+      const found = await until(() => feedbackAfter(d0).length);
+      const last = game.messages.contents.filter(x => !!x.getFlag(MODULE_ID, "feedback")).at(-1);
+      b.expect(found, `aller : carte de retour pour la table (${messagesAfter(d0).length} message(s) depuis le clic, ${feedbackAfter(d0).length} carte(s) ; dernière carte du journal ${last ? `${last.timestamp - d0} ms après le clic, « ${last.content.replace(/<[^>]+>/g, "").trim().slice(0, 60)} »` : "aucune"} ; ${game.messages.size} messages)`);
+    }
     b.expect(leverTile.texture.src === DOWN, `aller : la tuile prend l'image « actionnée » (${leverTile.texture.src})`);
     const heard = b.sounds.slice(s0);
     b.expect(heard.some(x => x.broadcast && (x.src === SOUNDS.lever)) && heard.some(x => x.src === SOUNDS.click),
