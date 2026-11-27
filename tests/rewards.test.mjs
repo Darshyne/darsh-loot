@@ -340,7 +340,7 @@ describe("giving from the window (the request)", () => {
     await rewardsApi.update(t.id, { members: record.members, foes: record.foes.map(f => ({ ...f, include: false })) });
     await expect(award({ id: t.id })).rejects.toThrow("Rewards.Nothing");
     await rewardsApi.update(t.id, { foes: record.foes });
-    await expect(award({ id: t.id }, alice)).rejects.toThrow("Refus.MJSeul");
+    await expect(award({ id: t.id }, alice)).rejects.toThrow("Rewards.GMOnly");
     settings.levelingMode = "noxp";
     await expect(award({ id: t.id })).rejects.toThrow("Rewards.Off");
     expect(xp(t.pcs)).toEqual([250, 0, 0]);

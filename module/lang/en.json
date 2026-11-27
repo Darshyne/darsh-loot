@@ -1446,7 +1446,8 @@
           "Present": "Those who fought",
           "Party": "The whole party"
         }
-      }
+      },
+      "GMOnly": "Only the GM can give XP."
     }
   },
   "TYPES": {

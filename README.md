@@ -46,7 +46,13 @@ each user's light or dark theme. It brings:
   stolen items are flagged; a setting turns it off or asks for the GM's approval, and the GM's NPCs can steal from characters too
   (hidden roll, secret success, failure seen by the whole table);
 - **necromancy**: a dead humanoid becomes a controlled skeleton or zombie;
-- **merchants**: barter window, restocking, shops without a token; a macro converts Item Piles merchants.
+- **merchants**: barter window, restocking, shops without a token; a macro converts Item Piles merchants;
+- **XP rewards**: at the end of a combat the GM's "Rewards" window lists the hostile creatures overcome and the characters who
+  fought, and gives the XP through dnd5e's own award (equal shares as in the DMG, or the same progression for everyone, or a
+  coefficient per character; what does not divide goes to the primary party's XP pool). A setting gives it automatically, at
+  each creature defeated, or only when the GM opens the window (tokens toolbar, Group sheet, right-click on a character, macro).
+  A bonus for a noncombat challenge or a milestone uses the DMG's encounter budgets. Everyone sees "+XP" over the characters.
+  Silent when dnd5e levels up without XP.
 
 It **requires the [`dnd5e-combat`](https://github.com/Darshyne/dnd5e-combat) engine**, called only through its
 public API, and replaces Item Piles (declared as a conflict). Treasure data comes from the dnd5e system and the

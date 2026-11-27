@@ -59,7 +59,7 @@ export function requestAward(id) {
 /* -------------------------------------------- */
 
 async function handleAward({ id, force=false, only=null, keepOpen=false }, { user }) {
-  if ( !user?.isGM ) throw new Error(loc("Refus.MJSeul"));
+  if ( !user?.isGM ) throw new Error(loc("Rewards.GMOnly"));
   if ( !xpEnabled() ) throw new Error(loc("Rewards.Off"));
   return serial(async () => {
     const record = getRecord(id);

@@ -1446,7 +1446,8 @@
           "Present": "Ceux qui ont combattu",
           "Party": "Tout le groupe"
         }
-      }
+      },
+      "GMOnly": "Seul le MJ peut donner de l'XP."
     }
   },
   "TYPES": {

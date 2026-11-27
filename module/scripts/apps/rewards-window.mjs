@@ -42,8 +42,10 @@ export class RewardsWindow extends ApplicationV2 {
     const app = RewardsWindow.instance ?? new RewardsWindow({ recordId, handlers });
     RewardsWindow.instance = app;
     if ( recordId ) app.recordId = recordId;
+    // A window not drawn yet has no element to bring forward (the first opening threw, seen on the bench).
+    const shown = app.rendered;
     app.render({ force: true });
-    app.bringToFront?.();
+    if ( shown ) app.bringToFront();
     return app;
   }
 

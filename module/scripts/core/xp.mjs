@@ -85,7 +85,8 @@ export function splitXP(total, recipients, { mode="equal", allies=0, remainder="
  * @param {number[][]} table
  */
 export function challengeXP(levels, difficulty, table) {
-  const list = levels.map(l => Math.floor(Number(l) || 0)).filter(l => l > 0);
+  // A character without a class yet counts as level 1.
+  const list = levels.map(l => Math.max(1, Math.floor(Number(l) || 0)));
   if ( !list.length || !table?.length ) return 0;
   const level = Math.min(Math.max(1, Math.round(list.reduce((a, b) => a + b, 0) / list.length)), table.length - 1);
   const column = DIFFICULTIES.indexOf(difficulty);
