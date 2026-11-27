@@ -9,8 +9,9 @@ import { route } from "./router.mjs";
 import { engineSettingsWindow } from "../adapter/engine.mjs";
 import { TABS } from "../core/settings-tabs.mjs";
 import { createTablesNow } from "./settings.mjs";
+import { LootRulesWindow } from "../apps/loot-rules-window.mjs";
 
-const OPEN = Object.freeze({ tables: () => createTablesNow() });
+const OPEN = Object.freeze({ tables: () => createTablesNow(), lootRules: () => LootRulesWindow.show() });
 
 export function registerSettingsWindow() {
   route("setup", "settings window", () => {

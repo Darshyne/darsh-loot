@@ -14,9 +14,9 @@ describe("fenêtre de réglages", () => {
     expect(new Set(placed).size).toBe(placed.length);
     expect([...placed].sort()).toEqual(visibleKeys().sort());
   });
-  it("les onglets ont un id unique ; le seul outil est celui des tables", () => {
+  it("les onglets ont un id unique ; les outils : les tables de butin (lot 3) et les tables génériques", () => {
     expect(new Set(TABS.map(t => t.id)).size).toBe(TABS.length);
-    expect(TABS.flatMap(t => t.tools ?? []).map(t => t.id)).toEqual(["tables"]);
+    expect(TABS.flatMap(t => t.tools ?? []).map(t => t.id)).toEqual(["lootRules", "tables"]);
   });
   it("chaque onglet et outil a son texte en français et en anglais", () => {
     for ( const lang of ["fr", "en"] ) {

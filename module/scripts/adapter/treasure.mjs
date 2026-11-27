@@ -5,13 +5,14 @@
  * (`dnd5e.equipment24`, `dnd5e.tables24`) ; un module absent retire seulement ce qu'il fournit (le DMG : gemmes, objets d'art,
  * objets magiques des repaires, sans équivalent dans le SRD).
  */
-import { MODULE_ID } from "../shared.mjs";
+import { MODULE_ID, setting } from "../shared.mjs";
 import {
   hasTreasure, individualRow, shapeTreasure, POCKETS, POCKETS_FORMULA, POCKET_TYPES, pickRange, shortName, linkedItemUuid,
   HOARDS, rarityFor, themeFor
 } from "../core/treasure.mjs";
 import { addCoins } from "../core/loot.mjs";
 import { GENERIC_TABLES } from "../core/tables.mjs";
+import { matchRule } from "../core/end-loot.mjs";
 
 const DMG = "dnd-dungeon-masters-guide";
 const PHB = "dnd-players-handbook";
@@ -67,6 +68,17 @@ export function isRolled(actor) {
 }
 
 /**
+ * Lot 3: the custom table rule (by CR, creature type and size) that applies to this creature, or null. Rules are a hidden world
+ * setting (`lootRules`), edited in the « Loot tables » window.
+ */
+export function lootRuleFor(actor) {
+  const details = actor?.system?.details ?? {};
+  let rules = [];
+  try { rules = setting("lootRules")?.rules ?? []; } catch { rules = []; }
+  return matchRule(rules, { cr: details.cr, type: details.type?.value ?? "", size: actor?.system?.traits?.size ?? "" });
+}
+
+/**
  * Peut-il y avoir quelque chose à tirer (pour le curseur avant la première fouille) ?
  * Une préférence de trésor, des poches, ou une table propre au PNJ.
  */
@@ -74,7 +86,7 @@ export function mayHaveTreasure(actor) {
   if ( isRolled(actor) ) return false;
   const details = actor.system.details ?? {};
   return hasTreasure(details.treasure?.value) || POCKET_TYPES.has(details.type?.value)
-    || !!actor.getFlag(MODULE_ID, "table");
+    || !!actor.getFlag(MODULE_ID, "table") || !!lootRuleFor(actor);
 }
 
 /** Données d'un objet de compendium, prêtes à créer (null si introuvable). */
@@ -152,6 +164,9 @@ async function rollTreasureNow(actor, { pockets=true, individual=true }={}) {
   const preferences = details.treasure?.value ?? [];
   const items = [];
   let coins = {};
+  // Lot 3: a custom table rule adds its draws to the DMG treasure, or replaces it (coins and pockets).
+  const rule = lootRuleFor(actor);
+  if ( rule?.effect === "replace" ) { individual = false; pockets = false; }
 
   if ( individual && hasTreasure(preferences) ) {
     const row = individualRow(details.cr);
@@ -179,6 +194,7 @@ async function rollTreasureNow(actor, { pockets=true, individual=true }={}) {
     }
   }
 
+  if ( rule ) items.push(...await drawItems(rule.table, rule.draws));
   const own = actor.getFlag(MODULE_ID, "table");
   if ( own ) items.push(...await drawItems(own, 1));
 

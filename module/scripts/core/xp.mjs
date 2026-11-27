@@ -122,7 +122,8 @@ export const alliesOf = record => (record?.allies ?? []).filter(a => a.include);
  * @param {object[]} records
  */
 export function pruneRecords(records, keep=KEEP_RECORDS) {
-  const live = r => ["pending", "open"].includes(r.status);
+  // Lot 3: a record whose loot is not distributed yet is live too.
+  const live = r => ["pending", "open"].includes(r.status) || (r.loot?.status === "pending");
   const done = records.filter(r => !live(r)).sort((a, b) => (b.time ?? 0) - (a.time ?? 0)).slice(0, keep);
   const kept = new Set([...records.filter(live), ...done]);
   return records.filter(r => kept.has(r));

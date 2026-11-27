@@ -6,6 +6,7 @@ import { MODULE_ID, setting, log } from "../shared.mjs";
 import { corpseToken } from "../adapter/dnd5e.mjs";
 import { isRolled, rollTreasure } from "../adapter/treasure.mjs";
 import { livingNPC } from "../adapter/theft.mjs";
+import { heldBy, keepSpecialWeapons } from "../adapter/end-loot.mjs";
 
 const ROLL_QUERY = `${MODULE_ID}.roll`;
 
@@ -29,6 +30,8 @@ export async function ensureRolled(corpse) {
 async function handleRoll({ corpse: uuid }, { user=null }={}) {
   const corpse = fromUuidSync(uuid);
   if ( !corpse?.actor || !(corpseToken(corpse) || livingNPC(corpse)) || isRolled(corpse.actor) ) return null;
+  // Lot 3: a corpse held for the end-of-combat loot is rolled when the GM validates, not at the first search.
+  if ( heldBy(corpse) ) return null;
   // D'un joueur : seulement si le MJ a laissé le tirage automatique, et avec une créature à lui sur la scène ; le contenu ne lui est
   // pas rendu (il le voit en ouvrant, comme tout le monde).
   if ( user && !user.isSelf && !user.isGM ) {
@@ -40,7 +43,9 @@ async function handleRoll({ corpse: uuid }, { user=null }={}) {
     return true;
   }
   if ( !pending.has(uuid) ) {
-    const run = rollTreasure(corpse.actor, { pockets: setting("pockets") })
+    // Lot 3: « keep the special weapon » holds for a corpse searched without the end-of-combat step too.
+    const before = (setting("keepSpecial") && corpseToken(corpse)) ? keepSpecialWeapons(corpse.actor).catch(() => 0) : Promise.resolve(0);
+    const run = before.then(() => rollTreasure(corpse.actor, { pockets: setting("pockets") }))
       .then(result => { log.info(`treasure of ${corpse.name}:`, result); return result; })
       .finally(() => pending.delete(uuid));
     pending.set(uuid, run);

@@ -5,6 +5,7 @@ import { route } from "./router.mjs";
 import { requestTake } from "./take.mjs";
 import { requestShareCoins } from "./share.mjs";
 import { ensureRolled } from "./treasure.mjs";
+import { passHold } from "./end-loot.mjs";
 import { ensureContainer, requestUnlock } from "./containers.mjs";
 import { trapGate, requestSpring } from "./traps.mjs";
 import { requestSteal, preparePocket } from "./theft.mjs";
@@ -47,6 +48,8 @@ export async function openSource(source, looter=actingToken()) {
  */
 export async function prepareLoot(source, looter) {
   if ( source.kind === "corpse" ) {
+    // Lot 3: a corpse held for the end-of-combat loot — the player is told the GM is preparing it, and may force.
+    if ( !(await passHold(source.doc)) ) return false;
     await ensureRolled(source.doc);
     playForAll(SOUNDS.rummage, 0.6);   // 2026-10-28 : la fouille d'un cadavre s'entend
   }

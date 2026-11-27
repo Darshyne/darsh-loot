@@ -3,11 +3,15 @@
  * (ticked when defeated; a GM ticks one that fled or surrendered — the DMG counts them), the characters (who receives), the NPC
  * allies (who takes a share), a bonus for a noncombat challenge or a milestone, how the XP divides, and « Give ».
  * Every change is saved in the record at once: closed and reopened, after a reload, it is all there. It decides nothing: what
- * it does goes through the handlers received at opening (runtime/rewards.mjs). Lot 3 (loot) is meant to add a section here.
+ * it does goes through the handlers received at opening (runtime/rewards.mjs).
+ * Lot 3 (2026-11-27): a « Loot » part — the corpses of the encounter (held until the GM validates), individual or grouped (one
+ * encounter chest), « keep the special weapons », the custom tables, « Distribute the loot ». With DAS's XP off, the window shows the
+ * loot alone (and is named after it).
  */
 import { MODULE_ID, loc, setting } from "../shared.mjs";
 import { planAward, challengeFor, xpOffReason, xpOffText } from "../adapter/xp.mjs";
 import { DIFFICULTIES, XP_SPLIT } from "../core/xp.mjs";
+import { LOOT_MODES, titleKey } from "../core/end-loot.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 const escape = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -30,7 +34,10 @@ export class RewardsWindow extends ApplicationV2 {
       dismiss: RewardsWindow.#onDismiss,
       create: RewardsWindow.#onCreate,
       challenge: RewardsWindow.#onChallenge,
-      openSheet: RewardsWindow.#onOpenSheet
+      openSheet: RewardsWindow.#onOpenSheet,
+      distribute: RewardsWindow.#onDistribute,
+      lootRules: RewardsWindow.#onLootRules,
+      openChest: RewardsWindow.#onOpenChest
     }
   };
 
@@ -56,7 +63,7 @@ export class RewardsWindow extends ApplicationV2 {
   }
 
   get title() {
-    return loc("Rewards.Title");
+    return game.i18n.localize(titleKey(!xpOffReason(), lootOn()));
   }
 
   /** The record shown: the one chosen, else the most recent pending one. */
@@ -71,23 +78,25 @@ export class RewardsWindow extends ApplicationV2 {
     const plan = record ? planAward(record) : null;
     const shares = new Map((plan?.shares ?? []).map(s => [s.uuid, s.xp]));
     const offReason = xpOffReason();
-    return { records, record, plan, shares, enabled: !offReason, offReason, mode: record?.split ?? setting("xpSplit") };
+    return { records, record, plan, shares, enabled: !offReason, offReason, mode: record?.split ?? setting("xpSplit"), loot: lootOn() };
   }
 
   async _renderHTML(context) {
     const root = document.createElement("form");
     root.className = "dlo-body dlo-rewards-body";
     root.addEventListener("submit", event => event.preventDefault());
-    const { record, plan, records, enabled, offReason, mode, shares } = context;
+    const { record, plan, records, enabled, offReason, mode, shares, loot } = context;
+    // Lot 3: with the end-of-combat loot on and DAS's XP off, the XP part is not shown at all.
+    const showXP = enabled || !loot;
 
     const picker = `
       <div class="dlo-rw-top">
         <select name="record" aria-label="${loc("Rewards.Encounter")}">
-          ${records.map(r => `<option value="${r.id}" ${r.id === record?.id ? "selected" : ""}>${escape(r.name)} — ${loc(`Rewards.Status.${r.status}`)}</option>`).join("")}
+          ${records.map(r => `<option value="${r.id}" ${r.id === record?.id ? "selected" : ""}>${escape(r.name)} — ${recordStatus(r, showXP)}</option>`).join("")}
         </select>
         <button type="button" data-action="create" data-tooltip="${loc("Rewards.NewHint")}"><i class="fa-solid fa-plus"></i> ${loc("Rewards.New")}</button>
       </div>`;
-    const off = enabled ? "" : `<p class="dlo-blocked"><i class="fa-solid fa-circle-info"></i> ${xpOffText(offReason)}</p>`;
+    const off = (enabled || !showXP) ? "" : `<p class="dlo-blocked"><i class="fa-solid fa-circle-info"></i> ${xpOffText(offReason)}</p>`;
     if ( !record ) {
       root.innerHTML = `${picker}${off}<p class="dlo-empty">${loc("Rewards.None")}</p>`;
       return root;
@@ -132,7 +141,7 @@ export class RewardsWindow extends ApplicationV2 {
       plan.lost ? loc("Rewards.Lost", { xp: number(plan.lost) }) : ""
     ].filter(Boolean).join(" · ");
 
-    root.innerHTML = `${picker}${off}
+    const xpParts = `${off}
       <section class="dlo-rw-section">
         <h3><i class="fa-solid fa-skull"></i> ${loc("Rewards.Foes")}</h3>
         ${foes ? `<ul class="dlo-rw-list">${foes}</ul>` : `<p class="dlo-empty">${loc("Rewards.NoFoes")}</p>`}
@@ -157,10 +166,11 @@ export class RewardsWindow extends ApplicationV2 {
           <select name="split">${XP_SPLIT.map(s => `<option value="${s}" ${s === mode ? "selected" : ""}>${loc(`Rewards.SplitMode.${s}`)}</option>`).join("")}</select>
         </label>
         <p class="dlo-rw-total"><strong>${loc("Rewards.Total", { xp: number(plan.xp) })}</strong>${rest ? ` <span class="dlo-muted">(${rest})</span>` : ""}</p>
-      </section>
+      </section>`;
+    root.innerHTML = `${picker}${showXP ? xpParts : ""}${lootSection(record)}
       <footer class="dlo-foot">
         <button type="button" data-action="dismiss"><i class="fa-solid fa-xmark"></i> ${loc("Rewards.Dismiss")}</button>
-        <button type="button" class="dlo-on" data-action="award" ${enabled ? "" : "disabled"}><i class="fa-solid fa-trophy"></i> ${loc("Rewards.Give")}</button>
+        ${showXP ? `<button type="button" class="dlo-on" data-action="award" ${enabled ? "" : "disabled"}><i class="fa-solid fa-trophy"></i> ${loc("Rewards.Give")}</button>` : ""}
       </footer>`;
     return root;
   }
@@ -194,6 +204,9 @@ export class RewardsWindow extends ApplicationV2 {
       case "bonus": record.bonus = Math.max(0, Math.floor(Number(el.value) || 0)); break;
       case "reason": record.reason = String(el.value ?? "").slice(0, 200); break;
       case "split": record.split = XP_SPLIT.includes(el.value) ? el.value : null; break;
+      case "lootMode": if ( record.loot && LOOT_MODES.includes(el.value) ) record.loot.mode = el.value; break;
+      case "keepSpecial": if ( record.loot ) record.loot.keepSpecial = el.checked; break;
+      case "corpse": { const c = record.loot?.corpses.find(x => x.key === key); if ( c ) c.include = el.checked; break; }
       default: return;
     }
     await this.handlers.save(record);
@@ -229,7 +242,87 @@ export class RewardsWindow extends ApplicationV2 {
     this.render();
   }
 
+  static async #onDistribute(event, target) {
+    const record = this.#record();
+    if ( !record?.loot ) return;
+    target.disabled = true;
+    try { await this.handlers.distribute(record.id, { mode: record.loot.mode, keepSpecial: !!record.loot.keepSpecial }); }
+    finally { if ( this.rendered ) this.render(); }
+  }
+
+  static #onLootRules() {
+    this.handlers.rules();
+  }
+
+  static #onOpenChest() {
+    this.handlers.openChest(this.#record());
+  }
+
   static #onOpenSheet(event, target) {
     fromUuidSync(target.dataset.uuid, { strict: false })?.sheet?.render(true);
   }
+}
+
+/** The end-of-combat loot is on (`lootWhen` other than `first`). */
+function lootOn() {
+  try { return setting("lootWhen") !== "first"; } catch { return false; }
+}
+
+/** A record's state in the picker: its XP state, and its loot state when it has one. */
+function recordStatus(record, showXP) {
+  const parts = [];
+  if ( showXP && (record.status !== "none") ) parts.push(loc(`Rewards.Status.${record.status}`));
+  if ( record.loot && (record.loot.status !== "none") ) parts.push(loc(`EndLoot.Status.${record.loot.status}`));
+  return parts.join(" · ") || loc("EndLoot.Status.none");
+}
+
+/** A corpse's line: its state now (gone, treasure already rolled, released by a forced search). */
+function corpseTag(c) {
+  const token = fromUuidSync(c.key, { strict: false });
+  if ( c.released ) return loc("EndLoot.Released", { user: c.released });
+  if ( !token?.actor ) return loc("EndLoot.Gone");
+  return token.actor.getFlag(MODULE_ID, "rolled") ? loc("EndLoot.Rolled") : loc("EndLoot.ToRoll");
+}
+
+/** The « Loot » part of the window. */
+function lootSection(record) {
+  const loot = record?.loot;
+  if ( !loot || (loot.status === "none") ) return "";
+  const head = `<h3><i class="fa-solid fa-sack-dollar"></i> ${loc("EndLoot.Section")}</h3>`;
+  if ( loot.status === "dismissed" ) {
+    return `<section class="dlo-rw-section dlo-rw-loot">${head}<p class="dlo-hint">${loc("EndLoot.Dismissed")}</p></section>`;
+  }
+  if ( loot.status === "done" ) {
+    const chest = loot.chest ? fromUuidSync(loot.chest.behavior, { strict: false }) : null;
+    const how = loc(`EndLoot.Done.${loot.mode}`, { count: loot.done?.corpses?.length ?? 0, by: loot.done?.by ?? "?" });
+    const chestLine = (loot.mode !== "grouped") ? ""
+      : (chest ? `<button type="button" data-action="openChest"><i class="fa-solid fa-box-open"></i> ${loc("EndLoot.OpenChest")}</button>`
+        : `<span class="dlo-muted">${loc("EndLoot.ChestGone")}</span>`);
+    return `<section class="dlo-rw-section dlo-rw-loot">${head}
+      <p class="dlo-rw-done-line"><i class="fa-solid fa-check"></i> ${escape(how)} ${chestLine}</p></section>`;
+  }
+  const rows = loot.corpses.map(c => `
+      <li class="dlo-rw-row ${c.released ? "dlo-rw-done" : ""}">
+        <input type="checkbox" data-field="corpse" data-key="${escape(c.key)}" ${c.include ? "checked" : ""} ${c.released ? "disabled" : ""}>
+        <img src="${escape(c.img)}" alt="">
+        <span class="dlo-rw-name">${escape(c.name)}</span>
+        <span class="dlo-rw-tag">${escape(corpseTag(c))}</span>
+      </li>`).join("");
+  return `
+      <section class="dlo-rw-section dlo-rw-loot">
+        ${head}
+        <div class="dlo-rw-loot-mode">
+          ${LOOT_MODES.map(m => `<label class="dlo-rw-choice"><input type="radio" name="lootMode" value="${m}" ${loot.mode === m ? "checked" : ""}>
+            <span>${loc(`EndLoot.Mode.${m}`)}</span></label>`).join("")}
+        </div>
+        <p class="dlo-hint">${loc(`EndLoot.ModeHint.${loot.mode}`)}</p>
+        ${rows ? `<ul class="dlo-rw-list">${rows}</ul>` : `<p class="dlo-empty">${loc("EndLoot.NoCorpses")}</p>`}
+        <label class="dlo-rw-check"><input type="checkbox" name="keepSpecial" ${loot.keepSpecial ? "checked" : ""}> ${loc("EndLoot.KeepSpecial")}</label>
+        <p class="dlo-hint">${loc("EndLoot.HeldHint")}</p>
+        <div class="dlo-rw-loot-actions">
+          <button type="button" data-action="lootRules"><i class="fa-solid fa-table-list"></i> ${loc("EndLoot.Rules.Button")}</button>
+          <button type="button" class="dlo-on" data-action="distribute" ${loot.corpses.some(c => c.include) ? "" : "disabled"}>
+            <i class="fa-solid fa-sack-dollar"></i> ${loc(`EndLoot.Distribute.${loot.mode}`)}</button>
+        </div>
+      </section>`;
 }

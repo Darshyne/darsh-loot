@@ -121,6 +121,30 @@ export function registerSettings() {
     name: "DLO.Settings.AutoTreasure.Name", hint: "DLO.Settings.AutoTreasure.Hint",
     scope: "world", config: true, type: Boolean, default: true
   });
+  // Lot 3 (2026-11-27, user's request): the end-of-combat loot — the GM validates in the « Rewards » window (default), done at the
+  // end of the combat without a window, or off (treasure rolled at the first search, as before).
+  game.settings.register(MODULE_ID, "lootWhen", {
+    name: "DLO.EndLoot.Settings.When.Name", hint: "DLO.EndLoot.Settings.When.Hint",
+    scope: "world", config: true, type: String, default: "semi",
+    choices: { semi: "DLO.EndLoot.Settings.When.Semi", auto: "DLO.EndLoot.Settings.When.Auto", first: "DLO.EndLoot.Settings.When.First" },
+    onChange: () => ui.controls?.render({ reset: true })
+  });
+  // Lot 3: where the loot goes by default (the window may change it per encounter) — on each corpse, or into one encounter chest.
+  game.settings.register(MODULE_ID, "lootMode", {
+    name: "DLO.EndLoot.Settings.Mode.Name", hint: "DLO.EndLoot.Settings.Mode.Hint",
+    scope: "world", config: true, type: String, default: "individual",
+    choices: { individual: "DLO.EndLoot.Mode.individual", grouped: "DLO.EndLoot.Mode.grouped" }
+  });
+  // Lot 3: an NPC's special weapon is kept as it is on its sheet instead of becoming the plain weapon (off by default: converted).
+  game.settings.register(MODULE_ID, "keepSpecial", {
+    name: "DLO.EndLoot.Settings.KeepSpecial.Name", hint: "DLO.EndLoot.Settings.KeepSpecial.Hint",
+    scope: "world", config: true, type: Boolean, default: false
+  });
+  // Lot 3: custom loot tables by CR, creature type and size (« Loot tables » window), hidden.
+  game.settings.register(MODULE_ID, "lootRules", {
+    scope: "world", config: false, type: Object, default: { rules: [] },
+    onChange: () => Hooks.callAll(`${MODULE_ID}.lootRules`)
+  });
   game.settings.register(MODULE_ID, "pockets", {
     name: "DLO.Settings.Pockets.Name", hint: "DLO.Settings.Pockets.Hint",
     scope: "world", config: true, type: Boolean, default: true

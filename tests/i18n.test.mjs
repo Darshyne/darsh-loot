@@ -13,6 +13,7 @@ import { difficultyOf } from "../module/scripts/core/theft.mjs";
 import { TABS } from "../module/scripts/core/settings-tabs.mjs";
 import { ACTIVATIONS, MECHANISM_MODES, ACTION_TYPES, ACTION_MODES } from "../module/scripts/core/mechanisms.mjs";
 import { DIFFICULTIES, XP_SPLIT } from "../module/scripts/core/xp.mjs";
+import { LOOT_MODES, RULE_EFFECTS } from "../module/scripts/core/end-loot.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 const lang = l => JSON.parse(readFileSync(join(ROOT, "module", "lang", `${l}.json`), "utf8"));
@@ -75,6 +76,13 @@ const DYNAMIC = {
   "DLO.Rewards.Challenge": [...DIFFICULTIES],
   "DLO.Rewards.SplitMode": [...XP_SPLIT],
   "DLO.Rewards.Off": ["das", "dnd5e"],
+  // Lot 3 (2026-11-27): the loot part of the window and the « Loot tables » window.
+  "DLO.EndLoot.Status": ["pending", "done", "dismissed", "none"],
+  "DLO.EndLoot.Mode": [...LOOT_MODES],
+  "DLO.EndLoot.ModeHint": [...LOOT_MODES],
+  "DLO.EndLoot.Done": [...LOOT_MODES],
+  "DLO.EndLoot.Distribute": [...LOOT_MODES],
+  "DLO.EndLoot.Rules.Effect": [...RULE_EFFECTS],
   "TYPES.RegionBehavior": Object.keys(manifest.documentTypes?.RegionBehavior ?? {}).map(t => `${manifest.id}.${t}`)
 };
 // Préfixes d'aide locale (`const L = key => … \`DLO.TileZone.${key}\``) : leurs appels L("X") sont des clés littérales.

@@ -16,6 +16,7 @@ import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
 import { registerShareInit, requestShareCoins } from "./runtime/share.mjs";
 import { registerGiveInit, requestGive } from "./runtime/give.mjs";
 import { registerRewardsInit, registerRewards, rewardsApi } from "./runtime/rewards.mjs";
+import { registerEndLootInit, endLootApi } from "./runtime/end-loot.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerMechanismsInit, actuate, resetMechanism } from "./runtime/mechanisms.mjs";
@@ -58,6 +59,7 @@ Hooks.once("init", () => {
   registerShareInit();
   registerGiveInit();
   registerRewardsInit();
+  registerEndLootInit();
   registerTreasure();
   registerContainersInit();
   registerZonesInit();
@@ -230,6 +232,11 @@ Hooks.once("ready", () => {
      * `recordCombat(combat)`, `update(id, changes)`, `create()`, `remove(id)`, `count(token)`, `enabled()`.
      */
     rewards: rewardsApi,
+    /**
+     * Lot 3 — end-of-combat loot: `distribute(recordId, { mode, keepSpecial })` (GM), `heldBy(token)`, `enabled()`. The loot part
+     * of a record is `record.loot` (see `rewards.records()`).
+     */
+    endLoot: endLootApi,
     routes: listRoutes,
     /** Fonctions de test pour le connecteur MCP (`call-module-api`, monde de test seulement). */
     mcp: testApi

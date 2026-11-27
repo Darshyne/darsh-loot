@@ -11,6 +11,7 @@
 import { MODULE_ID, loc, setting } from "../shared.mjs";
 import { splitXP, levelSpan, pendingXP, recipientsOf, alliesOf, pruneRecords, canLevelUp, isDefeated, challengeXP } from "../core/xp.mjs";
 import { operation } from "./ledger.mjs";
+import { isLive } from "../core/end-loot.mjs";
 import { primaryPartyCharacters } from "./party.mjs";
 import { engineRelation } from "./engine.mjs";
 
@@ -57,7 +58,7 @@ export const recordOfCombat = combatId => readRecords().find(r => r.combat === c
 /** The record the window opens on: the most recent pending one, else the most recent. */
 export function currentRecord() {
   const records = readRecords();
-  return records.find(r => ["pending", "open"].includes(r.status)) ?? records[0] ?? null;
+  return records.find(isLive) ?? records[0] ?? null;
 }
 
 /** Writes a record (replacing the one with its id) — GM only. Older finished records are pruned. */

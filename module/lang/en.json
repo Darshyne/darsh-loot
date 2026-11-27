@@ -170,6 +170,11 @@
           "Name": "Generic container tables",
           "Hint": "Seven loot tables (chest, barrel, crate, bookshelf, desk, altar, camping bag) in \"Loot — tables\". Player's Handbook items, or the same ones from the dnd5e SRD without it.",
           "Button": "Create the tables"
+        },
+        "lootRules": {
+          "Name": "Loot tables by CR, type and size",
+          "Hint": "Tables drawn on a creature by its CR, type and size, on top of the DMG treasure or instead of it.",
+          "Button": "Set the tables"
         }
       }
     },
@@ -1461,6 +1466,99 @@
         }
       },
       "GMOnly": "Only the GM can give XP."
+    },
+    "EndLoot": {
+      "Title": {
+        "both": "Loot and XP",
+        "loot": "Loot"
+      },
+      "Count": "Count in the encounter's loot",
+      "Menu": "Encounter loot…",
+      "ChestName": "Encounter loot",
+      "Already": "The loot of this encounter was already distributed.",
+      "NoCorpse": "{name}: no corpse to loot (gone or raised).",
+      "CardGrouped": "{name}: the loot of {count} creature(s) is gathered in a chest.",
+      "CardEmpty": "{name}: the creatures carried nothing.",
+      "CardIndividual": "{name}: {count} corpse(s) ready to be searched.",
+      "Float": "Loot!",
+      "FloatGrouped": "Loot gathered!",
+      "Held": "The GM is preparing the loot of this fight: wait until it is distributed.",
+      "ForcedWhat": "search {name} before the loot was distributed (taken out of the encounter's loot)",
+      "ChestGone": "The encounter chest was emptied.",
+      "OpenChest": "Open the chest",
+      "Section": "Loot",
+      "Dismissed": "Loot set aside: the corpses are searched as usual (treasure rolled at the first search).",
+      "Done": {
+        "individual": "Distributed by {by}: {count} corpse(s), the loot stays on each.",
+        "grouped": "Distributed by {by}: the loot of {count} corpse(s) is in the encounter chest."
+      },
+      "Released": "searched by force by {user}",
+      "Gone": "gone",
+      "Rolled": "treasure already rolled",
+      "ToRoll": "to roll",
+      "Mode": {
+        "individual": "On each corpse",
+        "grouped": "In one shared chest"
+      },
+      "ModeHint": {
+        "individual": "Each creature's treasure is rolled now and stays on its corpse: the players search each one.",
+        "grouped": "Everything is rolled then gathered in a chest put down among the corpses, which are emptied. The chest is searched and shared like a ground pile, and disappears once empty."
+      },
+      "NoCorpses": "No corpse in this encounter.",
+      "KeepSpecial": "Keep special weapons (otherwise they become the equivalent plain weapon)",
+      "HeldHint": "Until the loot is distributed, a player who searches one of these corpses is told the GM is preparing it (they may override it: the GM is told).",
+      "Distribute": {
+        "individual": "Distribute the loot",
+        "grouped": "Gather the loot"
+      },
+      "Status": {
+        "pending": "loot to distribute",
+        "done": "loot distributed",
+        "dismissed": "loot set aside",
+        "none": "nothing to do"
+      },
+      "Rules": {
+        "Title": "Loot tables",
+        "Button": "Loot tables…",
+        "Hint": "Tables drawn on a creature by its CR, type and size. The first rule that matches applies (order matters). « Adds »: on top of the DMG treasure; « Replaces »: instead of the DMG treasure and pockets. A table set on the NPC itself is always added. Drop a table (sidebar or compendium) on a line to pick it.",
+        "None": "No rule: only the DMG treasure is rolled.",
+        "Add": "Add a rule",
+        "Remove": "Remove the rule",
+        "Up": "Move up (checked first)",
+        "Down": "Move down",
+        "CrMin": "CR min",
+        "CrMax": "CR max",
+        "Type": "Type",
+        "Size": "Size",
+        "Table": "Table",
+        "Draws": "Draws",
+        "Any": "Any",
+        "NoTable": "— pick a table —",
+        "Open": "Open the table",
+        "DropHint": "Drop a table here",
+        "Effect": {
+          "Label": "Effect",
+          "add": "Adds",
+          "replace": "Replaces"
+        }
+      },
+      "Settings": {
+        "When": {
+          "Name": "End-of-combat loot",
+          "Hint": "Semi-automatic: at the end of a combat, the window opens at the GM with the encounter's corpses, held until the loot is distributed. Automatic: distributed at the end of the combat, no window, in the default mode. Off: as before, treasure is rolled at the first search.",
+          "Semi": "Semi-automatic (the GM validates)",
+          "Auto": "Automatic",
+          "First": "Off (rolled at the first search)"
+        },
+        "Mode": {
+          "Name": "Where the loot goes (default)",
+          "Hint": "On each corpse, or gathered in one shared chest put down among the corpses. The window can change it for each encounter."
+        },
+        "KeepSpecial": {
+          "Name": "Keep special weapons",
+          "Hint": "An NPC's weapon stays as it is on its sheet (« Chief's scimitar ») instead of becoming the plain weapon of the compendium. Off by default."
+        }
+      }
     }
   },
   "TYPES": {

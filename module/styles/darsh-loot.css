@@ -483,3 +483,23 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-rewards .dlo-rw-sum select { flex: 1; }
 .dlo-rewards .dlo-rw-total { margin: 6px 8px 0; color: var(--dlo-text); }
 .dlo-rewards input, .dlo-rewards select { color: var(--dlo-text); background: var(--dlo-field); border: 1px solid var(--dlo-edge); }
+
+/* Lot 3 (2026-11-27) — the « Loot » part of the Rewards window, and the « Loot tables » window. */
+.dlo-rewards .dlo-rw-loot-mode { display: flex; gap: 12px; margin: 2px 8px 0; }
+.dlo-rewards .dlo-rw-choice { display: flex; align-items: center; gap: 4px; color: var(--dlo-text); cursor: pointer; }
+.dlo-rewards .dlo-rw-check { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--dlo-text); }
+.dlo-rewards .dlo-rw-loot-actions { display: flex; justify-content: flex-end; gap: 6px; margin: 6px 8px 0; }
+.dlo-rewards .dlo-rw-done-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--dlo-text); }
+.dlo-rewards .dlo-rw-done-line > i { color: var(--dlo-ok); }
+.dlo-rewards .dlo-rw-done-line button { margin-left: auto; width: auto; }
+.dlo-loot-rules .dlo-rules { width: 100%; border-collapse: collapse; margin: 6px 0; }
+.dlo-loot-rules .dlo-rules th { text-align: left; font-size: 0.8rem; color: var(--dlo-title); padding: 2px 4px; border-bottom: 1px solid var(--dlo-edge); }
+.dlo-loot-rules .dlo-rules td { padding: 2px 4px; vertical-align: middle; }
+.dlo-loot-rules .dlo-rules tr:nth-child(odd) td { background: var(--dlo-row); }
+.dlo-loot-rules .dlo-rules input[type="number"] { width: 4.5em; text-align: right; }
+.dlo-loot-rules .dlo-rule-order { white-space: nowrap; }
+.dlo-loot-rules .dlo-rule-order button, .dlo-loot-rules td > button.icon { width: 24px; height: 24px; padding: 0; line-height: 22px; }
+.dlo-loot-rules .dlo-rule-table { display: flex; align-items: center; gap: 4px; min-width: 14em; }
+.dlo-loot-rules .dlo-rule-table select { flex: 1; min-width: 0; }
+.dlo-loot-rules input, .dlo-loot-rules select { color: var(--dlo-text); background: var(--dlo-field); border: 1px solid var(--dlo-edge); }
+.dlo-loot-rules .dlo-hint { color: var(--dlo-muted); font-size: 0.85rem; }

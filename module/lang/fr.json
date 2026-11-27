@@ -170,6 +170,11 @@
           "Name": "Tables génériques de conteneurs",
           "Hint": "Sept tables de butin (coffre, tonneau, caisse, bibliothèque, bureau, autel, sac de campement) dans « Butin — tables ». Objets du Manuel des joueurs, ou les mêmes du SRD de dnd5e sans lui.",
           "Button": "Créer les tables"
+        },
+        "lootRules": {
+          "Name": "Tables de butin par FP, type et taille",
+          "Hint": "Des tables tirées sur une créature selon son FP, son type et sa taille, en plus du trésor du DMG ou à sa place.",
+          "Button": "Régler les tables"
         }
       }
     },
@@ -1461,6 +1466,99 @@
         }
       },
       "GMOnly": "Seul le MJ peut donner de l'XP."
+    },
+    "EndLoot": {
+      "Title": {
+        "both": "Butin et XP",
+        "loot": "Butin"
+      },
+      "Count": "Compter dans le butin de la rencontre",
+      "Menu": "Butin de la rencontre…",
+      "ChestName": "Butin de la rencontre",
+      "Already": "Le butin de cette rencontre a déjà été distribué.",
+      "NoCorpse": "{name} : aucun cadavre à fouiller (disparus ou relevés).",
+      "CardGrouped": "{name} : le butin de {count} créature(s) est rassemblé dans un coffre.",
+      "CardEmpty": "{name} : les créatures n'avaient rien sur elles.",
+      "CardIndividual": "{name} : {count} cadavre(s) prêt(s) à être fouillé(s).",
+      "Float": "Butin !",
+      "FloatGrouped": "Butin rassemblé !",
+      "Held": "Le MJ prépare le butin de ce combat : attendez qu'il le distribue.",
+      "ForcedWhat": "fouiller {name} avant la distribution du butin (retiré du butin de la rencontre)",
+      "ChestGone": "Le coffre de la rencontre a été vidé.",
+      "OpenChest": "Ouvrir le coffre",
+      "Section": "Butin",
+      "Dismissed": "Butin écarté : les cadavres se fouillent comme d'habitude (trésor tiré à la première fouille).",
+      "Done": {
+        "individual": "Distribué par {by} : {count} cadavre(s), le butin reste sur chacun.",
+        "grouped": "Distribué par {by} : le butin de {count} cadavre(s) est dans le coffre de la rencontre."
+      },
+      "Released": "fouillé de force par {user}",
+      "Gone": "disparu",
+      "Rolled": "trésor déjà tiré",
+      "ToRoll": "à tirer",
+      "Mode": {
+        "individual": "Sur chaque cadavre",
+        "grouped": "Dans un coffre commun"
+      },
+      "ModeHint": {
+        "individual": "Le trésor de chaque créature est tiré maintenant et reste sur son cadavre : les joueurs fouillent chacun.",
+        "grouped": "Tout est tiré puis rassemblé dans un coffre posé au milieu des cadavres, qui sont vidés. Le coffre se fouille et se partage comme un tas au sol, et disparaît une fois vide."
+      },
+      "NoCorpses": "Aucun cadavre dans cette rencontre.",
+      "KeepSpecial": "Garder les armes spéciales (sinon elles deviennent l'arme normale équivalente)",
+      "HeldHint": "Tant que le butin n'est pas distribué, un joueur qui fouille un de ces cadavres est prévenu que le MJ le prépare (il peut passer outre : le MJ est averti).",
+      "Distribute": {
+        "individual": "Distribuer le butin",
+        "grouped": "Rassembler le butin"
+      },
+      "Status": {
+        "pending": "butin à distribuer",
+        "done": "butin distribué",
+        "dismissed": "butin écarté",
+        "none": "rien à faire"
+      },
+      "Rules": {
+        "Title": "Tables de butin",
+        "Button": "Tables de butin…",
+        "Hint": "Des tables tirées sur une créature selon son FP, son type et sa taille. La première règle qui correspond s'applique (l'ordre compte). « S'ajoute » : en plus du trésor du DMG ; « Remplace » : à la place du trésor du DMG et des poches. Une table posée sur le PNJ lui-même s'ajoute toujours. Glissez une table (barre latérale ou compendium) sur une ligne pour la choisir.",
+        "None": "Aucune règle : seul le trésor du DMG est tiré.",
+        "Add": "Ajouter une règle",
+        "Remove": "Retirer la règle",
+        "Up": "Monter (passe avant)",
+        "Down": "Descendre",
+        "CrMin": "FP min",
+        "CrMax": "FP max",
+        "Type": "Type",
+        "Size": "Taille",
+        "Table": "Table",
+        "Draws": "Tirages",
+        "Any": "Tous",
+        "NoTable": "— choisir une table —",
+        "Open": "Ouvrir la table",
+        "DropHint": "Glissez une table ici",
+        "Effect": {
+          "Label": "Effet",
+          "add": "S'ajoute",
+          "replace": "Remplace"
+        }
+      },
+      "Settings": {
+        "When": {
+          "Name": "Butin de fin de combat",
+          "Hint": "Semi-automatique : à la fin d'un combat, la fenêtre s'ouvre chez le MJ avec les cadavres de la rencontre, retenus jusqu'à ce qu'il distribue le butin. Automatique : distribué à la fin du combat, sans fenêtre, dans le mode par défaut. Coupé : comme avant, le trésor est tiré à la première fouille.",
+          "Semi": "Semi-automatique (le MJ valide)",
+          "Auto": "Automatique",
+          "First": "Coupé (tirage à la première fouille)"
+        },
+        "Mode": {
+          "Name": "Où va le butin (par défaut)",
+          "Hint": "Sur chaque cadavre, ou rassemblé dans un coffre commun posé au milieu des cadavres. La fenêtre permet de changer pour chaque rencontre."
+        },
+        "KeepSpecial": {
+          "Name": "Garder les armes spéciales",
+          "Hint": "Une arme d'un PNJ reste telle qu'elle est sur sa fiche (« Cimeterre du chef ») au lieu de devenir l'arme normale du compendium. Coupé par défaut."
+        }
+      }
     }
   },
   "TYPES": {

@@ -12,6 +12,7 @@ import { clearIfEmpty } from "../adapter/drop.mjs";
 import { behaviorConcealed, boxInSight } from "../adapter/hidden.mjs";
 import { playForAll, SOUNDS } from "./feedback.mjs";
 import { forceableRefusal } from "../core/force.mjs";
+import { heldBy } from "../adapter/end-loot.mjs";
 
 const TAKE_QUERY = `${MODULE_ID}.take`;
 
@@ -109,6 +110,8 @@ async function handleTake(payload, { user }) {
   if ( !user.isGM && !TAKE_KINDS.includes(source.kind) ) throw new Error(loc("Refus.Introuvable"));
   if ( source.locked() ) throw new Error(loc("Lock.Locked"));
   if ( !source.actor ) throw new Error(loc("Refus.Introuvable"));
+  // Lot 3: a corpse held for the end-of-combat loot is not taken from before the GM validates (forcing goes through the search).
+  if ( !user.isGM && (source.kind === "corpse") && heldBy(source.doc) ) throw new Error(loc("EndLoot.Held"));
   const owner = (source.kind === "container") ? source.doc.system.owner : "";
   const stolen = owner ? stolenFlag({ from: owner, fromUuid: source.uuid, place: source.doc.parent?.parent?.name,
     time: game.time.worldTime }) : null;

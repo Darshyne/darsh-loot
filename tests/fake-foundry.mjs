@@ -236,5 +236,6 @@ export function installFakeFoundry() {
       user: { id: "gm", isGM: true, name: "MJ" }
     }
   });
-  Object.assign(foundry.utils, { getProperty, setProperty, hasProperty, randomID, escapeHTML: text => text });
+  Object.assign(foundry.utils, { getProperty, setProperty, hasProperty, randomID, escapeHTML: text => text,
+    deepClone: value => (value === undefined ? value : structuredClone(value)) });
 }

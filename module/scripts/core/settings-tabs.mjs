@@ -6,8 +6,9 @@
 export const TABS = Object.freeze([
   { id: "search", icon: "fa-solid fa-magnifying-glass",
     keys: ["clickToLoot", "reach", "searchMenu", "searchRadius", "searchDuration", "searchCooldown"] },
-  { id: "loot", icon: "fa-solid fa-sack-dollar", keys: ["whoLoots", "autoTreasure", "lootMark", "pockets", "announce", "pickpocket", "theftHostile", "npcTheftNotice",
-    "shareWith", "shareRemainder", "giveMode"] },
+  { id: "loot", icon: "fa-solid fa-sack-dollar", keys: ["whoLoots", "autoTreasure", "lootWhen", "lootMode", "keepSpecial", "lootMark", "pockets", "announce",
+    "pickpocket", "theftHostile", "npcTheftNotice", "shareWith", "shareRemainder", "giveMode"],
+    tools: [{ id: "lootRules", icon: "fa-solid fa-table-list" }] },
   { id: "containers", icon: "fa-solid fa-box-open", keys: ["objectSize", "pileFrame", "dropMode", "deleteStores", "thrownWeapons"],
     tools: [{ id: "tables", icon: "fa-solid fa-table-list" }] },
   { id: "traps", icon: "fa-solid fa-burst", keys: ["advancedTraps", "trapPause", "disarmDuration", "trapImmunities"] },

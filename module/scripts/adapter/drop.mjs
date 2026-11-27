@@ -62,15 +62,17 @@ export async function realignPiles() {
     const floors = [];
     for ( const region of scene.regions ) {
       if ( !isPileRegion(region) ) continue;
+      // Lot 3: an encounter chest takes a whole square where it was put: not moved to the quarter of a pile.
+      const chest = !!region.getFlag(MODULE_ID, "pile")?.encounter;
       const spot = pileSpot(scene.grid.getTopLeftPoint(pileCenter(region)), size);
       const x = Math.round(spot.x);
       const y = Math.round(spot.y);
       const shape = region.shapes[0];
-      if ( shape && ((shape.x !== x - half) || (shape.y !== y - half)) ) {
+      if ( !chest && shape && ((shape.x !== x - half) || (shape.y !== y - half)) ) {
         regions.push({ _id: region.id, shapes: [{ ...shape.toObject?.() ?? shape, x: x - half, y: y - half }] });
       }
       const tile = pileTile(region);
-      if ( tile && ((tile.x !== x) || (tile.y !== y) || (tile.texture.anchorX !== 0.5) || (tile.texture.anchorY !== 0.5)) ) {
+      if ( !chest && tile && ((tile.x !== x) || (tile.y !== y) || (tile.texture.anchorX !== 0.5) || (tile.texture.anchorY !== 0.5)) ) {
         tiles.push({ _id: tile.id, x, y, "texture.anchorX": 0.5, "texture.anchorY": 0.5 });
       }
       // Un tas naît transparent et n'est révélé qu'à la fin du vol, par le MJ : s'il a rechargé ou s'est déconnecté
@@ -100,8 +102,10 @@ export async function realignPiles() {
  * région et son conteneur (déjà tiré, rien à tirer).
  * @returns {Promise<{ region: RegionDocument, behavior: RegionBehavior, tile: TileDocument }>}
  */
-export async function createPile(scene, center, { level=null, elevation=0, img, name, lastDrop }) {
-  const size = scene.grid.size * PILE_FRACTION;
+export async function createPile(scene, center, { level=null, elevation=0, img, name, lastDrop, cells=PILE_FRACTION, shown=false, encounter=null }) {
+  // Lot 3: `cells` (the encounter chest takes a whole square), `shown` (no throw reveals it: drawn at once), `encounter` (the id of
+  // the encounter record whose chest it is: it keeps its chest icon, `clearIfEmpty`).
+  const size = scene.grid.size * cells;
   const x = Math.round(center.x - (size / 2));   // coin de la région (ses formes se donnent par le coin)
   const y = Math.round(center.y - (size / 2));
   const levels = level ? [level] : [];
@@ -109,13 +113,13 @@ export async function createPile(scene, center, { level=null, elevation=0, img, 
   // client/documents/tile.mjs:47, canvas/placeables/tile.mjs:275), pas son coin : la tuile se pose sur le centre.
   const [tile] = await scene.createEmbeddedDocuments("Tile", [{
     texture: { src: img, anchorX: 0.5, anchorY: 0.5 }, x: Math.round(center.x), y: Math.round(center.y),
-    width: size, height: size, elevation, levels, alpha: 0, sort: 1000,
+    width: size, height: size, elevation, levels, alpha: shown ? 1 : 0, sort: 1000,
     flags: { [MODULE_ID]: lastDrop ? { pileTile: true, lastDrop } : { pileTile: true } }
   }]);
   const [region] = await scene.createEmbeddedDocuments("Region", [{
     name, color: "#b58a45", levels, visibility: CONST.REGION_VISIBILITY.LAYER,
     shapes: [{ type: "rectangle", x, y, width: size, height: size }],
-    flags: { [MODULE_ID]: { pile: { tile: tile.id } } },
+    flags: { [MODULE_ID]: { pile: encounter ? { tile: tile.id, encounter } : { tile: tile.id } } },
     behaviors: [{ name, type: CONTAINER_TYPE, system: { label: name, rolled: true, sound: "" } }]
   }]);
   return { region, behavior: region.behaviors.contents[0], tile };
@@ -216,6 +220,8 @@ export async function clearIfEmpty(region) {
   const coins = Object.values(store?.system.currency ?? {}).some(v => v > 0);
   const tile = pileTile(region);
   if ( store && (store.items.size || coins) ) {
+    // Lot 3: the encounter chest keeps its chest icon.
+    if ( region.getFlag(MODULE_ID, "pile")?.encounter ) return;
     const img = pileImage(store);
     if ( tile && (tile.texture.src !== img) ) await tile.update({ "texture.src": img });
     return;

@@ -17,6 +17,10 @@
  */
 import { MODULE_ID, loc, log, setting } from "../shared.mjs";
 import { route } from "./router.mjs";
+import { serial } from "./records.mjs";
+import { lootEnabled, withLoot, requestDistribute } from "./end-loot.mjs";
+import { heldBy } from "../adapter/end-loot.mjs";
+import { LootRulesWindow } from "../apps/loot-rules-window.mjs";
 import { askForce } from "./force.mjs";
 import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
 import { inTurn } from "../adapter/ledger.mjs";
@@ -29,17 +33,11 @@ import {
   emptyRecord, foeEntry, planAward, awardNow
 } from "../adapter/xp.mjs";
 import { RewardsWindow } from "../apps/rewards-window.mjs";
+import { titleKey } from "../core/end-loot.mjs";
 
 const AWARD_QUERY = `${MODULE_ID}.awardXP`;
 export const REWARDS_HOOK = `${MODULE_ID}.rewards`;
 
-/** The record writes of this client, one after the other (several creatures dying at once in « per kill » mode). */
-let queue = Promise.resolve();
-function serial(fn) {
-  const run = queue.then(fn);
-  queue = run.catch(() => {});
-  return run;
-}
 
 /* -------------------------------------------- */
 /*  Asking (any GM)                             */
@@ -128,7 +126,9 @@ function mergeRecords(kept, fresh) {
  * shown or kept according to `xpWhen`.
  */
 function onCombatEnd({ combat, defeated }={}) {
-  if ( !combat || !activeGM() || !xpEnabled() ) return;
+  const xp = xpEnabled();
+  const loot = lootEnabled();
+  if ( !combat || !activeGM() || (!xp && !loot) ) return;
   const when = setting("xpWhen");
   const down = new Set((defeated ?? []).map(t => t?.uuid).filter(Boolean));
   return serial(async () => {
@@ -136,20 +136,30 @@ function onCombatEnd({ combat, defeated }={}) {
     const kept = recordOfCombat(combat.id);
     if ( !fresh && !kept ) return null;
     const record = kept ? mergeRecords(kept, fresh) : fresh;
-    record.status = "pending";
+    // Lot 3: with XP off the record only carries the loot (status « none »: nothing to give).
+    if ( xp ) record.status = "pending";
+    else if ( !kept ) record.status = "none";
+    withLoot(record);
     await putRecord(record);
     return record;
   }).then(async record => {
     if ( !record ) return;
-    const left = pendingXP(record).xp;
-    if ( ["auto", "kill"].includes(when) ) {
-      if ( left ) await requestAward(record.id);
-      else if ( record.awards?.length ) await serial(() => putRecord({ ...getRecord(record.id), status: "awarded" }));
-    } else if ( when === "semi" ) {
-      openRewards(record.id);
-    } else {
-      ui.notifications.info(loc("Rewards.Kept", { name: record.name }));
+    let opened = false;
+    if ( xp ) {
+      const left = pendingXP(record).xp;
+      if ( ["auto", "kill"].includes(when) ) {
+        if ( left ) await requestAward(record.id);
+        else if ( record.awards?.length ) await serial(() => putRecord({ ...getRecord(record.id), status: "awarded" }));
+      } else if ( when === "semi" ) {
+        openRewards(record.id);
+        opened = true;
+      } else {
+        ui.notifications.info(loc("Rewards.Kept", { name: record.name }));
+      }
     }
+    if ( record.loot?.status !== "pending" ) return;
+    if ( setting("lootWhen") === "auto" ) await requestDistribute(record.id);
+    else if ( !opened ) openRewards(record.id);
   });
 }
 
@@ -204,18 +214,34 @@ const handlers = {
   dismiss: id => serial(async () => {
     const record = getRecord(id);
     if ( !record ) return null;
-    if ( record.awards?.length ) return putRecord({ ...record, status: "awarded" });
+    // Lot 3: loot set aside — its corpses are free again (searched as before, treasure at the first search). A record whose XP was
+    // given or whose loot was distributed is kept (marked); any other is removed.
+    const loot = (record.loot?.status === "pending") ? { ...record.loot, status: "dismissed" } : record.loot;
+    const xpLive = ["pending", "open"].includes(record.status);
+    if ( record.awards?.length || (record.loot?.status === "done") ) {
+      return putRecord({ ...record, status: record.awards?.length ? "awarded" : (xpLive ? "dismissed" : record.status), loot });
+    }
     return deleteRecord(id);
   }),
-  award: id => requestAward(id)
+  award: id => requestAward(id),
+  distribute: (id, options) => requestDistribute(id, options),
+  rules: () => LootRulesWindow.show(),
+  openChest: record => openChest(record)
 };
 
 /** GM: opens the « Rewards » window (on a record, else the most recent pending one). */
 export function openRewards(id=null) {
   if ( !game.user.isGM ) return null;
-  // DAS's XP switched off (the default): nothing to open, the GM is told where to switch it on.
-  if ( xpOffReason() === "das" ) { ui.notifications.info(xpOffText("das")); return null; }
+  // DAS's XP switched off (the default) and no end-of-combat loot: nothing to open, the GM is told where to switch it on.
+  if ( (xpOffReason() === "das") && !lootEnabled() ) { ui.notifications.info(xpOffText("das")); return null; }
   return RewardsWindow.show(id, handlers);
+}
+
+/** GM: opens the encounter chest of a record (its search window), if it is still there. */
+function openChest(record) {
+  const behavior = record?.loot?.chest?.behavior ? fromUuidSync(record.loot.chest.behavior, { strict: false }) : null;
+  if ( !behavior ) { ui.notifications.info(loc("EndLoot.ChestGone")); return null; }
+  return game.modules.get(MODULE_ID)?.api?.openContainer?.(behavior, null) ?? null;
 }
 
 /** GM: counts a defeated creature met out of combat in the current record (a new one when nothing is pending), then opens it. */
@@ -224,7 +250,8 @@ async function countCreature(token) {
     let current = currentRecord();
     if ( !current || !["pending", "open"].includes(current.status) ) current = emptyRecord();
     if ( !current.foes.some(f => f.key === token.uuid) ) current.foes.push(foeEntry(token, token.actor, { defeated: true }));
-    return putRecord(current);
+    if ( !xpEnabled() && (current.status === "pending") && !current.awards?.length ) current.status = "none";
+    return putRecord(withLoot(current));
   });
   openRewards(record.id);
 }
@@ -233,14 +260,14 @@ async function countCreature(token) {
 /*  Shortcuts                                   */
 /* -------------------------------------------- */
 
-const shortcutsShown = () => game.user?.isGM && xpEnabled();
+const shortcutsShown = () => game.user?.isGM && (xpEnabled() || lootEnabled());
 
 /** The toolbar of tokens: a button (GM). */
 function sceneControls(controls) {
   const tokens = controls?.tokens;
   if ( !tokens?.tools || !shortcutsShown() || !setting("xpToolbar") ) return;
   tokens.tools.dloRewards = {
-    name: "dloRewards", title: "DLO.Rewards.Tool", icon: "fa-solid fa-trophy", order: Object.keys(tokens.tools).length,
+    name: "dloRewards", title: titleKey(xpEnabled(), lootEnabled()), icon: "fa-solid fa-trophy", order: Object.keys(tokens.tools).length,
     button: true, visible: true, onChange: () => openRewards()
   };
 }
@@ -253,10 +280,16 @@ function tokenMenu(entries, { target }) {
     return;
   }
   const dead = target.actor.statuses?.has?.("dead");
+  // Lot 3: a corpse held for an encounter's loot — « Loot of the encounter… » opens the window on it.
+  const holding = dead ? heldBy(target) : null;
+  if ( holding ) {
+    entries.push({ icon: "fa-solid fa-sack-dollar", label: loc("EndLoot.Menu"), run: () => openRewards(holding.id) });
+    return;
+  }
   if ( !dead || combatOf(target) || target.actor.hasPlayerOwner ) return;
   const current = currentRecord();
   if ( current?.foes?.some(f => f.key === target.uuid) && ["pending", "open"].includes(current.status) ) return;
-  entries.push({ icon: "fa-solid fa-trophy", label: loc("Rewards.Count"), run: () => countCreature(target) });
+  entries.push({ icon: "fa-solid fa-trophy", label: loc(xpEnabled() ? "Rewards.Count" : "EndLoot.Count"), run: () => countCreature(target) });
 }
 
 /** dnd5e's Group sheet: a button in its header (GM). */
@@ -266,8 +299,9 @@ function groupSheetButton(app, element) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "header-control icon fa-solid fa-trophy dlo-sheet-rewards";
-  button.dataset.tooltip = loc("Rewards.Title");
-  button.setAttribute("aria-label", loc("Rewards.Title"));
+  const title = game.i18n.localize(titleKey(xpEnabled(), lootEnabled()));
+  button.dataset.tooltip = title;
+  button.setAttribute("aria-label", title);
   button.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
