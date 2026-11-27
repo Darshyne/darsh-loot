@@ -246,16 +246,30 @@ export default {
 
     // 4. The player takes everything from the encounter chest.
     if ( !setup.ownedByPlayer || !grouped?.behavior ) return;
+    // The character walks up to the chest (the GM moves its token next to it).
+    const walked = await gm(`
+      const region = fromUuidSync(args.behavior)?.parent;
+      const b = region?.bounds;
+      const token = game.scenes.get(args.scene).tokens.get(args.tokens.actor);
+      if ( !b || !token ) return null;
+      await token.update({ x: b.x - 100, y: b.y }, { animate: false });
+      await new Promise(r => setTimeout(r, 500));
+      return { x: token.x, y: token.y, chest: { x: b.x, y: b.y } };`, { ...setup, behavior: grouped.behavior });
+    ctx.log(`character next to the chest: ${JSON.stringify(walked)}`);
     const fromChest = await ctx.asPlayer(`
       const api = game.modules.get("darsh-loot").api;
       const behavior = fromUuidSync(args.behavior);
       const store = fromUuidSync(behavior.system.actor);
       const ids = api.view(store).entries.map(e => e.id);
       const before = { gp: game.actors.get(args.actor).system.currency.gp, items: game.actors.get(args.actor).items.size };
-      const r = await api.takeFromContainer(behavior, fromUuidSync(args.uuids.actor), { itemIds: ids, coins: true });
+      let error = null;
+      try {
+        await game.users.activeGM.query("darsh-loot.take", { source: { kind: "container", uuid: args.behavior }, looter: args.uuids.actor,
+          itemIds: ids, coins: true }, { timeout: 20000 });
+      } catch(err) { error = String(err?.message ?? err); }
       await new Promise(res => setTimeout(res, 1500));
       const actor = game.actors.get(args.actor);
-      return { r: !!r, took: ids.length, gp: actor.system.currency.gp - before.gp, items: actor.items.size - before.items,
+      return { r: !error, error, took: ids.length, gp: actor.system.currency.gp - before.gp, items: actor.items.size - before.items,
         scimitar: actor.items.some(i => i.name === "DAS test scimitar") };`, { ...setup, behavior: grouped.behavior });
     const gone = await gm(`await new Promise(r => setTimeout(r, 1000)); return { exists: !!fromUuidSync(args.behavior) };`, { behavior: grouped.behavior });
     ctx.expect(fromChest?.r && fromChest.gp >= grouped.storeGp && fromChest.scimitar && fromChest.items >= 1,
