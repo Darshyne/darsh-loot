@@ -6,8 +6,6 @@
  * déplacement au sol — dnd5e-combat ui/pointer.mjs) ; voir SPEC §4. Écouteurs en capture sur le document, avant le
  * canevas, comme le moteur. Un token sous la souris passe avant une région.
  */
-import { canDropCoins, chooseAndDropCoins } from "./drop.mjs";
-import { shareCoinsFrom } from "./share.mjs";
 import { route, routeClaim } from "./router.mjs";
 import { openSource, visitSource } from "./open.mjs";
 import { setting, sceneSetting, loc } from "../shared.mjs";
@@ -386,8 +384,6 @@ function onTokenMenu(entries, { token, target }) {
   }
   if ( !token?.actor || !target || (target === token) || inCombat() || !corpseToken(target) ) return;
   entries.push({ icon: "fa-solid fa-sack", label: loc("Window.SearchCorpse"), run: () => visitSource(corpseSource(target), token) });
-  // Lot 1: share its coins with the party without opening the window.
-  entries.push({ icon: "fa-solid fa-coins", label: loc("Share.MenuCoins"), run: () => shareCoinsFrom(corpseSource(target), token.document ?? token) });
 }
 
 /** 0.15.5 : « Fouiller » au menu contextuel d'une case où est un conteneur ou un tas (menu du moteur, hook `groundMenu`), hors combat. */
@@ -397,9 +393,6 @@ function onGroundMenu(entries, { token, point }) {
   trapGroundEntries(entries, token, point);
   // Étape 13 : « Actionner » un levier, un bouton (en combat aussi : l'action Utiliser), et les gestes du MJ sur ses mécanismes.
   mechanismGroundEntries(entries, token, point);
-  // Lot 1: drop coins on this square (in combat too), for the character in hand.
-  if ( canDropCoins(token.actor) ) entries.push({ icon: "fa-solid fa-coins", label: loc("Drop.CoinsMenu"),
-    run: () => chooseAndDropCoins(token.actor, point) });
   if ( inCombat() ) return;
   const behavior = containerAt(point);
   if ( !behavior ) return;
@@ -415,8 +408,6 @@ function onGroundMenu(entries, { token, point }) {
   if ( trap ) entries.push(...gmTrapEntries(trap));   // 0.17.0
   entries.push({ icon: "fa-solid fa-box-open", label: loc("Window.SearchContainer"),
     run: () => visitSource(containerSource(behavior), token) });
-  if ( !behavior.system.locked ) entries.push({ icon: "fa-solid fa-coins", label: loc("Share.MenuCoins"),
-    run: () => shareCoinsFrom(containerSource(behavior), token.document ?? token) });
 }
 
 /** Les leviers et mécanismes d'une case : « Actionner » pour le personnage en main, et pour le MJ réinitialiser et régler. */

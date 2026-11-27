@@ -1,9 +1,9 @@
 /**
  * Lot 1 (2026-11-27) — giving an item or coins, with a REAL player client. On a temporary ACTIVE scene (the player's client
  * views it), the token of « claude player »'s character stands next to a companion nobody plays, with 4 potions and 10 gp:
- *  1. the Core's right-click menu of the companion, as the player gets it, offers « Give an item… » and « Give coins… »;
- *     « Give an item… » run: the potion is picked, 2 typed — the companion holds 2 potions, 2 stay;
- *  2. the potion dragged onto the companion's token asks how many; 1 typed: given, and no pile appears on the ground;
+ *  1. the Core's right-click menu of the companion, as the player gets it, keeps « Trade » alone (no « give » entry: user's
+ *     decision of 2026-11-27); the potion dragged onto the companion's token asks how many; 2 typed: given, 2 stay, no pile;
+ *  2. dragged again, 1 typed: given;
  *  3. the same drag on an empty square still makes a pile, as before;
  *  4. the gold of the sheet's purse dragged onto the companion's token: « how many » with all the gold filled in; 4 kept: given;
  *  5. a friend far away: the « do it anyway » window opens; given up: nothing moves;
@@ -20,7 +20,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const MARK = "​⁠";
 
 export default {
-  name: "loot — lot 1: a real player gives an item and coins to another character (menu, drag on the token, ask mode)",
+  name: "loot — lot 1: a real player gives an item and coins to another character (drag on the token, ask mode)",
   players: true,
 
   async run(ctx) {
@@ -97,31 +97,25 @@ export default {
       fromUuidSync(args.looter).object?.control({ releaseOthers: true });
       await settle(300);
       const entries = await engine?.ui?.tokenMenu?.(fromUuidSync(args.companionToken).object) ?? [];
-      const wanted = [game.i18n.localize("DLO.Give.MenuItem"), game.i18n.localize("DLO.Give.MenuCoins")];
       const labels = entries.map(e => e.label);
-      const entry = entries.find(e => e.label === wanted[0]);
-      if ( !entry ) return { labels, wanted };
-      entry.run();
-      const fields = await waitFor(".dlo-give-fields");
-      if ( !fields ) return { labels, wanted, dialog: false };
-      const form = fields.closest("form");
-      const option = [...form.elements.gift.options].find(o => o.value === args.potion);
-      form.elements.gift.value = args.potion;
-      form.elements.gift.dispatchEvent(new Event("change", { bubbles: true }));
-      const max = form.elements.quantity.max;
-      form.elements.quantity.value = "2";
-      form.querySelector('button[data-action="ok"]').click();
+      Hooks.call("dropCanvasData", canvas, { type: "Item", uuid: args.potionUuid, ...centre(args.companionToken) }, null);
+      const input = await waitFor("input[name=quantity]");
+      if ( !input ) return { labels, dialog: false };
+      const max = input.max;
+      input.value = "2";
+      input.closest("form").querySelector('button[data-action="ok"]').click();
       await settle(2000);
-      return { labels, wanted, dialog: true, listed: !!option, max };`, setup);
-    ctx.expect(menu?.wanted?.every(w => (menu.labels ?? []).includes(w)), `the player's right-click menu of the companion offers « ${menu?.wanted?.join(" » and « ")} » (${(menu?.labels ?? []).join(" | ")})`);
+      return { labels, trade: game.i18n.localize("DLO.Trade.Menu"), dialog: true, max };`, setup);
+    ctx.expect((menu?.labels ?? []).includes(menu?.trade) && !(menu?.labels ?? []).some(l => /^(give an item|give coins|donner un objet|donner des pi)/i.test(l)),
+      `the player's right-click menu of the companion keeps « ${menu?.trade} » alone, no « give » entry (${(menu?.labels ?? []).join(" | ")})`);
     let now = await state();
-    ctx.expect(menu?.dialog && menu.listed && menu.max === "4" && now.potions[0] === 2 && now.potions[1] === 2, `« Give an item… »: the potion picked, 2 of 4 typed — 2 given, 2 kept (${JSON.stringify(now.potions)}, ${JSON.stringify(menu)})`);
+    ctx.expect(menu?.dialog && menu.max === "4" && now.potions[0] === 2 && now.potions[1] === 2 && now.piles === 0, `the potion dragged onto the companion's token asks how many; 2 of 4 typed — 2 given, 2 kept, no pile (${JSON.stringify(now)}, ${JSON.stringify(menu)})`);
     const card = await ctx.asPlayer(`
       const m = game.messages.contents.find(m => (m.timestamp >= args.since) && m.getFlag("darsh-loot", "give"));
       return m ? { whisper: m.whisper.length, fly: m.getFlag("darsh-loot", "flyFx")?.to?.length ?? 0, floats: 1 + (m.getFlag("darsh-loot", "feedback")?.also?.length ?? 0) } : null;`, { since });
     ctx.expect(card && card.whisper === 0 && card.fly === 1 && card.floats === 2, `the player's client received the public card: the potion flies to the companion, a floating text over each (${JSON.stringify(card)})`);
 
-    // 2. Dragged onto the companion's token.
+    // 2. Dragged again: one more.
     const onToken = await ctx.asPlayer(`${tools}
       Hooks.call("dropCanvasData", canvas, { type: "Item", uuid: args.potionUuid, ...centre(args.companionToken) }, null);
       const input = await waitFor("input[name=quantity]");

@@ -1,8 +1,8 @@
 /**
  * Lot 1 (2026-11-27) — coins dropped on the ground, with a REAL player client. On a temporary ACTIVE scene with two V14 levels
  * (the player's client views it), the token of « claude player »'s character stands on the UPPER level with 10 gp and 6 sp:
- *  1. the Core's right-click menu of a square, as the player gets it, offers « Drop coins here »; run, it asks how many; 4 gp
- *     typed: a pile showing coins appears next to the character, ON ITS LEVEL, holding 4 gp — 6 gp stay in the purse;
+ *  1. the Core's right-click menu of a square has no coin entry (user's decision of 2026-11-27); gold dragged from the sheet to
+ *     the map asks how many; 4 gp typed: a pile showing coins appears next to the character, ON ITS LEVEL, holding 4 gp;
  *  2. the coin icons of the player's character sheet can be dragged; such a drag dropped on the map asks how many, the coin
  *     dragged filled in; confirmed, the 6 sp join the same pile (one pile per square);
  *  3. the player's client received a public card for each drop;
@@ -17,7 +17,7 @@
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export default {
-  name: "loot — lot 1: a real player drops coins on the ground (menu, drag from the sheet, pile on its level, taken back)",
+  name: "loot — lot 1: a real player drops coins on the ground (drag from the sheet, pile on its level, taken back)",
   players: true,
 
   async run(ctx) {
@@ -108,15 +108,13 @@ export default {
       mine.object?.control({ releaseOthers: true });
       await new Promise(r => setTimeout(r, 300));
       const entries = engine?.ui?.groundMenu?.({ x: 650, y: 550 }) ?? [];
-      const wanted = game.i18n.localize("DLO.Drop.CoinsMenu");
-      const entry = entries.find(e => e.label === wanted);
-      if ( !entry ) return { labels: entries.map(e => e.label), wanted, controlled: canvas.tokens.controlled.length };
-      entry.run();
+      const labels = entries.map(e => e.label);
+      Hooks.call("dropCanvasData", canvas, { type: "darsh-loot.coins", actor: game.actors.get(args.actor).uuid, key: "gp", x: 650, y: 550 }, null);
       const typed = await fillCoins({ gp: 4 });
       await new Promise(r => setTimeout(r, 2500));
-      return { labels: entries.map(e => e.label), wanted, found: true, typed };`, setup);
-    ctx.expect(menu?.found, `the player's right-click menu of a square offers « ${menu?.wanted} » (${(menu?.labels ?? []).join(" | ")})`);
-    ctx.expect(menu?.typed?.dialog && menu.typed.seen?.gp?.max === "10" && menu.typed.seen?.sp?.max === "6", `it asks how many of each coin held (${JSON.stringify(menu?.typed)})`);
+      return { labels, typed };`, setup);
+    ctx.expect(!(menu?.labels ?? []).some(l => /coins|pièces/i.test(l)), `the player's right-click menu of a square has no coin entry (${(menu?.labels ?? []).join(" | ")})`);
+    ctx.expect(menu?.typed?.dialog && menu.typed.seen?.gp?.max === "10" && menu.typed.seen?.gp?.value === "10" && menu.typed.seen?.sp?.max === "6", `gold dragged from the sheet to the map: it asks how many of each coin held, the gold filled in (${JSON.stringify(menu?.typed)})`);
     let now = await state();
     const pile = now.piles[0];
     ctx.expect(now.piles.length === 1 && pile.gp === 4 && now.purse.gp === 6, `4 gp typed: one pile holds 4 gp, 6 gp stay in the purse (${JSON.stringify(now)})`);

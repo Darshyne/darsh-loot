@@ -333,7 +333,6 @@
       "PileName": "Items on the ground",
       "NotOnScene": "Your character is not on this scene.",
       "NotGear": "{item}: a creature's attack, not an object — nothing is dropped",
-      "CoinsMenu": "Drop coins here",
       "CoinsTitle": "Drop coins",
       "NoCoins": "No coins to drop.",
       "Off": "Dropping on the ground is switched off.",
@@ -1282,10 +1281,8 @@
     "Share": {
       "Button": "Share",
       "Tooltip": "Share the coins between {count} characters: {names}",
-      "MenuCoins": "Share the coins with the party",
       "Alone": "Nobody to share with: the party has fewer than two characters here.",
       "TooFew": "Not enough coins to give one to each of the {count} characters: take them instead.",
-      "NoCoins": "No coins here.",
       "Card": "Coins shared between {names}: {each} each.",
       "CardBonus": "{who} keeps the remainder: {rest}.",
       "CardLeft": "Left behind: {rest}.",
@@ -1315,9 +1312,6 @@
       "Told": "{user} overrode a rule — {what}. Reason set aside: {reason}"
     },
     "Give": {
-      "MenuItem": "Give an item…",
-      "MenuCoins": "Give coins…",
-      "Title": "Give to {to}",
       "QuantityTitle": "Give {name} to {to}",
       "Quantity": "How many?",
       "CoinsTitle": "Give coins to {to}",
@@ -1339,7 +1333,7 @@
       "Settings": {
         "Mode": {
           "Name": "Giving an item or coins",
-          "Hint": "Drag an item onto another character's token, or use « Give… » in its right-click menu. Both characters must be within reach of each other.",
+          "Hint": "Drag an item, or coins from the sheet, onto another character's token. Both characters must be within reach of each other.",
           "Direct": "Handed over at once",
           "Ask": "The receiver must accept (the GM answers for an absent player)",
           "Off": "Switched off"

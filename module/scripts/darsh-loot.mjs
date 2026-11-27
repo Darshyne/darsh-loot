@@ -10,9 +10,9 @@ import { registerOperations, reportInterrupted } from "./runtime/operations.mjs"
 import { registerTreasure, ensureRolled } from "./runtime/treasure.mjs";
 import { registerContainersInit, registerContainers, ensureContainer, requestUnlock } from "./runtime/containers.mjs";
 import { registerCorpses, openLoot } from "./runtime/corpses.mjs";
-import { registerWindows, openSource, visitSource, prepareLoot } from "./runtime/open.mjs";
-import { registerShareInit, registerShare, requestShareCoins } from "./runtime/share.mjs";
-import { registerGiveInit, registerGive, requestGive } from "./runtime/give.mjs";
+import { registerWindows, openSource, visitSource } from "./runtime/open.mjs";
+import { registerShareInit, requestShareCoins } from "./runtime/share.mjs";
+import { registerGiveInit, requestGive } from "./runtime/give.mjs";
 import { registerPointer } from "./runtime/pointer.mjs";
 import { registerZonesInit, runZone } from "./runtime/zones.mjs";
 import { registerMechanismsInit, actuate, resetMechanism } from "./runtime/mechanisms.mjs";
@@ -85,8 +85,6 @@ Hooks.once("ready", () => {
   registerDropFx();
   registerThrow();
   registerTrade();
-  registerShare({ prepare: prepareLoot });
-  registerGive();
   registerTheftMenu(visitSource);
   registerShop({ open: openSource, visit: visitSource });
   game.modules.get(MODULE_ID).api = {
@@ -134,7 +132,7 @@ Hooks.once("ready", () => {
     drop: (item, point, quantity) => requestDrop(item, point, quantity),
     /**
      * Give an item and / or coins of a character to another one, token to token: `{ item: id, quantity, coins: { gp: 5 } }`.
-     * Also: drag the item onto the other token, or « Give… » in its right-click menu. Resolves to what moved, null when refused.
+     * At the table: drag the item onto the other token. Resolves to what moved, null when refused.
      */
     give: (giver, receiver, what={}) => requestGive(doc(giver), doc(receiver), what),
     /** Drop coins of a character (actor or token) on the ground at a point of the viewed scene: `{ gp: 5, sp: 2 }`. */

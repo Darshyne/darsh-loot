@@ -80,7 +80,9 @@ export default {
       await api.open(fromUuidSync(args.near), fromUuidSync(args.looter));
       const slot = () => document.querySelector('.dlo-loot .dlo-slot[data-item-id="' + args.arrows + '"]');
       for ( let i = 0; i < 40 && !slot(); i++ ) await new Promise(r => setTimeout(r, 250));
-      if ( !slot() ) return { slot: false };
+      if ( !slot() ) return { slot: false, windows: [...foundry.applications.instances.values()].map(a => a.id).filter(id => id.startsWith("darsh-loot")),
+        text: document.querySelector(".dlo-loot")?.innerText ?? null, corpse: game.modules.get("darsh-loot").api.isCorpse(fromUuidSync(args.near)),
+        items: fromUuidSync(args.near)?.actor?.items.map(i => i.id + ":" + i.name) ?? null, wanted: args.arrows };
       const tooltip = slot().dataset.tooltip;
       slot().click();
       const input = () => document.querySelector("input[name=quantity]");

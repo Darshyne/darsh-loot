@@ -231,8 +231,8 @@ function onEngineDrop(takers, { token, items }) {
 /* -------------------------------------------- */
 
 /**
- * « Drop coins here » — from the Core's ground menu (runtime/pointer.mjs) or a drag of coins from the character's sheet: asks
- * how many of each coin, then asks the GM. `key`: the coin that was dragged, filled in with all of it.
+ * Coins dragged from the character's sheet onto the map: asks how many of each coin, then asks the GM (no menu entry: the user
+ * removed it, 2026-11-27). `key`: the coin that was dragged, filled in with all of it.
  * @param {Actor} actor
  * @param {{ x: number, y: number }} point
  */
@@ -251,11 +251,6 @@ export function requestDropCoins(actor, point, coins) {
   const dropper = dropperToken(actor);
   if ( !dropper ) return ui.notifications.warn(loc("Drop.NotOnScene"));
   return askGM(DROP_COINS_QUERY, handleDropCoins, { dropper: dropper.uuid, x: point.x, y: point.y, coins });
-}
-
-/** Can this character drop coins (the ground menu's question)? Its player, the gesture switched on, a purse that is not empty. */
-export function canDropCoins(actor) {
-  return !!actor?.isOwner && dropEnabled() && (coinsOf(actor.system.currency).length > 0);
 }
 
 /**

@@ -1,22 +1,20 @@
 /**
  * Sharing loot with the party (lot 1, 2026-11-27 — issue darsh-loot#19). A player asks, the active GM checks and writes.
  *
- * Coins: « Share the coins » in the search window of a corpse, a container or a ground pile, and in the right-click menu of
- * the Core, next to « Search ». The coins are split between the party's characters (adapter/party.mjs: dnd5e's primary party,
+ * Coins: « Share » in the search window of a corpse, a container or a ground pile (no right-click menu entry: the user found
+ * it one too many, 2026-11-27). The coins are split between the party's characters (adapter/party.mjs: dnd5e's primary party,
  * or the player-owned characters on the scene), coin by coin, without conversion; what does not divide stays where it is, or
  * goes to the one who shares (setting `shareRemainder`). One operation: a write that fails gives everything back.
  */
-import { MODULE_ID, loc, setting, sceneSetting } from "../shared.mjs";
+import { MODULE_ID, loc, setting } from "../shared.mjs";
 import { checkAccess, sourceRef, TAKE_KINDS } from "./take.mjs";
 import { askForce, tellForced } from "./force.mjs";
 import { feedbackCard, playForAll, SOUNDS } from "./feedback.mjs";
-import { canApproach, approachSource } from "./approach.mjs";
 import { inTurn } from "../adapter/ledger.mjs";
 import { resolveSource } from "../adapter/sources.mjs";
 import { clearIfEmpty } from "../adapter/drop.mjs";
 import { partyMembers, sceneOfSource, coinsLabel, tokenOnScene } from "../adapter/party.mjs";
 import { shareCoinsNow } from "../adapter/share.mjs";
-import { coinsOf } from "../core/loot.mjs";
 
 const SHARE_COINS_QUERY = `${MODULE_ID}.shareCoins`;
 
@@ -113,32 +111,6 @@ function announceShare({ source, scene, looter, members, shared }) {
     also: tokens.filter(t => t !== main).map(t => ({ token: t, text: float, kind: "gain" })), flags: { share: true, ...flags } });
 }
 
-/* -------------------------------------------- */
-/*  Menu                                        */
-/* -------------------------------------------- */
-
-/** What `registerShare` receives from the entry point (runtime/open.mjs, which itself knows this file). */
-const steps = { prepare: async () => true };
-
-/**
- * « Share the coins » in the Core's right-click menu (runtime/pointer.mjs adds it under « Search », for players and GM alike).
- * From the menu, without the window: walk within reach, open the source as a search does (treasure rolled, trapped chest),
- * then share its coins — or say there are none.
- */
-export async function shareCoinsFrom(source, looter) {
-  if ( !source?.exists() ) return null;
-  if ( looter && canApproach() && (source.distance(looter) > sceneSetting("reach", looter.parent)) ) await approachSource(source, looter);
-  if ( source.locked() ) return ui.notifications.warn(loc("Lock.Locked"));
-  if ( !(await steps.prepare(source, looter)) ) return null;
-  if ( !coinsOf(source.actor?.system.currency).length ) return ui.notifications.info(loc("Share.NoCoins"));
-  return requestShareCoins(source, looter);
-}
-
 export function registerShareInit() {
   CONFIG.queries[SHARE_COINS_QUERY] = handleShareCoins;
-}
-
-/** @param {{ prepare: (source: object, looter: TokenDocument|null) => Promise<boolean> }} given */
-export function registerShare({ prepare }={}) {
-  if ( prepare ) steps.prepare = prepare;
 }

@@ -3,7 +3,7 @@
  * levels, viewed by the GM, with a token of « claude player »'s character and a companion; both form a test primary party:
  *  1. the player opens the search window of a corpse next to the character: the « Share » button is there and names the two
  *     members; clicked, the 9 gp are split 4 / 4, 1 gp stays on the corpse, and the player's client receives the public card;
- *  2. the right-click menu the Core builds for the player offers « Share the coins with the party » on a corpse;
+ *  2. the right-click menu the Core builds for the player has no sharing entry (the window's button only: user's decision);
  *  3. a corpse far away, shared through the module's API as the interface does: the GM client refuses with a reason, the
  *     player's client shows the « do it anyway » window; confirmed, the share is done and the GM gets a whispered note;
  *  4. a corpse on the other V14 level, same square distance: out of reach (a refusal that can be forced, nothing moves);
@@ -124,9 +124,9 @@ export default {
       mine.object?.control({ releaseOthers: true });
       await new Promise(r => setTimeout(r, 300));
       const entries = await engine.ui.tokenMenu(fromUuidSync(args.menu).object);
-      return { labels: (entries ?? []).map(e => e.label), wanted: game.i18n.localize("DLO.Share.MenuCoins") };`, setup);
+      return { labels: (entries ?? []).map(e => e.label) };`, setup);
     if ( menu?.skipped !== undefined ) ctx.log(`the player's client does not view the test scene (${menu.skipped}): the menu is read GM-side by the selftest part`);
-    else ctx.expect((menu?.labels ?? []).includes(menu?.wanted), `the player's right-click menu on a corpse offers « ${menu?.wanted} » (${(menu?.labels ?? []).join(" | ")})`);
+    else ctx.expect(!(menu?.labels ?? []).some(l => /share|partag/i.test(l)), `the player's right-click menu on a corpse has no sharing entry (${(menu?.labels ?? []).join(" | ")})`);
 
     // 3. Too far: the « do it anyway » window, then the forced share and the note to the GM.
     const before = Date.now() - 1;

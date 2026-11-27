@@ -331,7 +331,3 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-coin-field input { width: 6em; text-align: right; }
 .dlo-coin-field em { opacity: 0.7; font-style: normal; }
 
-/* Lot 1 — give: the item and how many */
-.dlo-give-fields { display: flex; gap: 8px; align-items: center; }
-.dlo-give-fields select { flex: 1; }
-.dlo-give-fields input { width: 5em; text-align: right; }

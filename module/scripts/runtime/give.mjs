@@ -1,14 +1,13 @@
 /**
  * Giving (lot 1, 2026-11-27): hand an item, part of a stack or coins to another character without opening a trade.
- *  - drag the item (or the coins of the sheet's purse) onto the other character's token;
- *  - « Give an item… » / « Give coins… » in the right-click menu of that token (the Core's menu), players and GM alike.
+ * Drag the item (or the coins of the sheet's purse) onto the other character's token. No right-click menu entry: the user
+ * keeps « Trade » alone there (2026-11-27).
  * The player asks, the active GM checks and writes, as one operation inside `inTurn`. Setting `giveMode`: « direct » (the
  * default: it arrives at once), « ask » (the receiver's player agrees first — the GM answers for a character nobody holds),
  * « off ». The giver must be within reach of the receiver, on the same V14 level, with no wall in between: a refusal the
  * player may force, the GM being told (runtime/force.mjs).
  */
 import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
-import { route } from "./router.mjs";
 import { askForce, tellForced } from "./force.mjs";
 import { feedbackCard, SOUNDS } from "./feedback.mjs";
 import { forceableRefusal } from "../core/force.mjs";
@@ -19,10 +18,8 @@ import { moveItemNow, moveCoinsNow, canHandOver, COIN_PILE_IMG } from "../adapte
 import { tokenDistance } from "../adapter/dnd5e.mjs";
 import { boxInSight } from "../adapter/hidden.mjs";
 import { coinsLabel } from "../adapter/party.mjs";
-import { TOKEN_MENU_HOOK } from "../adapter/engine.mjs";
 import { askQuantity } from "../apps/quantity-dialog.mjs";
 import { askCoins } from "../apps/coins-dialog.mjs";
-import { askGift } from "../apps/give-dialog.mjs";
 
 const GIVE_QUERY = `${MODULE_ID}.give`;
 const OFFER_QUERY = `${MODULE_ID}.giveOffer`;
@@ -80,34 +77,6 @@ export async function giveCoinsTo(giver, receiver, key=null) {
     preset: (key && have[key]) ? { [key]: have[key] } : {}, icon: "fa-solid fa-hand-holding-heart" });
   if ( !coins ) return null;
   return requestGive(giver, receiver, { coins });
-}
-
-/** What a character can hand over: its physical items, top level only (a bag goes with its contents). */
-function giftable(actor) {
-  const ids = new Set(actor.items.map(i => i.id));
-  return actor.items.filter(i => PHYSICAL_TYPES.has(i.type) && ((i.system.quantity ?? 1) > 0) && canHandOver(actor, i.id)
-    && !(i.system.container && ids.has(i.system.container)))
-    .map(i => ({ id: i.id, name: i.name, img: i.img, quantity: (i.type === "container") ? 1 : (i.system.quantity ?? 1), equipped: !!i.system.equipped }))
-    .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
-}
-
-/** « Give an item… » from the menu: pick it and how many, then the request. */
-async function chooseAndGive(giver, receiver) {
-  const items = giftable(giver.actor);
-  if ( !items.length ) return ui.notifications.info(loc("Give.Nothing"));
-  const choice = await askGift({ title: loc("Give.Title", { to: receiver.name }), items, ok: loc("Give.Confirm") });
-  if ( !choice ) return null;
-  return requestGive(giver, receiver, choice);
-}
-
-/** « Give an item… » and « Give coins… » on the token of a character one may give to, for the character in hand. */
-function onTokenMenu(entries, { token, target }) {
-  const giver = token?.document ?? token, receiver = target?.document ?? target;
-  if ( !canGive(giver, receiver) ) return;
-  entries.push({ icon: "fa-solid fa-hand-holding-heart", label: loc("Give.MenuItem"), run: () => chooseAndGive(giver, receiver) });
-  if ( coinsOf(giver.actor.system.currency).length ) {
-    entries.push({ icon: "fa-solid fa-coins", label: loc("Give.MenuCoins"), run: () => giveCoinsTo(giver, receiver) });
-  }
 }
 
 /** At the receiver's player (« ask » mode): accept or refuse, within a minute. Only a GM client may ask. */
@@ -234,8 +203,4 @@ function announceGift({ giver, receiver, given }) {
 export function registerGiveInit() {
   CONFIG.queries[GIVE_QUERY] = handleGive;
   CONFIG.queries[OFFER_QUERY] = handleOffer;
-}
-
-export function registerGive() {
-  route(TOKEN_MENU_HOOK, "menu: Give an item, give coins", onTokenMenu);
 }
