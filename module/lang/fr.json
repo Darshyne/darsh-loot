@@ -332,7 +332,12 @@
       "Confirm": "Poser",
       "PileName": "Objets au sol",
       "NotOnScene": "Votre personnage n'est pas sur cette scène.",
-      "NotGear": "{item} : une attaque de créature, pas un objet — rien n'est posé"
+      "NotGear": "{item} : une attaque de créature, pas un objet — rien n'est posé",
+      "CoinsMenu": "Poser des pièces ici",
+      "CoinsTitle": "Poser des pièces",
+      "NoCoins": "Aucune pièce à poser.",
+      "Off": "Poser au sol est désactivé.",
+      "CoinsCard": "{who} pose des pièces au sol : {coins}."
     },
     "Trade": {
       "Title": "Échange : {a} ⇄ {b}",

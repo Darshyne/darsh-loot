@@ -332,7 +332,12 @@
       "Confirm": "Drop",
       "PileName": "Items on the ground",
       "NotOnScene": "Your character is not on this scene.",
-      "NotGear": "{item}: a creature's attack, not an object — nothing is dropped"
+      "NotGear": "{item}: a creature's attack, not an object — nothing is dropped",
+      "CoinsMenu": "Drop coins here",
+      "CoinsTitle": "Drop coins",
+      "NoCoins": "No coins to drop.",
+      "Off": "Dropping on the ground is switched off.",
+      "CoinsCard": "{who} drops coins on the ground: {coins}."
     },
     "Trade": {
       "Title": "Trade: {a} ⇄ {b}",

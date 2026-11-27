@@ -6,6 +6,7 @@
  * déplacement au sol — dnd5e-combat ui/pointer.mjs) ; voir SPEC §4. Écouteurs en capture sur le document, avant le
  * canevas, comme le moteur. Un token sous la souris passe avant une région.
  */
+import { canDropCoins, chooseAndDropCoins } from "./drop.mjs";
 import { shareCoinsFrom } from "./share.mjs";
 import { route, routeClaim } from "./router.mjs";
 import { openSource, visitSource } from "./open.mjs";
@@ -396,6 +397,9 @@ function onGroundMenu(entries, { token, point }) {
   trapGroundEntries(entries, token, point);
   // Étape 13 : « Actionner » un levier, un bouton (en combat aussi : l'action Utiliser), et les gestes du MJ sur ses mécanismes.
   mechanismGroundEntries(entries, token, point);
+  // Lot 1: drop coins on this square (in combat too), for the character in hand.
+  if ( canDropCoins(token.actor) ) entries.push({ icon: "fa-solid fa-coins", label: loc("Drop.CoinsMenu"),
+    run: () => chooseAndDropCoins(token.actor, point) });
   if ( inCombat() ) return;
   const behavior = containerAt(point);
   if ( !behavior ) return;

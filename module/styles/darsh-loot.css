@@ -324,3 +324,9 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-loot .dlo-share:hover:not(:disabled) { border-color: var(--dlo-gold); }
 .dlo-loot .dlo-share:disabled { color: var(--dlo-muted); opacity: 0.55; cursor: not-allowed; }
 .dlo-force-reason { font-weight: bold; }
+
+/* Lot 1 — coins: one field per coin held */
+.dlo-coin-fields { display: grid; gap: 6px; }
+.dlo-coin-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dlo-coin-field input { width: 6em; text-align: right; }
+.dlo-coin-field em { opacity: 0.7; font-style: normal; }

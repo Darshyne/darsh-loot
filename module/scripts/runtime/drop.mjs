@@ -9,9 +9,13 @@ import { MODULE_ID, loc, setting, sceneSetting, log } from "../shared.mjs";
 import { route } from "./router.mjs";
 import { askGM } from "./take.mjs";
 import { ensureStore } from "./containers.mjs";
-import { PHYSICAL_TYPES, canLeaveOwner } from "../core/loot.mjs";
+import { PHYSICAL_TYPES, canLeaveOwner, clampCoins, coinsOf } from "../core/loot.mjs";
 import { FLIGHT_MS, clampDrop, outsideRect, soundKind, pileSpot } from "../core/drop.mjs";
-import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, createPlacedContainer, fillWithContents, MIXED_PILE_IMG } from "../adapter/drop.mjs";
+import { createPile, pileAt, pileTile, pileCenter, moveItem, realignPiles, createPlacedContainer, fillWithContents, MIXED_PILE_IMG,
+  moveCoinsNow, pileImage, clearIfEmpty as clearPile, COIN_PILE_IMG } from "../adapter/drop.mjs";
+import { inTurn } from "../adapter/ledger.mjs";
+import { coinsLabel } from "../adapter/party.mjs";
+import { askCoins } from "../apps/coins-dialog.mjs";
 import { DROP_ITEMS_HOOK } from "../adapter/engine.mjs";
 import { levelBase } from "../adapter/sight.mjs";
 import { askQuantity as askStack } from "../apps/quantity-dialog.mjs";
@@ -19,6 +23,9 @@ import { askQuantity as askStack } from "../apps/quantity-dialog.mjs";
 export { clearIfEmpty } from "../adapter/drop.mjs";
 
 const DROP_QUERY = `${MODULE_ID}.drop`;
+const DROP_COINS_QUERY = `${MODULE_ID}.dropCoins`;
+/** What a drag of coins from a sheet carries (lot 1). */
+const COINS_DRAG = `${MODULE_ID}.coins`;
 
 /**
  * Le geste est-il actif ? Réglage `dropMode` : « on » (défaut) ou « off ». L'ancienne valeur « auto » (laissé à Item
@@ -41,6 +48,8 @@ function askQuantity(item) {
 }
 
 async function onDropCanvasData(board, data) {
+  // Lot 1: coins dragged from a character sheet (the drag is added by `onRenderSheet`) — how many, then the request.
+  if ( (data.type === COINS_DRAG) && dropEnabled() ) return chooseAndDropCoins(fromUuidSync(data.actor, { strict: false }), data, data.key);
   if ( (data.type !== "Item") || !dropEnabled() || !data.uuid ) return;
   const item = await fromUuid(data.uuid).catch(() => null);
   if ( !item || !PHYSICAL_TYPES.has(item.type) ) return;
@@ -200,13 +209,142 @@ function onEngineDrop(takers, { token, items }) {
   });
 }
 
+/* -------------------------------------------- */
+/*  Coins on the ground (lot 1, 2026-11-27)     */
+/* -------------------------------------------- */
+
+/**
+ * « Drop coins here » — from the Core's ground menu (runtime/pointer.mjs) or a drag of coins from the character's sheet: asks
+ * how many of each coin, then asks the GM. `key`: the coin that was dragged, filled in with all of it.
+ * @param {Actor} actor
+ * @param {{ x: number, y: number }} point
+ */
+export async function chooseAndDropCoins(actor, point, key=null) {
+  if ( !actor?.isOwner || !dropEnabled() ) return null;
+  const have = Object.fromEntries(coinsOf(actor.system.currency).map(c => [c.key, c.value]));
+  if ( !Object.keys(have).length ) return ui.notifications.info(loc("Drop.NoCoins"));
+  if ( !dropperToken(actor) ) return ui.notifications.warn(loc("Drop.NotOnScene"));
+  const coins = await askCoins({ title: loc("Drop.CoinsTitle"), have, ok: loc("Drop.Confirm"), preset: (key && have[key]) ? { [key]: have[key] } : {} });
+  if ( !coins ) return null;
+  return requestDropCoins(actor, point, coins);
+}
+
+/** Without a window (tests, macros, `api.dropCoins`): drop these coins of the character at a point of the viewed scene. */
+export function requestDropCoins(actor, point, coins) {
+  const dropper = dropperToken(actor);
+  if ( !dropper ) return ui.notifications.warn(loc("Drop.NotOnScene"));
+  return askGM(DROP_COINS_QUERY, handleDropCoins, { dropper: dropper.uuid, x: point.x, y: point.y, coins });
+}
+
+/** Can this character drop coins (the ground menu's question)? Its player, the gesture switched on, a purse that is not empty. */
+export function canDropCoins(actor) {
+  return !!actor?.isOwner && dropEnabled() && (coinsOf(actor.system.currency).length > 0);
+}
+
+/**
+ * Where a character's drop lands: the point brought back within reach of its token (half its size plus the search reach) and
+ * pushed out of its own square. The same rule as an item (`handleDrop`).
+ */
+function dropSpot(dropper, point) {
+  const scene = dropper.parent;
+  const size = scene.grid.size;
+  const s = dropper._source;
+  const rect = { x: s.x, y: s.y, w: s.width * size, h: s.height * size };
+  const center = { x: rect.x + (rect.w / 2), y: rect.y + (rect.h / 2) };
+  const maxDist = (Math.max(rect.w, rect.h) / 2) + ((sceneSetting("reach", scene) / scene.grid.distance) * size);
+  return { scene, center, point: outsideRect(rect, clampDrop(center, point, maxDist), 1), level: s.level ?? null, elevation: s.elevation ?? 0 };
+}
+
+/** At the GM: the coins leave the purse and become, or join, the pile of the square. */
+async function handleDropCoins(payload, { user }) {
+  if ( !dropEnabled() ) throw new Error(loc("Drop.Off"));
+  const dropper = fromUuidSync(payload.dropper, { strict: false });
+  const owner = dropper?.actor;
+  if ( !owner || (dropper.documentName !== "Token") ) throw new Error(loc("Drop.NotOnScene"));
+  if ( !owner.testUserPermission(user, "OWNER") ) throw new Error(loc("Refus.PasAToi"));
+  // Checked before anything is created: a purse that does not hold a single one of the coins asked.
+  if ( !clampCoins(payload.coins, owner.system.currency).any ) throw new Error(loc("Drop.NoCoins"));
+  const { scene, center, point, level, elevation } = dropSpot(dropper, { x: Number(payload.x), y: Number(payload.y) });
+  const spot = pileSpot(scene.grid.getTopLeftPoint(point), scene.grid.size);
+  const lastDrop = { id: foundry.utils.randomID(), from: center, to: spot, img: COIN_PILE_IMG, sound: soundKind({ type: "coins" }) };
+  const { region, tile, created } = await pileFor({ scene, center: spot, level, elevation, img: COIN_PILE_IMG, lastDrop });
+  const store = await ensureStore(region.behaviors.contents[0]);
+  let moved;
+  try {
+    moved = await inTurn([owner, store], () => moveCoinsNow(owner, store, payload.coins));
+    if ( !Object.keys(moved).length ) throw new Error(loc("Drop.NoCoins"));
+  } catch(err) {
+    // Nothing reached the pile: one created for this gesture does not stay empty on the map.
+    await clearPile(region).catch(e => log.warn("empty pile not removed:", e.message));
+    throw err;
+  }
+  const update = {};
+  const img = pileImage(store);
+  if ( tile.texture.src !== img ) update["texture.src"] = img;
+  if ( !created ) update[`flags.${MODULE_ID}.lastDrop`] = lastDrop;
+  if ( Object.keys(update).length ) await tile.update(update);
+  if ( created ) setTimeout(() => tile.update({ alpha: 1 }).catch(err => log.warn("pile not revealed:", err.message)), FLIGHT_MS + 350);
+  dropCard(dropper, moved);
+  return { region: region.uuid, coins: moved };
+}
+
+/** The pile of a square: the one that is there, or a new one (one per square — the second gesture waits for the first). */
+async function pileFor({ scene, center, level, elevation, img, lastDrop }) {
+  const region = pileAt(scene, center, level);
+  if ( region ) {
+    lastDrop.to = pileCenter(region);
+    return { region, tile: pileTile(region), created: false };
+  }
+  const key = `${scene.id}|${level ?? ""}|${center.x}|${center.y}`;
+  const created = !pendingPiles.has(key);
+  if ( created ) {
+    pendingPiles.set(key, createPile(scene, center, { level, elevation, img, name: loc("Drop.PileName"), lastDrop })
+      .finally(() => pendingPiles.delete(key)));
+  }
+  return { ...(await pendingPiles.get(key)), created };
+}
+
+/** Seen by all: who dropped how much (the flight and the sound of coins are played by every client, runtime/drop-fx.mjs). */
+function dropCard(dropper, coins) {
+  const text = loc("Drop.CoinsCard", { who: dropper.name, coins: coinsLabel(coins) });
+  return ChatMessage.implementation.create({
+    speaker: ChatMessage.implementation.getSpeaker({ token: dropper, actor: dropper.actor }),
+    content: `<p><i class="fa-solid fa-coins"></i> ${foundry.utils.escapeHTML(text)}</p>`,
+    flags: { [MODULE_ID]: { dropCoins: true, feedback: { token: dropper.uuid, text: `−${coinsLabel(coins)}`, kind: "prompt", also: [] } } }
+  });
+}
+
+/**
+ * The coins of a character sheet can be dragged to the map (dnd5e's sheets have no such drag): each coin icon of the
+ * inventory's purse becomes draggable for the owner. Added when the sheet is drawn, nothing of dnd5e is changed; if its
+ * markup changes one day, the drag is simply not there and the menu entry remains.
+ */
+function onRenderSheet(app, element) {
+  const actor = app.document ?? app.actor;
+  if ( !(actor instanceof Actor) || !actor.isOwner || !dropEnabled() ) return;
+  const root = element?.querySelectorAll ? element : app.element;
+  for ( const icon of root?.querySelectorAll?.("section.currency label i.currency") ?? [] ) {
+    const key = [...icon.classList].find(c => c in (CONFIG.DND5E?.currencies ?? {}));
+    if ( !key || icon.dataset.dloCoins ) continue;
+    icon.dataset.dloCoins = key;
+    icon.draggable = true;
+    icon.style.cursor = "grab";
+    icon.addEventListener("dragstart", event => {
+      event.stopPropagation();
+      event.dataTransfer.setData("text/plain", JSON.stringify({ type: COINS_DRAG, actor: actor.uuid, key }));
+    });
+  }
+}
+
 export function registerDropInit() {
   CONFIG.queries[DROP_QUERY] = handleDrop;
+  CONFIG.queries[DROP_COINS_QUERY] = handleDropCoins;
 }
 
 export function registerDrop() {
   route("dropCanvasData", "drop an item on the ground", (board, data) => { onDropCanvasData(board, data); });
   route(DROP_ITEMS_HOOK, "items dropped by the engine", onEngineDrop);
+  route("renderActorSheetV2", "coins of a sheet can be dragged to the map", onRenderSheet);
   // Tas posés avant la 0.7.1 : tuile recalée au centre de sa case (une fois, par le MJ actif).
   if ( game.users.activeGM?.isSelf ) realignPiles().catch(err => log.warn("pile realignment:", err.message));
 }

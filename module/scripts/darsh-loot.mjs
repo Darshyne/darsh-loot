@@ -24,7 +24,7 @@ import { registerPick } from "./runtime/pick.mjs";
 import { registerTheft, registerTheftMenu, requestSteal, npcSteal, visitVictim } from "./runtime/theft.mjs";
 import { registerStolenMark } from "./runtime/stolen-mark.mjs";
 import { registerNecromancyInit, registerNecromancy, requestAnimate, raisable } from "./runtime/necromancy.mjs";
-import { registerDropInit, registerDrop, requestDrop, dropEnabled } from "./runtime/drop.mjs";
+import { registerDropInit, registerDrop, requestDrop, requestDropCoins, dropEnabled } from "./runtime/drop.mjs";
 import { registerDropFx } from "./runtime/drop-fx.mjs";
 import { registerThrow } from "./runtime/throw.mjs";
 import { registerTradeInit, registerTrade, startTrade } from "./runtime/trade.mjs";
@@ -129,6 +129,8 @@ Hooks.once("ready", () => {
     convertAllItemPiles: options => (game.user.isGM ? convertAllItemPiles(options) : null),
     /** Poser au sol sans glisser : un objet du personnage, un point de la scène, une quantité (toute la pile sinon). */
     drop: (item, point, quantity) => requestDrop(item, point, quantity),
+    /** Drop coins of a character (actor or token) on the ground at a point of the viewed scene: `{ gp: 5, sp: 2 }`. */
+    dropCoins: (actorOrToken, point, coins) => requestDropCoins(actorOf(actorOrToken), point, coins),
     /** Ouvrir un échange entre son personnage et un autre PJ (acteurs, ou tokens). Aussi : « Échanger » au clic droit. */
     trade: (from, to) => startTrade(from?.actor ?? from, to?.actor ?? to),
     /** Le geste « glisser un objet sur la carte » est-il actif (réglage `dropMode`) ? */

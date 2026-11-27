@@ -16,7 +16,8 @@ import { requestTake } from "./take.mjs";
 import { corpseSource, containerSource } from "../adapter/sources.mjs";
 import { openSource } from "./open.mjs";
 import { requestUnlock, convertGroupToken } from "./containers.mjs";
-import { requestGroundDrop } from "./drop.mjs";
+import { requestGroundDrop, requestDropCoins } from "./drop.mjs";
+import { isPileRegion, pileTile, COIN_PILE_IMG } from "../adapter/drop.mjs";
 import { shownCursor, clickCursor } from "./pointer.mjs";
 import { testActuate, clickable } from "./mechanisms.mjs";
 import { MECHANISM_ZONE } from "../adapter/zone-behaviors.mjs";
@@ -1233,6 +1234,77 @@ async function partialTake(b) {
   await closeNew(before);
 }
 
+/** Coins on the ground: they become or join the pile of the square, seen and heard by all, whole or undone. */
+async function dropCoinsPart(b) {
+  const actor = await testCharacter(b, "Test dropper");
+  await actor.update({ "system.currency": { gp: 10, sp: 5 } });
+  const dropper = await b.token(actor, 0, 0);
+  const piles = () => b.scene.regions.filter(r => isPileRegion(r));
+  const known = new Set(piles().map(r => r.id));
+  const mine = () => piles().filter(r => !known.has(r.id));
+  const storeOf = region => { const u = region?.behaviors.contents[0]?.system.actor; return u ? fromUuidSync(u, { strict: false }) : null; };
+  const purse = a => ({ gp: a?.system.currency.gp ?? 0, sp: a?.system.currency.sp ?? 0 });
+  /** New piles are marked for the cleanup (their store too). */
+  const mark = async () => { for ( const r of mine() ) { if ( !b.created.Region.includes(r.id) ) b.created.Region.push(r.id); const st = storeOf(r); if ( st && !st.getFlag(MODULE_ID, "test") ) await st.setFlag(MODULE_ID, "test", true); } };
+
+  const menu = engineTestApi()?.mcp?.placeMenu?.({ tokenId: dropper.id, ...b.center(1, 0) });
+  const labels = (await menu)?.labels ?? null;
+  if ( labels ) b.expect(labels.includes(loc("Drop.CoinsMenu")), `right-click menu of a square: ${labels.join(" | ")}`);
+  else b.note("the Core's test API is not there: the ground menu entry is not read");
+
+  let since = Date.now() - 1;
+  const first = await requestDropCoins(actor, b.center(1, 0), { gp: 4 });
+  await sleep(1200);
+  await mark();
+  const pile = mine()[0];
+  b.expect(!!first && mine().length === 1 && purse(storeOf(pile)).gp === 4 && purse(actor).gp === 6, `4 gp dropped: a pile holds them, 6 gp stay in the purse (${JSON.stringify([purse(storeOf(pile)), purse(actor)])})`);
+  const tile = pile ? pileTile(pile) : null;
+  b.expect(tile?.texture.src === COIN_PILE_IMG && tile?.getFlag(MODULE_ID, "lastDrop")?.sound === "coins", `the pile shows coins, and every client plays their flight and their sound (${tile?.texture.src})`);
+  const card = messagesAfter(since, m => !!m.getFlag(MODULE_ID, "dropCoins"))[0];
+  b.expect(card && !card.whisper.length && !!card.getFlag(MODULE_ID, "feedback"), "one public card, with a floating text over the character");
+
+  // The same square again, asking for more gold than is left: what is there joins the same pile.
+  await requestDropCoins(actor, b.center(1, 0), { gp: 100, sp: 5 });
+  await sleep(1000);
+  await mark();
+  b.expect(mine().length === 1 && purse(storeOf(pile)).gp === 10 && purse(storeOf(pile)).sp === 5 && purse(actor).gp === 0,
+    `more coins on the same square join the pile; never more than the purse held (${JSON.stringify([purse(storeOf(pile)), purse(actor)])})`);
+
+  // A write that fails: the coins are back, and the pile created for them does not stay.
+  await actor.update({ "system.currency": { gp: 3, sp: 0 } });
+  since = Date.now() - 1;
+  const restore = failNextUpdate(actor);
+  const failed = await requestDropCoins(actor, b.center(0, 1), { gp: 3 });
+  restore();
+  await sleep(1000);
+  await mark();
+  b.expect(failed === null && purse(actor).gp === 3 && mine().length === 1, `the purse cannot be written: the 3 gp are back and no empty pile stays (${purse(actor).gp} gp, ${mine().length} pile)`);
+  b.expect(tracesAfter(since).length === 1, "the GM gets one trace of the failed drop");
+
+  // Far away: the coins land within reach of the character, not across the room.
+  await requestDropCoins(actor, b.center(5, 0), { gp: 1 });
+  await sleep(1000);
+  await mark();
+  const far = mine().find(r => r !== pile);
+  const cells = far ? Math.abs((far.bounds.x - dropper._source.x) / b.G) : null;
+  b.expect(!!far && cells <= 2, `asked five squares away: the pile is next to the character (${cells?.toFixed(1)} squares)`);
+
+  // Taken back: an emptied pile disappears.
+  await requestTake(containerSource(pile.behaviors.contents[0]), dropper, { coins: true });
+  await sleep(800);
+  b.expect(!b.scene.regions.has(pile.id) && purse(actor).gp === 12, `the coins taken back: the pile is gone (${purse(actor).gp} gp)`);
+
+  // A player cannot drop the coins of a character that is not his.
+  const player = somePlayer();
+  if ( player ) {
+    const other = await b.actor({ name: "Test stranger", type: "character", img: "icons/svg/mystery-man.svg", system: { currency: { gp: 9 } } });
+    const stranger = await b.token(other, 3, 1);
+    const outcome = await CONFIG.queries[`${MODULE_ID}.dropCoins`]({ dropper: stranger.uuid, ...b.center(4, 1), coins: { gp: 9 } }, { user: player })
+      .then(() => "accepted", err => err.message);
+    b.expect(outcome !== "accepted" && purse(other).gp === 9, `a player dropping another character's coins: refused (« ${outcome} »)`);
+  } else b.note("no player user in this world: the crafted drop is not played");
+}
+
 const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap, 8, 6], "piege-avance": [advancedTrap, 10, 7],
   "piege-token": [tokenTrap, 7, 3], "coffre-porte": [trappedThings, 7, 3], butin: [loot, 6, 2], sons: [sounds, 7, 2], fouille: [search, 5, 3],
   "groupe-conteneur": [groupContainer, 5, 2], "clic-gauche": [clickLoot, 6, 2],
@@ -1240,7 +1312,8 @@ const PARTS = { "portes-secretes": [secretDoors, 9, 3], "piege-zone": [zoneTrap,
   // Lot 0 (2026-11-26)
   shop: [shop, 4, 2], trade: [trade, 3, 2], necromancy: [necromancy, 5, 2], thrown: [thrown, 9, 4],
   // Lot 1 (2026-11-27)
-  "share-coins": [shareCoinsPart, 7, 3], "partial-take": [partialTake, 4, 2] };
+  "share-coins": [shareCoinsPart, 7, 3], "partial-take": [partialTake, 4, 2],
+  "drop-coins": [dropCoinsPart, 8, 3] };
 
 /** Une partie (ou la liste). Rend `{ part, checks, error }`. */
 export async function selftest({ part=null }={}) {

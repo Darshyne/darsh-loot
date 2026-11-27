@@ -5,7 +5,7 @@
  */
 import { MODULE_ID, loc } from "../shared.mjs";
 import { CONTAINER_TYPE } from "./container-behavior.mjs";
-import { stackTarget, canLeaveOwner } from "../core/loot.mjs";
+import { stackTarget, canLeaveOwner, addCoins, clampCoins, COINS } from "../core/loot.mjs";
 import { PILE_FRACTION, pileSpot, pileLevelFix } from "../core/drop.mjs";
 import { levelBase } from "./sight.mjs";
 import { inTurn, operation } from "./ledger.mjs";
@@ -13,6 +13,16 @@ import { snapshotWithContents, clearAttunement } from "./dnd5e.mjs";
 
 /** Icône d'un tas de plusieurs objets différents. */
 export const MIXED_PILE_IMG = "icons/containers/bags/sack-cloth-stitched-brown.webp";
+
+/** Lot 1: the icon of a pile that holds coins only. */
+export const COIN_PILE_IMG = "icons/commodities/currency/coins-plain-stack-gold.webp";
+
+/** The icon of a pile, from what its store holds: the item when it is alone, coins when there is nothing else, a sack otherwise. */
+export function pileImage(store) {
+  const coins = Object.values(store?.system.currency ?? {}).some(v => v > 0);
+  if ( !store?.items.size ) return coins ? COIN_PILE_IMG : MIXED_PILE_IMG;
+  return ((store.items.size === 1) && !coins) ? store.items.contents[0].img : MIXED_PILE_IMG;
+}
 
 /** La région d'un tas. */
 export const isPileRegion = region => !!region?.getFlag(MODULE_ID, "pile");
@@ -205,7 +215,7 @@ export async function clearIfEmpty(region) {
   const coins = Object.values(store?.system.currency ?? {}).some(v => v > 0);
   const tile = pileTile(region);
   if ( store && (store.items.size || coins) ) {
-    const img = ((store.items.size === 1) && !coins) ? store.items.contents[0].img : MIXED_PILE_IMG;
+    const img = pileImage(store);
     if ( tile && (tile.texture.src !== img) ) await tile.update({ "texture.src": img });
     return;
   }
@@ -314,4 +324,34 @@ async function moveItemSteps(from, to, itemId, quantity, { anyType=false, launde
     });
   }
   return { name: item.name, quantity: moved };
+}
+
+/* -------------------------------------------- */
+/*  Coins (lot 1, 2026-11-27)                   */
+/* -------------------------------------------- */
+
+/**
+ * Moves coins from one actor to another (dropped on the ground, given), for a gesture that already holds its turn on both
+ * (`inTurn`). What the giver holds is read here: never more than what is there. Each write registers its undo with `op` (the
+ * caller's operation); without `op` the move is its own operation.
+ * @param {Actor} from
+ * @param {Actor} to
+ * @param {Record<string, number>} asked
+ * @returns {Promise<Record<string, number>>}  What moved (empty: nothing to move — a refusal is the caller's business).
+ */
+export function moveCoinsNow(from, to, asked, { op=null }={}) {
+  if ( op ) return moveCoinsSteps(from, to, asked, op);
+  if ( !clampCoins(asked, from.system.currency).any ) return Promise.resolve({});
+  return operation({ label: loc("Op.Move", { from: from.name, to: to.name }), journal: false }, own => moveCoinsSteps(from, to, asked, own));
+}
+
+async function moveCoinsSteps(from, to, asked, op) {
+  const { coins, any } = clampCoins(asked, from.system.currency);
+  if ( !any ) return {};
+  const minus = Object.fromEntries(COINS.map(k => [k, -(coins[k] ?? 0)]));
+  await to.update({ "system.currency": addCoins(to.system.currency, coins) });
+  op.did(loc("Op.Step.CoinsIn", { who: to.name }), () => to.update({ "system.currency": addCoins(to.system.currency, minus) }));
+  await from.update({ "system.currency": addCoins(from.system.currency, minus) });
+  op.did(loc("Op.Step.CoinsOut", { who: from.name }), () => from.update({ "system.currency": addCoins(from.system.currency, coins) }));
+  return coins;
 }

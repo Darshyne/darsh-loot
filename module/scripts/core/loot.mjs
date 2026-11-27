@@ -71,6 +71,22 @@ export function takenQuantity(have, asked) {
   return (Number.isFinite(n) && (n >= 1)) ? Math.min(n, all) : all;
 }
 
+/**
+ * What can really leave a purse of what is asked (lot 1: coins dropped or given): whole numbers, nothing negative, never more
+ * than what is there, known coins only. Only positive amounts are kept.
+ * @returns {{ coins: Record<string, number>, any: boolean }}
+ */
+export function clampCoins(asked={}, have={}) {
+  const coins = {};
+  if ( asked && (typeof asked === "object") ) {
+    for ( const key of COINS ) {
+      const n = Math.min(Math.floor(Number(asked[key]) || 0), Math.floor(Number(have[key]) || 0));
+      if ( n > 0 ) coins[key] = n;
+    }
+  }
+  return { coins, any: Object.keys(coins).length > 0 };
+}
+
 /** Reste-t-il quelque chose à prendre ? */
 export function hasLoot(entries, currency) {
   return (entries.length > 0) || (coinsOf(currency).length > 0);

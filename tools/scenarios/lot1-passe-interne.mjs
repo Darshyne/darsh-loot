@@ -6,6 +6,9 @@
  *    back with a trace for the GM, and « too far » is refused to a player with a reason he may force — the GM is then told.
  *  - `partial-take`: N of a stack are taken and the rest stays; a source that cannot be reduced takes back what arrived; in the
  *    window a click on a stack asks how many and Shift+click takes it whole.
+ *  - `drop-coins`: coins dropped become a pile showing coins, more coins on the same square join it, never more than the purse
+ *    held; a write that fails gives them back and leaves no empty pile; a drop asked far away lands next to the character; an
+ *    emptied pile disappears.
  * Each part creates its own test documents and removes them. Restored: the viewed scene, the world's primary party and the
  * sharing settings; the test scene is deleted.
  *
@@ -13,7 +16,7 @@
  * (on the bench: `npm run banc:passe -- "<that path>"`). `PARTS=share-coins` in the environment plays only those.
  */
 const MODULE = "darsh-loot";
-const ALL = ["share-coins", "partial-take"];
+const ALL = ["share-coins", "partial-take", "drop-coins"];
 const PARTS = process.env.PARTS ? process.env.PARTS.split(",").filter(p => ALL.includes(p)) : ALL;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
