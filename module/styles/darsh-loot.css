@@ -106,11 +106,12 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
   border: 1px solid var(--dlo-edge);
   border-radius: 4px;
   box-shadow: 0 0 6px var(--dlo-shadow-strong);
-  padding: 0 0 8px;
+  padding: 0 8px 8px;
+  min-width: 0;
 }
-.dlo-shop .dlo-shop-col > *, .dlo-trade .dlo-trade-col > * { margin-inline: 8px; }
+/* The header strip spans the card's whole width: it runs over the card's side padding. */
 .dlo-shop .dlo-shop-col h3, .dlo-trade .dlo-trade-col h3 {
-  margin: 0 0 8px; padding: 0.5rem;
+  margin: 0 -8px 8px; padding: 0.5rem;
   display: flex; justify-content: space-between; align-items: center; gap: 6px;
   background: linear-gradient(to right, var(--dlo-head-1), var(--dlo-head-2));
   color: #fff;
@@ -285,7 +286,7 @@ html body[data-darsh-loot-cursor="shop"] #board { cursor: url("../assets/cursors
 .dlo-shop .dlo-warn { color: var(--dlo-warn); }
 .dlo-shop .dlo-shop-purse { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--dlo-edge);
   display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; }
-.dlo-shop .dlo-shop-balance { margin: 4px 0 0; font-weight: bold; color: var(--dlo-text);
+.dlo-shop .dlo-shop-balance { margin: 4px 0 0; font-weight: bold; color: var(--dlo-text); overflow-wrap: anywhere;
   font-family: var(--dnd5e-font-roboto-slab, serif); font-size: var(--font-size-14, 14px); }
 .dlo-shop .dlo-shop-foot { margin-top: auto; padding-top: 8px; padding-inline: 0; justify-content: space-between; }
 .dlo-shop .dlo-off .dlo-slot { cursor: not-allowed; }
