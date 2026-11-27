@@ -3,7 +3,7 @@
  * scene with a test primary party (the player's character, a companion, an absent character), two goblins, an orc and an NPC ally:
  *  1. semi-automatic (default): a real combat ends with one goblin dead and one at 0 hp — the « Rewards » window opens at the GM on
  *     the encounter's record (goblins ticked, orc not, the absent character unticked, the ally taking a share); the shortcuts are
- *     there (tokens toolbar, Group sheet header, the Core's right-click menu on a character);
+ *     there (tokens toolbar, Group sheet header) — and no « XP… » in the right-click menu of a character (user's request, 27/11);
  *  2. « Give »: 100 XP split 33 / 33 (the ally's share lost), 1 XP to the party's pool, a public card with floating text over both
  *     characters, the companion can level up; the player's client gets the card;
  *  3. « Give » again: the « already given » window (forceable refusal); giving up writes nothing;
@@ -148,7 +148,7 @@ export default {
     ctx.expect(shortcuts?.tool, "a « Rewards » button in the tokens toolbar");
     ctx.expect(shortcuts?.sheet, "a « Rewards » button in the header of dnd5e's Group sheet");
     if ( shortcuts?.menu === null ) ctx.log("the Core has no api.ui.tokenMenu: menu entry not read");
-    else ctx.expect(shortcuts?.menu, `« Rewards… » in the Core's right-click menu on a character (${(shortcuts?.labels ?? []).join(" | ")})`);
+    else ctx.expect(shortcuts?.menu === false, `no « XP… » in the Core's right-click menu on a character (${(shortcuts?.labels ?? []).join(" | ")})`);
 
     // 2. « Give ».
     const t2 = Date.now() - 1000;
@@ -280,10 +280,9 @@ export default {
       const off = { tool: tool(), menu: await menu(), opened: !!opened };
       await S("xpManage", true); await new Promise(r => setTimeout(r, 300));
       return { hidden, off, label, back: tool() };`, setup);
-    ctx.expect(switches && !switches.hidden.tool && switches.hidden.menu, `« XP button in the toolbar » off: no toolbar button, the menu entry stays (${JSON.stringify(switches?.hidden)})`);
+    ctx.expect(switches && !switches.hidden.tool && !switches.hidden.menu, `« XP button in the toolbar » off: no toolbar button (${JSON.stringify(switches?.hidden)})`);
     ctx.expect(switches && !switches.off.tool && !switches.off.menu && !switches.off.opened && switches.back,
       `« Handle XP with DAS » off: no button, no menu entry, the window does not open; back on, the button returns (${JSON.stringify(switches)})`);
-    ctx.expect(switches?.label === "XP…", `the menu entry is called « ${switches?.label} »`);
 
     // 7. dnd5e levels up without XP: silent.
     const noxp = await gm(`

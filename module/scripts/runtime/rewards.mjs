@@ -274,13 +274,11 @@ function sceneControls(controls) {
   };
 }
 
-/** The Core's right-click menu (GM): « Rewards… » on a character; « Count in the rewards » on a hostile creature defeated out of combat. */
+/** The Core's right-click menu (GM): « Count in the rewards » on a hostile creature defeated out of combat; « Encounter loot… » on a held corpse. */
 function tokenMenu(entries, { target }) {
   if ( !target?.actor || !shortcutsShown() ) return;
-  if ( target.actor.type === "character" ) {
-    entries.push({ icon: "fa-solid fa-trophy", label: loc("Rewards.Menu"), run: () => openRewards() });
-    return;
-  }
+  // 2026-11-27 (user's request): no « XP… » entry on a character — the toolbar, the Group sheet and the macro open the window.
+  if ( target.actor.type === "character" ) return;
   const dead = target.actor.statuses?.has?.("dead");
   // Lot 3: a corpse held for an encounter's loot — « Loot of the encounter… » opens the window on it.
   const holding = dead ? heldBy(target) : null;
