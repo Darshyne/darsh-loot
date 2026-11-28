@@ -1,5 +1,34 @@
 {
   "DLO": {
+    "RandomScrolls": {
+      "Mode": {
+        "off": "Disattivata",
+        "auto": "Usa la prova predefinita",
+        "ask": "Chiedi al GM a ogni prova"
+      },
+      "Identification": "Identificazione delle pergamene generiche",
+      "Ability": "Caratteristica per identificare",
+      "BaseDC": "CD base",
+      "PerLevel": "CD aggiuntiva per livello dell’incantesimo",
+      "Unknown": "Pergamena non identificata",
+      "Received": "{actor} ha raccolto {item}.",
+      "Roll": "Tira un incantesimo",
+      "Choose": "Scegli un incantesimo",
+      "Identify": "Identifica la pergamena",
+      "IdentifyFirst": "Identifica la pergamena prima di tirare un incantesimo.",
+      "Check": "Tipo di prova",
+      "AbilityCheck": "Prova di caratteristica",
+      "DC": "CD",
+      "Failed": "{actor} non ha identificato la pergamena.",
+      "Error": "Impossibile elaborare la pergamena.",
+      "Enable": "Estrai gli incantesimi delle pergamene",
+      "Packs": "ID dei compendi degli incantesimi (separati da virgole)",
+      "Title": "Incantesimi delle pergamene",
+      "Limit": "Usa solo gli incantesimi selezionati",
+      "Save": "Salva",
+      "Cancel": "Annulla",
+      "Unavailable": "Nessun incantesimo disponibile. La pergamena originale è stata conservata."
+    },
     "Window": {
       "Title": "Perquisizione: {name}",
       "Corpse": "Cadavere",
@@ -163,6 +192,7 @@
         "Hint": "Perquisizione, bottino, contenitori e trappole, organizzati in schede."
       },
       "Tab": {
+        "scrolls": "Pergamene",
         "search": "Perquisizione",
         "loot": "Perquisizione dei cadaveri",
         "containers": "Contenitori",
@@ -173,6 +203,11 @@
         "theft": "Borseggio"
       },
       "Tool": {
+        "scrollPools": {
+          "Hint": "Scegli gli incantesimi per livello",
+          "Button": "Configura gli incantesimi",
+          "Name": "Incantesimi delle pergamene"
+        },
         "tables": {
           "Name": "Tabelle generiche dei contenitori",
           "Hint": "Sette tabelle del bottino (forziere, barile, cassa, libreria, scrivania, altare, sacca da accampamento) in «Bottino — tabelle». Oggetti del Manuale del Giocatore, oppure gli stessi dell'SRD di dnd5e in sua assenza.",

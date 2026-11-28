@@ -1,5 +1,34 @@
 {
   "DLO": {
+    "RandomScrolls": {
+      "Mode": {
+        "off": "Off",
+        "auto": "Use the default check",
+        "ask": "Ask the GM for each check"
+      },
+      "Identification": "Identify generic scrolls",
+      "Ability": "Identification ability",
+      "BaseDC": "Base DC",
+      "PerLevel": "Additional DC per spell level",
+      "Unknown": "Unidentified scroll",
+      "Received": "{actor} looted {item}.",
+      "Roll": "Roll a spell",
+      "Choose": "Choose a spell",
+      "Identify": "Identify scroll",
+      "IdentifyFirst": "Identify the scroll before rolling a spell.",
+      "Check": "Check type",
+      "AbilityCheck": "Ability check",
+      "DC": "DC",
+      "Failed": "{actor} did not identify the scroll.",
+      "Error": "The scroll could not be processed.",
+      "Enable": "Roll spell scrolls",
+      "Packs": "Spell compendium IDs (comma-separated)",
+      "Title": "Spell scroll pools",
+      "Limit": "Use only selected spells",
+      "Save": "Save",
+      "Cancel": "Cancel",
+      "Unavailable": "No eligible spell could be used. The original scroll was kept."
+    },
     "Window": {
       "Title": "Search: {name}",
       "Corpse": "Corpse",
@@ -163,6 +192,7 @@
         "Hint": "Searching, loot, containers and traps, in tabs."
       },
       "Tab": {
+        "scrolls": "Scrolls",
         "search": "Searching",
         "loot": "Searching corpses",
         "containers": "Containers",
@@ -173,6 +203,11 @@
         "theft": "Pickpocketing"
       },
       "Tool": {
+        "scrollPools": {
+          "Hint": "Choose spells for each level",
+          "Button": "Configure spells",
+          "Name": "Spell scroll pools"
+        },
         "tables": {
           "Name": "Generic container tables",
           "Hint": "Seven loot tables (chest, barrel, crate, bookshelf, desk, altar, camping bag) in \"Loot — tables\". Player's Handbook items, or the same ones from the dnd5e SRD without it.",
