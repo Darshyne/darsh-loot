@@ -54,7 +54,7 @@
       },
       "Announce": {
         "Name": "Annunciare ciò che viene preso",
-        "Hint": "Un messaggio in chat che elenca ciò che è stato preso da un cadavere.",
+        "Hint": "Un messaggio in chat che elenca ciò che viene preso da un cadavere, da un contenitore o da un mucchio a terra, e ogni acquisto o vendita in bottega.",
         "GM": "Sussurrato al GM",
         "All": "Pubblico",
         "None": "Nessun messaggio"

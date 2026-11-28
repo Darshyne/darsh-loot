@@ -54,7 +54,7 @@
       },
       "Announce": {
         "Name": "Announce what is taken",
-        "Hint": "A chat message listing what was taken from a corpse.",
+        "Hint": "A chat message listing what is taken from a corpse, a container or a pile on the ground, and each purchase or sale in a shop.",
         "GM": "Whisper to the GM",
         "All": "Public",
         "None": "No message"

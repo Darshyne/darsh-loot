@@ -54,7 +54,7 @@
       },
       "Announce": {
         "Name": "Anunciar os itens recolhidos",
-        "Hint": "Envia ao chat uma mensagem com os itens recolhidos do cadáver.",
+        "Hint": "Envia ao chat uma mensagem com os itens recolhidos de um cadáver, de um contêiner ou de uma pilha no chão, e cada compra ou venda em uma loja.",
         "GM": "Mensagem privada ao mestre",
         "All": "Público",
         "None": "Nenhuma mensagem"

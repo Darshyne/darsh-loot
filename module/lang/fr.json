@@ -54,7 +54,7 @@
       },
       "Announce": {
         "Name": "Annoncer ce qui est ramassé",
-        "Hint": "Un message de chat qui liste ce qui a été pris sur un cadavre.",
+        "Hint": "Un message de chat qui liste ce qui est pris sur un cadavre, dans un conteneur ou dans un tas au sol, et chaque achat ou vente en boutique.",
         "GM": "Chuchoté au MJ",
         "All": "Public",
         "None": "Aucun message"
@@ -412,7 +412,7 @@
       "Restock": "Réassortir",
       "Sheet": "Fiche",
       "Closed": "La boutique est fermée.",
-      "ClosedTag": "(fermé)",
+      "ClosedTag": "(fermée)",
       "TooFar": "Trop loin : approchez-vous du marchand.",
       "NoFunds": "Vous n'avez pas assez d'argent.",
       "MerchantNoFunds": "Le marchand n'a pas assez d'argent : prenez-lui autre chose en échange.",
