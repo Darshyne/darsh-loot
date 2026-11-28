@@ -5,10 +5,10 @@
  * is told, « Distribute » in individual mode rolls each corpse and frees it, « auto » distributes at once, « set aside » frees them.
  * The grouped mode (a chest on the canvas) is played on the bench (tools/scenarios/lot3-butin-fin-combat.mjs).
  */
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { installFakeFoundry, FakeActor, FakeCollection, documents, faults, chat, settings } from "./fake-foundry.mjs";
 import {
-  lootPart, mergeLoot, isLive, holdingRecord, corpsesToLoot, chestSpot, cleanRule, ruleMatches, matchRule, titleKey
+  lootPart, mergeLoot, isLive, holdingRecord, corpsesToLoot, chestSpot, cleanRule, ruleMatches, matchRule, titleKey, endLootSwitch
 } from "../module/scripts/core/end-loot.mjs";
 import { pruneRecords } from "../module/scripts/core/xp.mjs";
 
@@ -161,6 +161,8 @@ beforeAll(() => {
   RewardsWindow.show = id => { opened.push(id); return null; };
 });
 beforeEach(async () => {
+  // The feature is withdrawn in 0.23.0 (core/end-loot.mjs): its own tests switch it back on; « withdrawn » below checks it is off.
+  endLootSwitch.withdrawn = false;
   documents.clear();
   faults.clear();
   chat.length = 0;
@@ -174,6 +176,48 @@ beforeEach(async () => {
     keepSpecial: false, pockets: true, autoTreasure: true, reach: 50, lootRules: { rules: [] } });
   await game.settings.set("darsh-loot", "rewards", { records: [] });
   registerOperations();
+});
+
+afterEach(() => { endLootSwitch.withdrawn = true; });
+
+describe("withdrawn (0.23.0, user's decision)", () => {
+  beforeEach(() => { endLootSwitch.withdrawn = true; });
+
+  it("is withdrawn in the shipped code", async () => {
+    const { endLootSwitch: shipped } = await import("../module/scripts/core/end-loot.mjs");
+    expect(shipped.withdrawn).toBe(true);
+  });
+
+  it("even with « end-of-combat loot » on: no loot part, nothing held, no window when XP is off", async () => {
+    const t = table();
+    ended(t);
+    await new Promise(r => setTimeout(r, 30));
+    expect(endLootApi.enabled()).toBe(false);
+    expect(rewardsApi.records()).toEqual([]);
+    expect(opened).toEqual([]);
+    expect(endLootApi.heldBy(t.tokens.g1)).toBeNull();
+  });
+
+  it("with XP on, the record carries XP only", async () => {
+    settings.xpManage = true;
+    const t = table();
+    ended(t);
+    await until(() => opened.length === 1);
+    const [record] = rewardsApi.records();
+    expect(record.status).toBe("pending");
+    expect(record.loot).toBeUndefined();
+  });
+
+  it("a corpse held by a record an earlier version left pending is free: a player takes from it, nothing is doubled", async () => {
+    const t = table();
+    t.g1.system.currency = { gp: 7 };
+    await game.settings.set("darsh-loot", "rewards", { records: [{ id: "old", name: "Old", status: "none", time: 1, foes: [], members: [],
+      loot: { status: "pending", mode: "individual", corpses: [{ key: t.tokens.g1.uuid, include: true }] } }] });
+    expect(endLootApi.heldBy(t.tokens.g1)).toBeNull();
+    await take(t, t.tokens.g1);
+    expect(t.pc.system.currency.gp).toBe(7);
+    expect(t.g1.system.currency.gp ?? 0).toBe(0);
+  });
 });
 
 describe("end of combat — the loot part", () => {

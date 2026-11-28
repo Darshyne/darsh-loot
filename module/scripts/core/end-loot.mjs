@@ -12,6 +12,15 @@
  * table set on the NPC itself (`flags.darsh-loot.table`) comes on top, as before.
  */
 
+/**
+ * Withdrawn from 0.23.0 (2026-11-28, user's decision after a test at the table: confusing, and it doubled loot already on corpses).
+ * While `withdrawn` is true the feature is off whatever the world settings say: nothing happens at the end of a combat, no corpse is
+ * held (records written by an earlier version free theirs), its settings and window section are hidden, and each corpse is rolled at
+ * its first search as before lot 3. The code stays, to be reworked later. Custom loot tables and « keep special weapons » are not
+ * part of it: they apply at the first search. Mutable only for the tests of the feature itself.
+ */
+export const endLootSwitch = { withdrawn: true };
+
 /** How the GM validates the end-of-combat loot (world setting `lootWhen`): in the window, or at once without it. */
 export const LOOT_WHEN = Object.freeze(["semi", "auto"]);
 

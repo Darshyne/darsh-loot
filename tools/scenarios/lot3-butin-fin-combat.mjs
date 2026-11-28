@@ -13,6 +13,9 @@
  *  4. the player takes everything from the encounter chest: it reaches the character, and the emptied chest disappears.
  * Restored: the active and viewed scenes, the settings, the records, the test actors, table and chest stores.
  *
+ * Withdrawn in 0.23.0 (user's decision): « non applicable » until the feature comes back. What is checked meanwhile:
+ * tools/scenarios/butin-fin-combat-retire.mjs.
+ *
  * Run with the Core's runner (on the bench: `npm run banc:passe -- "<this path>"`).
  */
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -23,6 +26,12 @@ export default {
 
   async run(ctx) {
     const gm = async (code, args) => (await ctx.call("run-script", { code, ...(args ? { args } : {}), waitMs: 30000 }))?.result;
+
+    // 0.23.0: the feature is withdrawn (core/end-loot.mjs `endLootSwitch`); this scenario waits for its return.
+    if ( (await gm(`return game.modules.get("darsh-loot")?.api?.endLoot?.enabled?.() ?? false;`)) !== true ) {
+      ctx.log("end-of-combat loot withdrawn (0.23.0): non applicable");
+      return;
+    }
 
     const setup = await gm(`
       const S = (k, v) => game.settings.set("darsh-loot", k, v);

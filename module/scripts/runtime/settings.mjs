@@ -3,6 +3,7 @@
  */
 import { MODULE_ID, loc, log } from "../shared.mjs";
 import { createGenericTables } from "../adapter/treasure.mjs";
+import { endLootSwitch } from "../core/end-loot.mjs";
 
 /**
  * Bouton des réglages « Créer les tables génériques » : le cœur instancie la classe et appelle `render` ; on crée les
@@ -128,23 +129,24 @@ export function registerSettings() {
     name: "DLO.Settings.AutoTreasure.Name", hint: "DLO.Settings.AutoTreasure.Hint",
     scope: "world", config: true, type: Boolean, default: true
   });
+  // 0.23.0: the three end-of-combat loot settings are hidden while the feature is withdrawn (core/end-loot.mjs `endLootSwitch`).
   // Lot 3 (2026-11-27, user's request): the GM's end-of-combat loot for the party, on or off altogether (like pickpocketing). Off:
   // nothing happens at the end of a combat, each corpse is rolled at its first search, as before.
   game.settings.register(MODULE_ID, "lootManage", {
     name: "DLO.EndLoot.Settings.Manage.Name", hint: "DLO.EndLoot.Settings.Manage.Hint",
-    scope: "world", config: true, type: Boolean, default: true,
+    scope: "world", config: !endLootSwitch.withdrawn, type: Boolean, default: true,
     onChange: () => ui.controls?.render({ reset: true })
   });
   // Lot 3: how the GM validates it — in the window (default), or at once without a window.
   game.settings.register(MODULE_ID, "lootWhen", {
     name: "DLO.EndLoot.Settings.When.Name", hint: "DLO.EndLoot.Settings.When.Hint",
-    scope: "world", config: true, type: String, default: "semi",
+    scope: "world", config: !endLootSwitch.withdrawn, type: String, default: "semi",
     choices: { semi: "DLO.EndLoot.Settings.When.Semi", auto: "DLO.EndLoot.Settings.When.Auto" }
   });
   // Lot 3: where the loot goes by default (the window may change it per encounter) — on each corpse, or into one encounter chest.
   game.settings.register(MODULE_ID, "lootMode", {
     name: "DLO.EndLoot.Settings.Mode.Name", hint: "DLO.EndLoot.Settings.Mode.Hint",
-    scope: "world", config: true, type: String, default: "individual",
+    scope: "world", config: !endLootSwitch.withdrawn, type: String, default: "individual",
     choices: { individual: "DLO.EndLoot.Mode.individual", grouped: "DLO.EndLoot.Mode.grouped" }
   });
   // Lot 3: an NPC's special weapon is kept as it is on its sheet instead of becoming the plain weapon (off by default: converted).

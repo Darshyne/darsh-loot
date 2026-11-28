@@ -11,7 +11,7 @@
 import { MODULE_ID, loc, setting } from "../shared.mjs";
 import { planAward, challengeFor, xpOffReason, xpOffText } from "../adapter/xp.mjs";
 import { DIFFICULTIES, XP_SPLIT } from "../core/xp.mjs";
-import { LOOT_MODES, titleKey } from "../core/end-loot.mjs";
+import { LOOT_MODES, titleKey, endLootSwitch } from "../core/end-loot.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 const escape = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -268,10 +268,11 @@ export class RewardsWindow extends ApplicationV2 {
 }
 
 /** A record that has end-of-combat loot to show (waiting, distributed or set aside). */
-const hasLoot = record => !!record?.loot && (record.loot.status !== "none");
+const hasLoot = record => !endLootSwitch.withdrawn && !!record?.loot && (record.loot.status !== "none");
 
 /** The GM's end-of-combat loot is on (`lootManage`). */
 function lootOn() {
+  if ( endLootSwitch.withdrawn ) return false;
   try { return (setting("lootManage") !== false) && (setting("corpseLoot") !== false); } catch { return false; }
 }
 
@@ -279,7 +280,7 @@ function lootOn() {
 function recordStatus(record, showXP) {
   const parts = [];
   if ( showXP && (record.status !== "none") ) parts.push(loc(`Rewards.Status.${record.status}`));
-  if ( record.loot && (record.loot.status !== "none") ) parts.push(loc(`EndLoot.Status.${record.loot.status}`));
+  if ( hasLoot(record) ) parts.push(loc(`EndLoot.Status.${record.loot.status}`));
   return parts.join(" · ") || loc("EndLoot.Status.none");
 }
 
@@ -294,7 +295,7 @@ function corpseTag(c) {
 /** The « Loot » part of the window. */
 function lootSection(record) {
   const loot = record?.loot;
-  if ( !loot || (loot.status === "none") ) return "";
+  if ( !hasLoot(record) ) return "";
   const head = `<h3><i class="fa-solid fa-sack-dollar"></i> ${loc("EndLoot.Section")}</h3>`;
   if ( loot.status === "dismissed" ) {
     return `<section class="dlo-rw-section dlo-rw-loot">${head}<p class="dlo-hint">${loc("EndLoot.Dismissed")}</p></section>`;

@@ -24,15 +24,18 @@ import { getRecord, putRecord, xpEnabled } from "../adapter/xp.mjs";
 import {
   heldBy, lootableCorpses, keepSpecialWeapons, rollCorpse, createEncounterChest, gatherInto, dropIfEmpty
 } from "../adapter/end-loot.mjs";
-import { lootPart, mergeLoot, LOOT_MODES } from "../core/end-loot.mjs";
+import { lootPart, mergeLoot, LOOT_MODES, endLootSwitch } from "../core/end-loot.mjs";
 
 const DISTRIBUTE_QUERY = `${MODULE_ID}.endLoot`;
 const RELEASE_QUERY = `${MODULE_ID}.releaseCorpse`;
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-/** The GM's end-of-combat loot is on (`lootManage`, on by default) — and searching corpses too (`corpseLoot`). */
-export const lootEnabled = () => (setting("lootManage") !== false) && (setting("corpseLoot") !== false);
+/**
+ * The GM's end-of-combat loot is on (`lootManage`, on by default) — and searching corpses too (`corpseLoot`). Always off while the
+ * feature is withdrawn (core/end-loot.mjs `endLootSwitch`).
+ */
+export const lootEnabled = () => !endLootSwitch.withdrawn && (setting("lootManage") !== false) && (setting("corpseLoot") !== false);
 
 /** Adds (or completes) the loot part of a record from its defeated foes, with the world's defaults. Changes the record. */
 export function withLoot(record) {

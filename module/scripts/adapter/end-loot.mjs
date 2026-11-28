@@ -7,7 +7,7 @@ import { corpseToken, lootView, transfer } from "./dnd5e.mjs";
 import { rollTreasure } from "./treasure.mjs";
 import { createPile, clearIfEmpty } from "./drop.mjs";
 import { readRecords } from "./xp.mjs";
-import { chestSpot, corpsesToLoot, holdingRecord } from "../core/end-loot.mjs";
+import { chestSpot, corpsesToLoot, holdingRecord, endLootSwitch } from "../core/end-loot.mjs";
 
 /** The icon of the encounter chest (Foundry's own icons). */
 export const CHEST_IMG = "icons/containers/chest/chest-reinforced-steel-oak-tan.webp";
@@ -84,6 +84,8 @@ export async function dropIfEmpty(region) {
  * records are a world setting).
  */
 export function heldBy(token) {
+  // Withdrawn (0.23.0): no corpse is held, even by a record an earlier version left pending.
+  if ( endLootSwitch.withdrawn ) return null;
   const key = (typeof token === "string") ? token : token?.uuid;
   return holdingRecord(readRecords(), key);
 }
