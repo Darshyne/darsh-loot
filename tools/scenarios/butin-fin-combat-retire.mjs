@@ -79,11 +79,12 @@ export default {
     const shown = await gm(`
       const conf = k => game.settings.settings.get("darsh-loot." + k)?.config;
       const { TABS } = await import("/modules/darsh-loot/scripts/core/settings-tabs.mjs");
-      return { config: ["lootManage", "lootWhen", "lootMode"].map(conf), tab: TABS.some(t => t.id === "endLoot"),
-        keepSpecial: conf("keepSpecial"), enabled: game.modules.get("darsh-loot").api.endLoot.enabled() };`);
+      const listed = k => TABS.some(t => t.keys.includes(k));
+      return { config: ["lootManage", "lootWhen", "lootMode"].map(conf), listed: ["lootManage", "lootWhen", "lootMode"].some(listed),
+        tab: TABS.some(t => t.id === "endLoot"), keepSpecial: listed("keepSpecial"), enabled: game.modules.get("darsh-loot").api.endLoot.enabled() };`);
     ctx.expect(shown?.config?.every(c => c === false), `the three end-of-combat loot settings are hidden (${JSON.stringify(shown?.config)})`);
-    ctx.expect(shown && !shown.tab, "the settings window has no « End-of-combat loot » tab");
-    ctx.expect(shown?.keepSpecial === true, "« keep special weapons » (applied at the first search) is still offered");
+    ctx.expect(shown && !shown.tab && !shown.listed, "the settings window has no « End-of-combat loot » tab, and lists none of its settings");
+    ctx.expect(shown?.keepSpecial === true, "« keep special weapons » (applied at the first search) is still in the settings window");
     ctx.expect(shown?.enabled === false, "api.endLoot.enabled() is false although « lootManage » is on in the world");
 
     // 2. A real combat ends with both goblins dead.
