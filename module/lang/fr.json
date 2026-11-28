@@ -53,7 +53,7 @@
         "GM": "Le MJ seulement"
       },
       "Announce": {
-        "Name": "Annoncer ce qui est pris",
+        "Name": "Annoncer ce qui est ramassé",
         "Hint": "Un message de chat qui liste ce qui a été pris sur un cadavre.",
         "GM": "Chuchoté au MJ",
         "All": "Public",
