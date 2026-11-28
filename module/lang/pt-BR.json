@@ -1,5 +1,34 @@
 {
   "DLO": {
+    "RandomScrolls": {
+      "Mode": {
+        "off": "Desativada",
+        "auto": "Usar o teste padrão",
+        "ask": "Perguntar ao mestre a cada teste"
+      },
+      "Identification": "Identificação de pergaminhos genéricos",
+      "Ability": "Atributo para identificar",
+      "BaseDC": "CD base",
+      "PerLevel": "CD adicional por nível da magia",
+      "Unknown": "Pergaminho não identificado",
+      "Received": "{actor} saqueou {item}.",
+      "Roll": "Sortear uma magia",
+      "Choose": "Escolher uma magia",
+      "Identify": "Identificar pergaminho",
+      "IdentifyFirst": "Identifique o pergaminho antes de sortear uma magia.",
+      "Check": "Tipo de teste",
+      "AbilityCheck": "Teste de atributo",
+      "DC": "CD",
+      "Failed": "{actor} não identificou o pergaminho.",
+      "Error": "Não foi possível processar o pergaminho.",
+      "Enable": "Sortear magias de pergaminhos",
+      "Packs": "IDs dos compêndios de magias (separados por vírgulas)",
+      "Title": "Magias dos pergaminhos",
+      "Limit": "Usar apenas as magias selecionadas",
+      "Save": "Salvar",
+      "Cancel": "Cancelar",
+      "Unavailable": "Nenhuma magia elegível. O pergaminho original foi mantido."
+    },
     "Window": {
       "Title": "Revistar: {name}",
       "Corpse": "Cadáver",
@@ -1150,6 +1179,7 @@
         "Hint": "Busca, saque, contêineres e armadilhas, em abas."
       },
       "Tab": {
+        "scrolls": "Pergaminhos",
         "search": "Busca",
         "loot": "Revistar cadáveres",
         "containers": "Contêineres",
@@ -1160,6 +1190,11 @@
         "theft": "Bater carteira"
       },
       "Tool": {
+        "scrollPools": {
+          "Hint": "Escolha as magias por nível",
+          "Button": "Configurar magias",
+          "Name": "Magias dos pergaminhos"
+        },
         "tables": {
           "Name": "Tabelas genéricas de contêineres",
           "Hint": "Sete tabelas de saque (baú, barril, caixote, estante de livros, escrivaninha, altar e bolsa de acampamento) em \"Saque — tabelas\". Itens do Livro do Jogador, ou os mesmos do SRD do dnd5e sem ele.",

@@ -1,3 +1,4 @@
+import { openScrollPools } from "../adapter/random-scrolls.mjs";
 /**
  * La fenêtre de réglages de DAS · Loot & Trade (2026-10-30) : la même que celle de DAS · Core, déclarée par son API publique
  * `api.settings.registerWindow` (moteur ≥ 0.241.0). Quatre onglets ; le bouton « Créer les tables » y devient un outil du MJ. Au
@@ -11,7 +12,7 @@ import { TABS } from "../core/settings-tabs.mjs";
 import { createTablesNow } from "./settings.mjs";
 import { LootRulesWindow } from "../apps/loot-rules-window.mjs";
 
-const OPEN = Object.freeze({ tables: () => createTablesNow(), lootRules: () => LootRulesWindow.show() });
+const OPEN = Object.freeze({ tables: () => createTablesNow(), lootRules: () => LootRulesWindow.show(), scrollPools: openScrollPools });
 
 export function registerSettingsWindow() {
   route("setup", "settings window", () => {

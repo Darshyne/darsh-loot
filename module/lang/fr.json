@@ -1,5 +1,34 @@
 {
   "DLO": {
+    "RandomScrolls": {
+      "Mode": {
+        "off": "Désactivée",
+        "auto": "Jet avec les valeurs par défaut",
+        "ask": "Demander au MJ à chaque tentative"
+      },
+      "Identification": "Identification des parchemins génériques",
+      "Ability": "Caractéristique du jet d’identification",
+      "BaseDC": "DD de base",
+      "PerLevel": "DD supplémentaire par niveau du sort",
+      "Unknown": "Parchemin non identifié",
+      "Received": "{actor} a récupéré {item}.",
+      "Roll": "Tirer un sort",
+      "Choose": "Choisir un sort",
+      "Identify": "Identifier le parchemin",
+      "IdentifyFirst": "Le parchemin doit être identifié avant de tirer un sort.",
+      "Check": "Type de jet",
+      "AbilityCheck": "Test de caractéristique",
+      "DC": "DD",
+      "Failed": "{actor} n’a pas réussi à identifier le parchemin.",
+      "Error": "Le parchemin n’a pas pu être traité.",
+      "Enable": "Tirer les sorts des parchemins",
+      "Packs": "Identifiants des compendiums de sorts (séparés par des virgules)",
+      "Title": "Sorts des parchemins",
+      "Limit": "Utiliser uniquement les sorts cochés",
+      "Save": "Enregistrer",
+      "Cancel": "Annuler",
+      "Unavailable": "Aucun sort éligible. Le parchemin d’origine a été conservé."
+    },
     "Window": {
       "Title": "Fouille : {name}",
       "Corpse": "Cadavre",
@@ -163,6 +192,7 @@
         "Hint": "Fouille, butin, conteneurs et pièges, rangés en onglets."
       },
       "Tab": {
+        "scrolls": "Parchemins",
         "search": "Fouille",
         "loot": "Fouille des cadavres",
         "containers": "Conteneurs",
@@ -173,6 +203,11 @@
         "theft": "Vol à la tire"
       },
       "Tool": {
+        "scrollPools": {
+          "Hint": "Choisir les sorts disponibles à chaque niveau",
+          "Button": "Configurer les sorts",
+          "Name": "Sorts des parchemins"
+        },
         "tables": {
           "Name": "Tables génériques de conteneurs",
           "Hint": "Sept tables de butin (coffre, tonneau, caisse, bibliothèque, bureau, autel, sac de campement) dans « Butin — tables ». Objets du Manuel des joueurs, ou les mêmes du SRD de dnd5e sans lui.",

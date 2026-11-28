@@ -1,3 +1,5 @@
+import { registerScrollActions } from "./runtime/scroll-actions.mjs";
+import { registerRandomScrolls } from "./adapter/random-scrolls.mjs";
 /**
  * Butin et commerce (darsh-loot) — point d'entrée. Voir SPEC.md.
  */
@@ -53,6 +55,8 @@ registerPileFrame();
 
 Hooks.once("init", () => {
   registerSettings();
+  registerRandomScrolls();
+  registerScrollActions();
   registerSettingsWindow();
   registerOperations();
   registerTake();

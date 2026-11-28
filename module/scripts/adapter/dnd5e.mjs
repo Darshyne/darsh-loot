@@ -5,6 +5,7 @@ import { MODULE_ID, loc, setting } from "../shared.mjs";
 import { isCorpse, gearEntries, coinsOf, hasLoot, stackTarget, edgeDistance, addCoins, takenQuantity, COINS } from "../core/loot.mjs";
 import { sizeOfSpan } from "../core/traps.mjs";
 import { nextStolenMark } from "../core/theft.mjs";
+import { convertLootScrolls, isSpellScroll } from "./random-scrolls.mjs";
 import { inTurn, operation } from "./ledger.mjs";
 
 /** Le token (document) est-il un cadavre fouillable ? */
@@ -170,9 +171,12 @@ export function clearAttunement(data) {
  * before, the item stayed on both sides. With `op`, the caller's operation undoes it with the rest.
  */
 export function transferNow(corpse, recipient, what={}) {
-  if ( what.op ) return transferSteps(corpse, recipient, what);
+  if ( what.op ) return transferSteps(corpse, recipient, what).then(({ names, coins }) => ({ names, coins }));
   return operation({ label: loc("Op.Take", { from: corpse.name, to: recipient.name }), journal: false },
-    op => transferSteps(corpse, recipient, { ...what, op }));
+    op => transferSteps(corpse, recipient, { ...what, op })).then(({ scrolls, ...taken }) => {
+      if (scrolls.length && recipient.type === "character") Hooks.callAll(MODULE_ID + ".receivedScrolls", recipient, scrolls);
+      return taken;
+    });
 }
 
 async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stolen=null, quantities=null, op }) {
@@ -180,7 +184,7 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
   itemIds = [...new Set(itemIds ?? [])];
   const Item5e = CONFIG.Item.documentClass;
   const available = new Set(gearEntries(plainItems(corpse), requireGear(corpse)).map(e => e.id));
-  const taken = { names: [], coins: [] };
+  const taken = { names: [], coins: [], scrolls: [] };
   const toCreate = [];
   const toUpdate = [];
   // Lot 1 (audit defect 21): stacks taken in part — what leaves, what stays.
@@ -192,20 +196,20 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
   for ( const id of itemIds ) {
     if ( !available.has(id) ) continue;
     const item = corpse.items.get(id);
-    const gear = await item.system.asGear?.() ?? item;
+    const gear = isSpellScroll(item) ? item : (await item.system.asGear?.() ?? item);
     const have = item.system.quantity ?? 1;
     const moved = (gear.type === "container") ? have : takenQuantity(have, quantities?.[id]);
     if ( moved < have ) partial.push({ _id: id, moved });
     else whole.push(id);
     const incoming = { type: gear.type, name: gear.name, source: gear._stats?.compendiumSource ?? null };
-    const stackOn = ((gear.type !== "container") && !stolen) ? stackTarget(owned, incoming) : null;
+    const stackOn = ((gear.type !== "container") && !isSpellScroll(gear) && !stolen) ? stackTarget(owned, incoming) : null;
     if ( stackOn ) {
       const current = recipient.items.get(stackOn);
       const pending = toUpdate.find(u => u._id === stackOn);
       if ( pending ) { pending.quantity += moved; pending.added += moved; }
       else toUpdate.push({ _id: stackOn, quantity: (current.system.quantity ?? 0) + moved, added: moved });
     } else {
-      const created = await Item5e.createWithContents([gear]);
+      let created = await Item5e.createWithContents([gear]);
       if ( moved < have ) foundry.utils.setProperty(created[0], "system.quantity", moved);
       // 0.21.0 (issue #5): an item that comes back to the one it was stolen from loses its mark, even taken back by stealing.
       for ( const data of created ) {
@@ -214,7 +218,13 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
         else if ( data.flags?.[MODULE_ID] ) delete data.flags[MODULE_ID].stolen;
         clearAttunement(data);
       }
-      toCreate.push({ top: created[0]._id, data: created });
+      if (recipient.type === "character" && isSpellScroll(gear)) {
+        created = await convertLootScrolls(created);
+        for (const data of created) {
+          data._id ??= foundry.utils.randomID();
+          toCreate.push({ top: data._id, data: [data] });
+        }
+      } else toCreate.push({ top: created[0]._id, data: created });
     }
     taken.names.push(((moved > 1) || (moved < have)) ? `${gear.name} (${moved})` : gear.name);
   }
@@ -260,5 +270,6 @@ async function transferSteps(corpse, recipient, { itemIds=[], coins=false, stole
       taken.coins = found;
     }
   }
+  taken.scrolls = toCreate.flatMap(entry => entry.data).filter(isSpellScroll).map(item => item._id);
   return taken;
 }

@@ -1,3 +1,4 @@
+import { convertLootScrolls, tableScrollData } from "./random-scrolls.mjs";
 /**
  * Tirage du trésor d'un cadavre (SPEC §3.1, étape 2), une fois, chez le MJ, à la première fouille.
  * Règles : core/treasure.mjs. Sources : DMG 2024 (tables et objets génériques de trésor), PHB 2024 (équipement,
@@ -145,6 +146,8 @@ async function itemFromResult(result) {
   }
   const text = result.description || result.name || result.text;
   if ( !text ) return null;
+  const scroll = tableScrollData(text, result.img);
+  if ( scroll ) return scroll;
   return { name: shortName(text), type: "loot", img: result.img || TRINKET_IMG,
     system: { quantity: 1, description: { value: `<p>${text}</p>` } } };
 }
@@ -197,6 +200,7 @@ async function rollTreasureNow(actor, { pockets=true, individual=true }={}) {
   if ( rule ) items.push(...await drawItems(rule.table, rule.draws));
   const own = actor.getFlag(MODULE_ID, "table");
   if ( own ) items.push(...await drawItems(own, 1));
+  const preparedItems = await convertLootScrolls(items);
 
   // The flag (and the coins) first, the items next: nothing is drawn twice if another request arrives in between. Items that
   // cannot be created take the flag back, so the corpse is not left « rolled » and empty.
@@ -205,14 +209,14 @@ async function rollTreasureNow(actor, { pockets=true, individual=true }={}) {
   if ( Object.keys(coins).length ) update["system.currency"] = addCoins(before, coins);
   await actor.update(update);
   try {
-    if ( items.length ) await actor.createEmbeddedDocuments("Item", items);
+    if ( preparedItems.length ) await actor.createEmbeddedDocuments("Item", preparedItems);
   } catch(err) {
     const back = { [`flags.${MODULE_ID}.rolled`]: false };
     if ( Object.keys(coins).length ) back["system.currency"] = before;
     await actor.update(back).catch(() => {});
     throw err;
   }
-  return { items: items.map(i => i.name), coins };
+  return { items: preparedItems.map(i => i.name), coins };
 }
 
 /**
@@ -291,7 +295,7 @@ export function rollContainer(behavior, actor) {
 
 async function rollContainerNow(behavior, actor) {
   const { table, draws, hoard, theme } = behavior.system;
-  const items = [];
+  let items = [];
   let coins = {};
   if ( table && (draws > 0) ) items.push(...await drawItems(table, draws));
 
@@ -314,6 +318,7 @@ async function rollContainerNow(behavior, actor) {
   }
 
   // Marked first (see `rollTreasure`); a chest whose items cannot be created is not left « rolled » and empty.
+  items = await convertLootScrolls(items);
   await behavior.update({ "system.rolled": true });
   try {
     if ( items.length ) await actor.createEmbeddedDocuments("Item", items);
